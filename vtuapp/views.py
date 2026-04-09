@@ -1,3 +1,4 @@
+import requests # Add this to your imports at the top
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -183,37 +184,34 @@ def cable_tv(request):
 
 
 # ====================== FUND WALLET ======================
+
 @login_required
 def fund_wallet(request):
     if request.method == 'POST':
-        try:
-            amount = int(request.POST.get('amount'))
-            if amount < 100:
-                messages.error(request, 'Minimum funding amount is ₦100')
-                return redirect('fund_wallet')
+        amount = request.POST.get('amount')
+        email = request.user.email or f"{request.user.username}@bindatasub.com"
+        
+        url = "https://api.paystack.co/transaction/initialize"
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+            "Content-Type": "application/json",
+        }
+        data = {
+            "amount": int(amount) * 100,
+            "email": email,
+            "callback_url": request.build_absolute_uri('/fund-wallet/callback/')
+        }
 
-            # Correct initialization for pypaystack2
-            paystack = Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
+        response = requests.post(url, headers=headers, json=data)
+        res_data = response.json()
 
-            response = paystack.transaction.initialize(
-                amount=amount * 100,                    # Paystack uses kobo
-                email=request.user.email or f"{request.user.username}@bindatasub.com",
-                reference=f"fund_{request.user.id}_{int(time.time())}",
-                callback_url=request.build_absolute_uri('/fund-wallet/callback/')
-            )
-
-            if response['status']:
-                return redirect(response['data']['authorization_url'])
-            else:
-                messages.error(request, 'Failed to initialize payment. Please try again.')
-                return redirect('fund_wallet')
-
-        except Exception as e:
-            messages.error(request, f'Error initializing payment: {str(e)}')
+        if res_data['status']:
+            return redirect(res_data['data']['authorization_url'])
+        else:
+            messages.error(request, "Paystack error: " + res_data['message'])
             return redirect('fund_wallet')
-
+            
     return render(request, 'vtuapp/fund_wallet.html')
-
 
 # ====================== PAYSTACK CALLBACK ======================
 @login_required
@@ -225,16 +223,25 @@ def fund_wallet_callback(request):
         return redirect('dashboard')
 
     try:
-        paystack = Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
-        response = paystack.transaction.verify(reference)
+        # Use requests to verify the payment directly with Paystack API
+        url = f"https://api.paystack.co/transaction/verify/{reference}"
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        }
+        
+        response = requests.get(url, headers=headers)
+        res_data = response.json()
 
-        if response['status'] and response['data']['status'] == 'success':
-            amount = Decimal(response['data']['amount']) / 100
+        if res_data['status'] and res_data['data']['status'] == 'success':
+            # Paystack sends amount in kobo (e.g., 10000 for ₦100)
+            amount = Decimal(res_data['data']['amount']) / 100
 
+            # Update the user's wallet
             wallet = request.user.wallet
             wallet.balance += amount
             wallet.save()
 
+            # Record the transaction
             Transaction.objects.create(
                 user=request.user,
                 transaction_type='Wallet Funding',
@@ -243,14 +250,13 @@ def fund_wallet_callback(request):
                 status='Successful'
             )
 
-            messages.success(request, f'✅ ₦{amount:,.2f} has been credited to your wallet successfully!')
+            messages.success(request, f'✅ ₦{amount:,.2f} has been credited to your wallet!')
         else:
-            messages.error(request, 'Payment verification failed. Contact support if money was deducted.')
+            messages.error(request, 'Payment verification failed. Please contact support.')
 
     except Exception as e:
         messages.error(request, f'Verification error: {str(e)}')
 
-    return redirect('dashboard')
     return redirect('dashboard')
 
 @login_required
