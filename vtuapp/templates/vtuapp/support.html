@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bin Datasub - Support</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
+        input, textarea { color: white !important; }
+    </style>
+</head>
+<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
+    <div class="max-w-2xl mx-auto px-4">
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-8 neon-cyan">
+            
+            {% if messages %}
+            <div id="messages-container" class="space-y-3 mb-8">
+                {% for message in messages %}
+                <div class="px-6 py-4 rounded-2xl text-sm flex items-center gap-3
+                            {% if message.tags == 'success' %}bg-emerald-600{% else %}bg-red-600{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="text-center mb-10">
+                <i class="fas fa-headset text-6xl text-cyan-400 mb-4"></i>
+                <h1 class="text-4xl font-bold">24/7 Support</h1>
+                <p class="text-cyan-300 mt-2">We're here to help you anytime</p>
+            </div>
+
+            <form method="POST" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Subject</label>
+                    <input type="text" name="subject" required
+                           class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                    <textarea name="message" rows="6" required
+                              class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 resize-y"></textarea>
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3">
+                    <i class="fas fa-paper-plane"></i> SEND MESSAGE
+                </button>
+            </form>
+
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-sm">
+                <div class="bg-[#1a1a4a] rounded-2xl p-6">
+                    <i class="fas fa-phone text-3xl text-cyan-400 mb-3"></i>
+                    <p class="font-medium">Call Us</p>
+                    <p class="text-gray-400">+2349038047335</p>
+                </div>
+                <div class="bg-[#1a1a4a] rounded-2xl p-6">
+                    <i class="fas fa-envelope text-3xl text-cyan-400 mb-3"></i>
+                    <p class="font-medium">Email</p>
+                    <p class="text-gray-400">support@bindatasub.com</p>
+                </div>
+                <div class="bg-[#1a1a4a] rounded-2xl p-6">
+                    <i class="fas fa-clock text-3xl text-cyan-400 mb-3"></i>
+                    <p class="font-medium">Response Time</p>
+                    <p class="text-gray-400">Within 5 minutes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function autoHideMessages() {
+            const messages = document.querySelectorAll('#messages-container > div');
+            messages.forEach((msg) => {
+                setTimeout(() => {
+                    msg.style.opacity = '0';
+                    msg.style.transform = 'translateY(-10px)';
+                    setTimeout(() => msg.remove(), 400);
+                }, 4000);
+            });
+        }
+        window.onload = autoHideMessages;
+    </script>
+</body>
+</html>

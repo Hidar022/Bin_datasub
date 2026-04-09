@@ -1,0 +1,28 @@
+body {
+  background-color: #1C1C1C;
+  font-family: 'Poppins', sans-serif;
+}
+
+.btn-gradient {
+  background: linear-gradient(90deg, #6A0DAD, #00FFFF);
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  transition: 0.3s;
+}
+
+.btn-gradient:hover {
+  box-shadow: 0 0 15px #00FFFF;
+  transform: scale(1.05);
+}
+
+.service-card {
+  background: #2A2A2A;
+  border-radius: 10px;
+  transition: 0.3s;
+}
+
+.service-card:hover {
+  box-shadow: 0 0 15px #FF4500;
+  transform: scale(1.05);
+}

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bin Datasub - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .neon-cyan { box-shadow: 0 0 20px #22d3ee; }
+        .neon-purple { box-shadow: 0 0 20px #a855f7; }
+        .neon-orange { box-shadow: 0 0 20px #f59e0b; }
+        .header-glow { background: linear-gradient(90deg, #a855f7, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Hamburger animation */
+        .hamburger { transition: all 0.3s; }
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(7px, -6px); }
+    </style>
+</head>
+<body class="bg-[#0a0a2e] text-white min-h-screen font-sans">
+    <!-- Top Navigation - Fully Responsive -->
+    <nav class="bg-[#120f2e]/95 backdrop-blur-lg border-b border-purple-500/30 sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-2xl">📡</div>
+                    <span class="text-2xl md:text-3xl font-bold tracking-tighter header-glow">Bin Datasub</span>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+                    <a href="{% url 'dashboard' %}" class="text-cyan-400 border-b-2 border-cyan-400 pb-1">Home</a>
+                    <a href="{% url 'services' %}" class="hover:text-cyan-300 transition-colors">Services</a>
+                    <a href="{% url 'transactions' %}" class="hover:text-cyan-300 transition-colors">Transactions</a>
+                    <a href="{% url 'support' %}" class="hover:text-cyan-300">Support</a>
+                    <a href="{% url 'profile' %}" class="hover:text-cyan-300">Profile</a>
+                    <a href="{% url 'logout' %}" class="text-red-400">Logout</a> 
+                </div>
+
+                <!-- User + Hamburger -->
+                <div class="flex items-center gap-4">
+                    <span class="hidden sm:inline font-medium">Hi, {{ request.user.username }}!</span>
+                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-400 rounded-2xl flex items-center justify-center text-lg">👤</div>
+                    
+                    <!-- Hamburger -->
+                    <button id="hamburger" class="md:hidden hamburger flex flex-col gap-1.5 w-8">
+                        <span class="block w-6 h-0.5 bg-white rounded"></span>
+                        <span class="block w-6 h-0.5 bg-white rounded"></span>
+                        <span class="block w-6 h-0.5 bg-white rounded"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 pt-4 border-t border-purple-500/30">
+                <div class="flex flex-col gap-4 text-sm font-medium">
+                    <a href="{% url 'dashboard' %}" class="text-cyan-400">Home</a>
+                    <a href="{% url 'services' %}" class="hover:text-cyan-300">Services</a>
+                    <a href="{% url 'transactions' %}" class="hover:text-cyan-300">Transactions</a>
+                    <a href="{% url 'support' %}" class="hover:text-cyan-300">Support</a>
+                    <a href="{% url 'profile' %}" class="hover:text-cyan-300">Profile</a>
+                    <a href="{% url 'logout' %}" class="text-red-400">Logout</a>    
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-6 md:py-8">
+        <h1 class="text-3xl md:text-5xl font-bold">Welcome Back, {{ request.user.username }}!</h1>
+        <p class="text-cyan-300 text-lg md:text-xl">Get the best deals on Data, Airtime & Bills</p>
+
+        <!-- Wallet -->
+        <div class="mt-8 bg-gradient-to-r from-[#1a174a] to-[#120f2e] border-2 border-cyan-400 rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 neon-cyan">
+            <div>
+                <p class="uppercase text-xs md:text-sm tracking-widest text-cyan-300">Wallet Balance</p>
+                <p class="text-4xl md:text-5xl font-bold text-cyan-400">₦{{ wallet.balance|floatformat:2 }}</p>
+            </div>
+            <a href="{% url 'fund_wallet' %}" 
+            class="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto text-center px-8 py-4 rounded-2xl font-semibold flex items-center justify-center gap-3 transition-all">
+                <i class="fas fa-plus"></i> Fund Wallet
+            </a>
+        </div>
+
+        <!-- Services Grid - Responsive -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mt-10">
+            <a href="{% url 'buy_data' %}" class="block bg-[#12123a] border-2 border-purple-400 rounded-3xl p-6 neon-purple hover:scale-105 transition-all">
+                <i class="fas fa-wifi text-5xl text-cyan-400"></i>
+                <h3 class="text-2xl font-semibold mt-6">Buy Data</h3>
+                <p class="text-cyan-300 text-sm md:text-base">Affordable Data Plans</p>
+                <button class="mt-8 w-full bg-cyan-400 text-black py-4 rounded-2xl font-semibold">Buy Now</button>
+            </a>
+
+            <a href="{% url 'buy_airtime' %}" class="block bg-[#12123a] border-2 border-cyan-400 rounded-3xl p-6 neon-cyan hover:scale-105 transition-all">
+                <i class="fas fa-mobile-alt text-5xl text-blue-400"></i>
+                <h3 class="text-2xl font-semibold mt-6">Buy Airtime</h3>
+                <p class="text-cyan-300 text-sm md:text-base">Instant Airtime Top-Up</p>
+                <button class="mt-8 w-full bg-blue-400 text-black py-4 rounded-2xl font-semibold">Buy Now</button>
+            </a>
+
+            <a href="{% url 'pay_electricity' %}" class="block bg-[#12123a] border-2 border-orange-400 rounded-3xl p-6 neon-orange hover:scale-105 transition-all">
+                <i class="fas fa-bolt text-5xl text-orange-400"></i>
+                <h3 class="text-2xl font-semibold mt-6">Pay Electricity</h3>
+                <p class="text-cyan-300 text-sm md:text-base">Electricity Bill Payment</p>
+                <button class="mt-8 w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold">Buy Now</button>
+            </a>
+
+            <a href="{% url 'cable_tv' %}" class="block bg-[#12123a] border-2 border-purple-400 rounded-3xl p-6 neon-purple hover:scale-105 transition-all">
+                <i class="fas fa-tv text-5xl text-purple-400"></i>
+                <h3 class="text-2xl font-semibold mt-6">Cable TV</h3>
+                <p class="text-cyan-300 text-sm md:text-base">Pay TV Subscription</p>
+                <button class="mt-8 w-full bg-purple-500 text-white py-4 rounded-2xl font-semibold">Buy Now</button>
+            </a>
+        </div>
+
+        <!-- Transactions + Side Panels -->
+        <div class="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+            <!-- Recent Transactions -->
+            <div class="lg:col-span-8 bg-[#12123a] rounded-3xl p-5 md:p-8">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-3">
+                    <i class="fas fa-history"></i> Recent Transactions
+                </h2>
+                {% if transactions %}
+                    <div class="mt-6 text-center">
+                <a href="{% url 'transactions' %}" 
+                class="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-medium">
+                    View All Transactions →
+                </a>
+            </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm min-w-[600px]">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-left text-xs md:text-sm text-gray-400">
+                                <th class="pb-4">Description</th>
+                                <th class="pb-4">Amount</th>
+                                <th class="pb-4">Provider</th>
+                                <th class="pb-4 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            {% for tx in transactions %}
+                            <tr>
+                                <td class="py-5">{{ tx.transaction_type }} Purchase</td>
+                                <td class="py-5 font-semibold text-emerald-400">₦{{ tx.amount|floatformat:0 }}</td>
+                                <td class="py-5">{{ tx.provider }} {% if tx.phone_or_meter %}— {{ tx.phone_or_meter }}{% endif %}</td>
+                                <td class="py-5 text-right"><span class="bg-emerald-500/20 text-emerald-400 px-4 py-1 rounded-3xl text-xs font-medium">Successful</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-400 text-center py-12">No transactions yet. Start buying!</p>
+                {% endif %}
+            </div>
+
+                <!-- Side panels - stack on mobile -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Refer & Earn -->
+            <div class="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400 rounded-3xl p-6 neon-purple">
+                <h3 class="text-xl font-semibold flex items-center gap-3">Refer & Earn <span class="text-3xl">🎁</span></h3>
+                <p class="text-gray-300 mt-2 text-sm">Invite friends & earn rewards!</p>
+                <a href="{% url 'referral' %}" 
+                class="mt-8 block w-full bg-white text-black py-4 rounded-2xl font-bold text-center hover:bg-gray-100 transition">
+                    Share Referral Link
+                </a>
+            </div>
+
+            <!-- 24/7 Support -->
+            <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 neon-cyan">
+                <h3 class="text-xl font-semibold">24/7 Support</h3>
+                <p class="text-gray-300 text-sm">We're there to help anytime!</p>
+                <a href="{% url 'support' %}" 
+                class="mt-8 block w-full bg-cyan-400 text-black py-4 rounded-2xl font-semibold text-center hover:bg-cyan-300 transition">
+                    Contact Us
+                </a>
+            </div>
+        </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="fixed bottom-4 right-4 left-4 md:left-auto md:right-6 space-y-3 z-50">
+        {% for message in messages %}
+        <div class="bg-emerald-600 text-white px-6 py-4 rounded-3xl flex items-center gap-3 shadow-2xl text-sm md:text-base">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+        // Hamburger Menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>

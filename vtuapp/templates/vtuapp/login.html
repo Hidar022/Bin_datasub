@@ -1,0 +1,82 @@
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bin Datasub - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .neon-glow { box-shadow: 0 0 25px #a855f7, 0 0 40px #a855f7; }
+        .neon-text { text-shadow: 0 0 15px #22d3ee; }
+        input { color: white !important; }
+        input::placeholder { color: #9ca3af !important; }
+    </style>
+</head>
+<body class="bg-[#0a0a2e] text-white min-h-screen flex items-center justify-center py-12">
+    <div class="max-w-md w-full mx-4">
+        <div class="flex justify-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl font-bold">📡</div>
+                <span class="text-4xl font-bold tracking-tighter neon-text">Bin Datasub</span>
+            </div>
+        </div>
+
+        <div class="bg-[#12123a] border border-purple-500/50 rounded-3xl p-8 neon-glow">
+            <h1 class="text-3xl font-bold text-center mb-2">Welcome Back</h1>
+            <p class="text-cyan-300 text-center mb-8">Login to your VTU dashboard</p>
+
+            <!-- Messages -->
+            <div id="messages-container" class="space-y-3 mb-6"></div>
+
+            <form id="loginForm" method="POST" class="space-y-6">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ field.label }}</label>
+                    {{ field|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all" }}
+                </div>
+                {% endfor %}
+
+                <button type="submit" id="loginBtn"
+                        class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 transition-all">
+                    <span id="btnText">LOGIN</span>
+                    <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 text-center text-gray-400">
+                New here? 
+                <a href="{% url 'register' %}" class="text-cyan-400 hover:text-white font-medium">Create free account →</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const btn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        form.addEventListener('submit', function() {
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+        });
+
+        function autoHideMessages() {
+            const messages = document.querySelectorAll('#messages-container > div');
+            messages.forEach(msg => {
+                setTimeout(() => {
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.remove(), 400);
+                }, 4000);
+            });
+        }
+        window.onload = autoHideMessages;
+    </script>
+</body>
+</html>
