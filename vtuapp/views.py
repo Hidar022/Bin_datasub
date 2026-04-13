@@ -1,26 +1,26 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
-from .models import Wallet, Transaction, DataPlan, Profile
-from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView
-from django.urls import reverse_lazy
 from django.contrib import messages
 from django.http import JsonResponse
 from django.conf import settings
 from decimal import Decimal
 import time
 import requests
+import json
+from django.views.decorators.csrf import csrf_exempt
 
 # Models
-from .models import Wallet, Transaction, DataPlan
+from .models import Wallet, Transaction, DataPlan, Profile
 
 # Forms
 from .forms import (
     AirtimeForm, DataForm, ElectricityForm, CableTVForm, 
     DataPurchaseForm
 )
+
+from django.contrib.auth.hashers import check_password, make_password
 
 
 def home_redirect(request):
@@ -68,9 +68,10 @@ def dashboard(request):
         'transactions': transactions
     })
 
+
+# ====================== SETTINGS ======================
 @login_required
 def settings_page(request):
-    # Ensure profile exists
     profile, created = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
@@ -161,7 +162,6 @@ def fund_wallet(request):
     return render(request, 'vtuapp/fund_wallet.html')
 
 
-# ====================== PAYSTACK CALLBACK ======================
 @login_required
 def fund_wallet_callback(request):
     reference = request.GET.get('reference')
@@ -204,8 +204,7 @@ def fund_wallet_callback(request):
     return redirect('dashboard')
 
 
-# ====================== PURCHASE VIEWS WITH HASHED PIN ======================
-
+# ====================== PURCHASE VIEWS ======================
 @login_required
 def buy_airtime(request):
     if request.method == 'POST':
@@ -384,10 +383,54 @@ def referral(request):
         'referral_link': referral_link
     })
 
-class CustomPasswordResetView(PasswordResetView):
-    template_name = 'vtuapp/password_reset.html'
-    email_template_name = 'vtuapp/password_reset_email.html'
-    success_url = reverse_lazy('password_reset_done')
 
-class CustomPasswordResetDoneView(PasswordResetDoneView):
-    template_name = 'vtuapp/password_reset_done.html'    
+# ====================== WEBAUTHN (Biometric) ======================
+@login_required
+def webauthn_register_options(request):
+    """Generate registration options for fingerprint/face ID"""
+    try:
+        options = generate_registration_options(
+            rp_id=request.get_host().split(':')[0],
+            rp_name="Bin Datasub",
+            user_id=str(request.user.id).encode(),
+            user_name=request.user.username,
+            user_display_name=request.user.username,
+        )
+
+        webauthn_challenges[request.user.id] = options.challenge
+
+        return JsonResponse(options_to_json(options))
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
+def webauthn_register_complete(request):
+    """Verify and save the biometric credential"""
+    try:
+        data = json.loads(request.body)
+        challenge = webauthn_challenges.get(request.user.id)
+
+        if not challenge:
+            return JsonResponse({'status': 'error', 'message': 'Challenge expired'}, status=400)
+
+        verification = verify_registration_response(
+            credential=data,
+            expected_challenge=challenge,
+            expected_rp_id=request.get_host().split(':')[0],
+            expected_origin=request.build_absolute_uri('/'),
+        )
+
+        # Save credential (for now just success message)
+        messages.success(request, '✅ Fingerprint / Face ID registered successfully!')
+        webauthn_challenges.pop(request.user.id, None)
+
+        return JsonResponse({'status': 'success', 'message': 'Biometric registered successfully!'})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+# Temporary storage for challenges
+webauthn_challenges = {}

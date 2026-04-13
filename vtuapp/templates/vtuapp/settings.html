@@ -233,42 +233,51 @@
 
         window.onload = () => switchTab(0);
     </script>
-        <script>
-    async function registerBiometric() {
-        try {
-            const response = await fetch('/webauthn/register/', {
-                method: 'GET',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const options = await response.json();
+<script>
+async function registerBiometric() {
+    try {
+        const response = await fetch('/webauthn/register/', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
 
-            const credential = await navigator.credentials.create({ publicKey: options });
-
-            const registerResponse = await fetch('/webauthn/register/', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
-                },
-                body: JSON.stringify({
-                    credential: credential
-                })
-            });
-
-            const result = await registerResponse.json();
-            if (result.status === 'success') {
-                alert('✅ Biometric registered successfully!');
-            } else {
-                alert('Failed to register biometric: ' + result.message);
-            }
-        } catch (err) {
-            alert('Biometric registration failed: ' + err.message);
+        if (!response.ok) {
+            alert("Biometric registration failed. Please make sure your device supports it.");
+            return;
         }
-    }
 
-    async function testBiometric() {
-        alert("Test biometric login - implementation in next step");
+        const options = await response.json();
+
+        const credential = await navigator.credentials.create({
+            publicKey: options
+        });
+
+        const completeResponse = await fetch('/webauthn/register/complete/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(credential)
+        });
+
+        const result = await completeResponse.json();
+
+        if (result.status === 'success') {
+            alert('✅ Fingerprint / Face ID registered successfully!');
+        } else {
+            alert('Registration failed: ' + result.message);
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Biometric registration failed. Your browser or device may not support it.\n\nError: " + err.message);
     }
-    </script>
+}
+
+async function testBiometric() {
+    alert("Test biometric login coming soon.\n\nWe will implement login with fingerprint in the next step.");
+}
+</script>
 </body>
 </html>
