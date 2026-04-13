@@ -394,7 +394,7 @@ def webauthn_register_options(request):
             rp_name="Bin Datasub",
             user_id=str(request.user.id).encode(),
             user_name=request.user.username,
-            user_display_name=request.user.username,
+            user_display_name=request.user.get_full_name() or request.user.username,
         )
 
         webauthn_challenges[request.user.id] = options.challenge
