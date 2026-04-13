@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+# Load the .env file
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -34,18 +37,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#ri@=86i00=ts6$1s##_6))$q^ji@7%#yrqtt&k0o%%7vej1$9'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 # This allows both your phone/live site and your local computer
 ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 # Paystack Settings
-PAYSTACK_PUBLIC_KEY = 'pk_test_e9db6df630304e8fe2312119c25ef8be97019cf0' 
-PAYSTACK_SECRET_KEY = 'sk_test_e77b41d16c6142bc758af34af3de5b912d91d31e'  
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+# Use them for Paystack too
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY') 
 
 # Optional: Redirect after payment
 PAYSTACK_CALLBACK_URL = 'http://127.0.0.1:8000/fund-wallet/callback/'
