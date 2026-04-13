@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bin Datasub - Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
+        .sidebar-tab { transition: all 0.3s; }
+        .sidebar-tab.active { background-color: #1a1a4a; border-left: 4px solid #22d3ee; }
+    </style>
+</head>
+<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">Settings</h1>
+            <p class="text-cyan-300 mb-8">Manage your account and security</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Sidebar -->
+                <div class="lg:col-span-3 bg-[#1a1a4a] rounded-3xl p-4">
+                    <div class="flex lg:flex-col gap-2">
+                        <button onclick="switchTab(0)" class="sidebar-tab active flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-0">
+                            <i class="fas fa-user"></i> <span class="hidden sm:inline">Profile</span>
+                        </button>
+                        <button onclick="switchTab(1)" class="sidebar-tab flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-1">
+                            <i class="fas fa-shield-alt"></i> <span class="hidden sm:inline">Security</span>
+                        </button>
+                        <button onclick="switchTab(2)" class="sidebar-tab flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-2">
+                            <i class="fas fa-fingerprint"></i> <span class="hidden sm:inline">Biometric</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="lg:col-span-9">
+                    <div id="messages-container" class="space-y-3 mb-6"></div>
+
+                <!-- Profile Tab -->
+                <div id="tab-content-0" class="tab-content">
+                    <form id="profileForm" class="space-y-6">
+                        {% csrf_token %}
+                        <input type="hidden" name="section" value="profile">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                                <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
+                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                                <input type="text" value="{{ request.user.username }}" disabled
+                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                                <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
+                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                                <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
+                                    pattern="[0-9]+" 
+                                    inputmode="numeric"
+                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                    maxlength="15"
+                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
+                                <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
+                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="profileBtn"
+                                class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                            <span id="profileBtnText">SAVE CHANGES</span>
+                            <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        </button>
+                    </form>
+                </div>
+
+                    <!-- Security Tab -->
+                    <div id="tab-content-1" class="tab-content hidden space-y-10">
+                        <!-- Change Account Password -->
+                        <div class="bg-[#1a1a4a] rounded-3xl p-8">
+                            <h3 class="text-xl font-semibold mb-6">Change Account Password</h3>
+                            <form id="passwordForm" class="space-y-6">
+                                {% csrf_token %}
+                                <input type="hidden" name="section" value="password">
+                                <input type="password" name="old_password" placeholder="Current Password" 
+                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                <input type="password" name="new_password" placeholder="New Password" 
+                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                <input type="password" name="confirm_password" placeholder="Confirm New Password" 
+                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                       <div class="mt-4 text-right">
+                                    <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300 transition-all">
+                                        Forgot Password?
+                                    </a>
+                                </div>
+                                <button type="submit" id="passwordBtn"
+                                        class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                                    <span id="passwordBtnText">UPDATE PASSWORD</span>
+                                    <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Change Transaction PIN -->
+                        <div class="bg-[#1a1a4a] rounded-3xl p-8">
+                            <h3 class="text-xl font-semibold mb-6">Change Transaction PIN</h3>
+                            <form id="pinForm" class="space-y-6">
+                                {% csrf_token %}
+                                <input type="hidden" name="section" value="pin">
+                                <input type="password" name="old_pin" maxlength="4" placeholder="Current PIN" 
+                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
+                                <input type="password" name="new_pin" maxlength="4" placeholder="New PIN" 
+                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
+                                <button type="submit" id="pinBtn"
+                                        class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                                    <span id="pinBtnText">UPDATE TRANSACTION PIN</span>
+                                    <i id="pinSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                <!-- Biometric Tab -->
+                <div id="tab-content-2" class="tab-content hidden">
+                    <div class="bg-[#1a1a4a] rounded-3xl p-10 text-center">
+                        <i class="fas fa-fingerprint text-8xl text-cyan-400 mb-8"></i>
+                        <h3 class="text-3xl font-bold mb-4">Biometric Authentication</h3>
+                        <p class="text-gray-300 max-w-md mx-auto mb-10">
+                            Use your fingerprint or face ID for faster and more secure login and purchases.
+                        </p>
+                        
+                        <button onclick="registerBiometric()" 
+                                class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
+                            Register Fingerprint / Face ID
+                        </button>
+                        
+                        <button onclick="testBiometric()" 
+                                class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
+                            Test Biometric Login
+                        </button>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-content-' + tab).classList.remove('hidden');
+
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function showMessage(type, message) {
+            const container = document.getElementById('messages-container');
+            const div = document.createElement('div');
+            div.className = `px-6 py-4 rounded-2xl text-sm flex items-center gap-3 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            div.textContent = message;
+            container.appendChild(div);
+
+            setTimeout(() => {
+                div.style.opacity = '0';
+                setTimeout(() => div.remove(), 400);
+            }, 4000);
+        }
+
+        // Handle all form submissions with AJAX
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                let btn = this.querySelector('button[type="submit"]');
+                let text = btn.querySelector('span');
+                let spinner = btn.querySelector('i');
+
+                if (text && spinner) {
+                    text.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+                    btn.disabled = true;
+                }
+
+                const formData = new FormData(this);
+
+                fetch("{% url 'settings' %}", {
+                    method: "POST",
+                    body: formData,
+                    headers: { 
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showMessage(data.status || 'error', data.message || 'Something went wrong');
+                    if (data.status === 'success') {
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                })
+                .catch(() => {
+                    showMessage('error', 'Connection error. Please try again.');
+                })
+                .finally(() => {
+                    if (text && spinner) {
+                        text.classList.remove('hidden');
+                        spinner.classList.add('hidden');
+                        btn.disabled = false;
+                    }
+                });
+            });
+        });
+
+        function enableBiometric() {
+            alert("Biometric setup (WebAuthn) is ready for the next phase.");
+        }
+
+        window.onload = () => switchTab(0);
+    </script>
+        <script>
+    async function registerBiometric() {
+        try {
+            const response = await fetch('/webauthn/register/', {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const options = await response.json();
+
+            const credential = await navigator.credentials.create({ publicKey: options });
+
+            const registerResponse = await fetch('/webauthn/register/', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                },
+                body: JSON.stringify({
+                    credential: credential
+                })
+            });
+
+            const result = await registerResponse.json();
+            if (result.status === 'success') {
+                alert('✅ Biometric registered successfully!');
+            } else {
+                alert('Failed to register biometric: ' + result.message);
+            }
+        } catch (err) {
+            alert('Biometric registration failed: ' + err.message);
+        }
+    }
+
+    async function testBiometric() {
+        alert("Test biometric login - implementation in next step");
+    }
+    </script>
+</body>
+</html>

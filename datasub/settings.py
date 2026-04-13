@@ -34,6 +34,8 @@ PAYSTACK_SECRET_KEY = 'sk_test_e77b41d16c6142bc758af34af3de5b912d91d31e'
 # Optional: Redirect after payment
 PAYSTACK_CALLBACK_URL = 'http://127.0.0.1:8000/fund-wallet/callback/'
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 # Application definition
 
 INSTALLED_APPS = [

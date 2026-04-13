@@ -1,40 +1,41 @@
-import requests # Add this to your imports at the top
-from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
+from .models import Wallet, Transaction, DataPlan, Profile
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView
+from django.urls import reverse_lazy
 from django.contrib import messages
-from .models import Wallet, Transaction
-from .forms import AirtimeForm, DataForm, ElectricityForm, CableTVForm
-from .forms import DataPurchaseForm
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
-from .models import Wallet, Transaction, DataPlan
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.conf import settings
 from decimal import Decimal
 import time
+import requests
 
-from pypaystack2 import Paystack
+# Models
+from .models import Wallet, Transaction, DataPlan
+
+# Forms
+from .forms import (
+    AirtimeForm, DataForm, ElectricityForm, CableTVForm, 
+    DataPurchaseForm
+)
+
 
 def home_redirect(request):
     return redirect('login') if not request.user.is_authenticated else redirect('dashboard')
 
+
+# ====================== AUTH ======================
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            if User.objects.filter(username=username).exists():
-                messages.error(request, "This username is already taken. Please choose another.")
-            else:
-                user = form.save()
-                login(request, user)
-                return redirect('dashboard')
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Account created successfully!')
+            return redirect('dashboard')
     else:
         form = UserCreationForm()
     return render(request, 'vtuapp/register.html', {'form': form})
@@ -51,10 +52,13 @@ def login_view(request):
         form = AuthenticationForm()
     return render(request, 'vtuapp/login.html', {'form': form})
 
+
 def logout_view(request):
     logout(request)
     return redirect('login')
 
+
+# ====================== DASHBOARD ======================
 @login_required
 def dashboard(request):
     wallet = request.user.wallet
@@ -64,7 +68,180 @@ def dashboard(request):
         'transactions': transactions
     })
 
-# ==================== INTERACTIVE SERVICE VIEWS ====================
+@login_required
+def settings_page(request):
+    # Ensure profile exists
+    profile, created = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        section = request.POST.get('section')
+
+        if section == 'profile':
+            user = request.user
+            user.email = request.POST.get('email', user.email)
+            user.save()
+
+            profile.full_name = request.POST.get('full_name', profile.full_name)
+            profile.phone = request.POST.get('phone', profile.phone)
+            if request.POST.get('dob'):
+                profile.dob = request.POST.get('dob')
+            profile.save()
+
+            return JsonResponse({'status': 'success', 'message': '✅ Profile updated successfully!'})
+
+        elif section == 'password':
+            old_password = request.POST.get('old_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            if not check_password(old_password, request.user.password):
+                return JsonResponse({'status': 'error', 'message': '❌ Current password is incorrect'})
+            elif new_password != confirm_password:
+                return JsonResponse({'status': 'error', 'message': '❌ New passwords do not match'})
+            elif len(new_password) < 6:
+                return JsonResponse({'status': 'error', 'message': '❌ Password must be at least 6 characters'})
+            else:
+                request.user.set_password(new_password)
+                request.user.save()
+                return JsonResponse({'status': 'success', 'message': '✅ Account password updated successfully!'})
+
+        elif section == 'pin':
+            old_pin = request.POST.get('old_pin')
+            new_pin = request.POST.get('new_pin')
+
+            wallet = request.user.wallet
+            if not wallet.check_pin(old_pin):
+                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'})
+            elif len(new_pin) != 4 or not new_pin.isdigit():
+                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'})
+            else:
+                wallet.set_pin(new_pin)
+                return JsonResponse({'status': 'success', 'message': '✅ Transaction PIN updated successfully!'})
+
+        return JsonResponse({'status': 'error', 'message': 'Invalid section'})
+
+    has_pin = bool(request.user.wallet.pin)
+    return render(request, 'vtuapp/settings.html', {'has_pin': has_pin})
+
+
+# ====================== FUND WALLET (Paystack) ======================
+@login_required
+def fund_wallet(request):
+    if request.method == 'POST':
+        try:
+            amount = int(request.POST.get('amount'))
+            if amount < 100:
+                messages.error(request, 'Minimum funding amount is ₦100')
+                return redirect('fund_wallet')
+
+            url = "https://api.paystack.co/transaction/initialize"
+            headers = {
+                "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+                "Content-Type": "application/json",
+            }
+            data = {
+                "amount": amount * 100,
+                "email": request.user.email or f"{request.user.username}@bindatasub.com",
+                "callback_url": request.build_absolute_uri('/fund-wallet/callback/')
+            }
+
+            response = requests.post(url, headers=headers, json=data)
+            res_data = response.json()
+
+            if res_data.get('status'):
+                return redirect(res_data['data']['authorization_url'])
+            else:
+                messages.error(request, "Paystack error: " + res_data.get('message', 'Unknown error'))
+                return redirect('fund_wallet')
+
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('fund_wallet')
+
+    return render(request, 'vtuapp/fund_wallet.html')
+
+
+# ====================== PAYSTACK CALLBACK ======================
+@login_required
+def fund_wallet_callback(request):
+    reference = request.GET.get('reference')
+    
+    if not reference:
+        messages.error(request, 'Payment reference not found')
+        return redirect('dashboard')
+
+    try:
+        url = f"https://api.paystack.co/transaction/verify/{reference}"
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        }
+        
+        response = requests.get(url, headers=headers)
+        res_data = response.json()
+
+        if res_data.get('status') and res_data['data']['status'] == 'success':
+            amount = Decimal(res_data['data']['amount']) / 100
+
+            wallet = request.user.wallet
+            wallet.balance += amount
+            wallet.save()
+
+            Transaction.objects.create(
+                user=request.user,
+                transaction_type='Wallet Funding',
+                amount=amount,
+                provider='Paystack',
+                status='Successful'
+            )
+
+            messages.success(request, f'✅ ₦{amount:,.2f} has been credited to your wallet successfully!')
+        else:
+            messages.error(request, 'Payment verification failed. Contact support if money was deducted.')
+
+    except Exception as e:
+        messages.error(request, f'Verification error: {str(e)}')
+
+    return redirect('dashboard')
+
+
+# ====================== PURCHASE VIEWS WITH HASHED PIN ======================
+
+@login_required
+def buy_airtime(request):
+    if request.method == 'POST':
+        form = AirtimeForm(request.POST)
+        if form.is_valid():
+            pin = form.cleaned_data.get('pin') or request.POST.get('pin')
+            wallet = request.user.wallet
+
+            if not wallet.check_pin(pin):
+                return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
+
+            amount = form.cleaned_data['amount']
+            if wallet.balance >= amount:
+                wallet.balance -= amount
+                wallet.save()
+
+                Transaction.objects.create(
+                    user=request.user,
+                    transaction_type='Airtime',
+                    amount=amount,
+                    provider=form.cleaned_data['network'],
+                    phone_or_meter=form.cleaned_data['phone'],
+                    status='Successful'
+                )
+                return JsonResponse({
+                    'status': 'success',
+                    'message': f'✅ ₦{amount} Airtime sent successfully!'
+                })
+            else:
+                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
+        
+        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
+
+    form = AirtimeForm()
+    return render(request, 'vtuapp/buy_airtime.html', {'form': form})
+
 
 @login_required
 def buy_data(request):
@@ -74,7 +251,7 @@ def buy_data(request):
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
 
-            if not wallet.pin or wallet.pin != pin:
+            if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             plan = form.cleaned_data['plan']
@@ -94,21 +271,17 @@ def buy_data(request):
                 )
                 return JsonResponse({
                     'status': 'success',
-                    'message': f'✅ {plan.name} ({plan.data_amount}) purchased successfully!'
+                    'message': f'✅ {plan.name} purchased successfully!'
                 })
             else:
                 return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
 
         return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
 
-    # GET request - send plans to template
     form = DataPurchaseForm()
     plans = DataPlan.objects.filter(is_active=True)
-    
-    return render(request, 'vtuapp/buy_data.html', {
-        'form': form,
-        'plans': plans
-    })
+    return render(request, 'vtuapp/buy_data.html', {'form': form, 'plans': plans})
+
 
 @login_required
 def pay_electricity(request):
@@ -118,7 +291,7 @@ def pay_electricity(request):
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
 
-            if not wallet.pin or wallet.pin != pin:
+            if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             amount = form.cleaned_data['amount']
@@ -146,6 +319,7 @@ def pay_electricity(request):
     form = ElectricityForm()
     return render(request, 'vtuapp/pay_electricity.html', {'form': form})
 
+
 @login_required
 def cable_tv(request):
     if request.method == 'POST':
@@ -154,7 +328,7 @@ def cable_tv(request):
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
 
-            if not wallet.pin or wallet.pin != pin:
+            if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             amount = form.cleaned_data['amount']
@@ -183,82 +357,7 @@ def cable_tv(request):
     return render(request, 'vtuapp/cable_tv.html', {'form': form})
 
 
-# ====================== FUND WALLET ======================
-
-@login_required
-def fund_wallet(request):
-    if request.method == 'POST':
-        amount = request.POST.get('amount')
-        email = request.user.email or f"{request.user.username}@bindatasub.com"
-        
-        url = "https://api.paystack.co/transaction/initialize"
-        headers = {
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
-            "Content-Type": "application/json",
-        }
-        data = {
-            "amount": int(amount) * 100,
-            "email": email,
-            "callback_url": request.build_absolute_uri('/fund-wallet/callback/')
-        }
-
-        response = requests.post(url, headers=headers, json=data)
-        res_data = response.json()
-
-        if res_data['status']:
-            return redirect(res_data['data']['authorization_url'])
-        else:
-            messages.error(request, "Paystack error: " + res_data['message'])
-            return redirect('fund_wallet')
-            
-    return render(request, 'vtuapp/fund_wallet.html')
-
-# ====================== PAYSTACK CALLBACK ======================
-@login_required
-def fund_wallet_callback(request):
-    reference = request.GET.get('reference')
-    
-    if not reference:
-        messages.error(request, 'Payment reference not found')
-        return redirect('dashboard')
-
-    try:
-        # Use requests to verify the payment directly with Paystack API
-        url = f"https://api.paystack.co/transaction/verify/{reference}"
-        headers = {
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
-        }
-        
-        response = requests.get(url, headers=headers)
-        res_data = response.json()
-
-        if res_data['status'] and res_data['data']['status'] == 'success':
-            # Paystack sends amount in kobo (e.g., 10000 for ₦100)
-            amount = Decimal(res_data['data']['amount']) / 100
-
-            # Update the user's wallet
-            wallet = request.user.wallet
-            wallet.balance += amount
-            wallet.save()
-
-            # Record the transaction
-            Transaction.objects.create(
-                user=request.user,
-                transaction_type='Wallet Funding',
-                amount=amount,
-                provider='Paystack',
-                status='Successful'
-            )
-
-            messages.success(request, f'✅ ₦{amount:,.2f} has been credited to your wallet!')
-        else:
-            messages.error(request, 'Payment verification failed. Please contact support.')
-
-    except Exception as e:
-        messages.error(request, f'Verification error: {str(e)}')
-
-    return redirect('dashboard')
-
+# ====================== OTHER PAGES ======================
 @login_required
 def transactions_history(request):
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')
@@ -269,73 +368,26 @@ def services_page(request):
     return render(request, 'vtuapp/services.html')
 
 @login_required
-def profile(request):
-    if request.method == 'POST':
-        pin = request.POST.get('pin')
-        if pin and len(pin) == 4 and pin.isdigit():
-            wallet = request.user.wallet
-            wallet.pin = pin
-            wallet.save()
-            messages.success(request, '✅ 4-Digit PIN set successfully!')
-            return redirect('profile')
-        else:
-            messages.error(request, 'PIN must be exactly 4 digits')
-    
-    return render(request, 'vtuapp/profile.html')
-
-# Update all purchase views to require PIN (example for buy_airtime)
-@login_required
-def buy_airtime(request):
-    if request.method == 'POST':
-        form = AirtimeForm(request.POST)
-        if form.is_valid():
-            pin = form.cleaned_data.get('pin') or request.POST.get('pin')
-            wallet = request.user.wallet
-
-            if not wallet.pin or wallet.pin != pin:
-                return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
-
-            amount = form.cleaned_data['amount']
-            if wallet.balance >= amount:
-                wallet.balance -= amount
-                wallet.save()
-
-                Transaction.objects.create(
-                    user=request.user,
-                    transaction_type='Airtime',
-                    amount=amount,
-                    provider=form.cleaned_data['network'],
-                    phone_or_meter=form.cleaned_data['phone'],
-                    status='Successful'
-                )
-                return JsonResponse({
-                    'status': 'success',
-                    'message': f'✅ ₦{amount} Airtime sent successfully to {form.cleaned_data["phone"]}'
-                })
-            else:
-                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
-        
-        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
-
-    form = AirtimeForm()
-    return render(request, 'vtuapp/buy_airtime.html', {'form': form})
-
-@login_required
 def support(request):
     if request.method == 'POST':
-        # For now, just show success message (you can connect to email later)
-        messages.success(request, '✅ Your message has been sent to our support team. We will reply soon!')
+        messages.success(request, '✅ Your message has been sent to our support team.')
         return redirect('support')
-    
-    return render(request, 'vtuapp/support.html')   
+    return render(request, 'vtuapp/support.html')
 
 @login_required
 def referral(request):
-    # You can generate a real referral code later
-    referral_code = f"BDS-{request.user.username.upper()[:6]}"
+    referral_code = f"BDS-{request.user.username.upper()[:8]}"
     referral_link = f"https://yourdomain.com/register/?ref={referral_code}"
     
     return render(request, 'vtuapp/referral.html', {
         'referral_code': referral_code,
         'referral_link': referral_link
-    })     
+    })
+
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'vtuapp/password_reset.html'
+    email_template_name = 'vtuapp/password_reset_email.html'
+    success_url = reverse_lazy('password_reset_done')
+
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'vtuapp/password_reset_done.html'    

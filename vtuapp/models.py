@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.auth.hashers import make_password, check_password
 
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
@@ -45,5 +46,52 @@ class DataPlan(models.Model):
     validity = models.CharField(max_length=50, default="30 Days")
     is_active = models.BooleanField(default=True)
 
+class Wallet(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    pin = models.CharField(max_length=128, blank=True, null=True)   # Increased length for hash
+
+    def set_pin(self, raw_pin):
+        """Hash the PIN before saving"""
+        self.pin = make_password(raw_pin)
+        self.save()
+
+    def check_pin(self, raw_pin):
+        """Check if entered PIN is correct"""
+        if not self.pin:
+            return False
+        return check_password(raw_pin, self.pin)
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    full_name = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=15, blank=True)
+    dob = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+    
+    def __str__(self):
+        return f"{self.user.username}'s Wallet"
+    
+class BiometricCredential(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='biometric_credentials')
+    credential_id = models.TextField()           # Base64 encoded
+    public_key = models.TextField()
+    sign_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Biometric for {self.user.username}"
+    
     def __str__(self):
         return f"{self.network} - {self.name} - ₦{self.price}"

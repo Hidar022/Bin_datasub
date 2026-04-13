@@ -40,7 +40,11 @@
                     {{ field|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all" }}
                 </div>
                 {% endfor %}
-
+                <div class="mt-4 text-right">
+                 <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300 transition-all">
+                    Forgot Password?
+                </a>
+            </div>
                 <button type="submit" id="loginBtn"
                         class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 transition-all">
                     <span id="btnText">LOGIN</span>
