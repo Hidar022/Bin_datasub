@@ -1,0 +1,22 @@
+# Security
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+
+# Database (Keep your local data local)
+db.sqlite3
+
+# Static files
+staticfiles/
+
+# Media files (User uploads)
+media/
+
+# OS specific
+.DS_Store
+Thumbs.db
