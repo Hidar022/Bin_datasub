@@ -15,6 +15,21 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+import os
+
+# Your current STATIC_URL is fine, but make sure it has a leading slash
+STATIC_URL = '/static/'
+
+# This tells Django where to gather all static files for production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# This tells Django where to look for your custom static files (CSS/JS)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -124,4 +139,3 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
