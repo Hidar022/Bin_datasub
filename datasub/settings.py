@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-#ri@=86i00=ts6$1s##_6))$q^ji@7%#yrqtt&k0o%%7vej1$9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['hidar022.pythonanywhere.com']
 
 # Paystack Settings
 PAYSTACK_PUBLIC_KEY = 'pk_test_e9db6df630304e8fe2312119c25ef8be97019cf0' 
