@@ -236,22 +236,46 @@
 <script>
 async function registerBiometric() {
     try {
+        console.log("Starting biometric registration...");
+
         const response = await fetch('/webauthn/register/', {
             method: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
         });
 
+        const text = await response.text();
+        console.log("Server response:", text);
+
         if (!response.ok) {
-            alert("Biometric registration failed. Please make sure your device supports it.");
+            alert("Server returned error: " + text.substring(0, 300));
             return;
         }
 
-        const options = await response.json();
+        let options;
+        try {
+            options = JSON.parse(text);
+        } catch (e) {
+            alert("Invalid JSON from server: " + text.substring(0, 200));
+            return;
+        }
 
+        if (options.status === 'error') {
+            alert("Server error: " + options.message);
+            return;
+        }
+
+        // Try to create credential
+        console.log("Calling navigator.credentials.create...");
         const credential = await navigator.credentials.create({
             publicKey: options
         });
 
+        console.log("Credential created:", credential);
+
+        // Send to server
         const completeResponse = await fetch('/webauthn/register/complete/', {
             method: 'POST',
             headers: {
@@ -261,7 +285,10 @@ async function registerBiometric() {
             body: JSON.stringify(credential)
         });
 
-        const result = await completeResponse.json();
+        const resultText = await completeResponse.text();
+        console.log("Complete response:", resultText);
+
+        const result = JSON.parse(resultText);
 
         if (result.status === 'success') {
             alert('✅ Fingerprint / Face ID registered successfully!');
@@ -270,13 +297,9 @@ async function registerBiometric() {
         }
 
     } catch (err) {
-        console.error(err);
-        alert("Biometric registration failed. Your browser or device may not support it.\n\nError: " + err.message);
+        console.error("Biometric error:", err);
+        alert("Biometric registration failed:\n" + err.message + "\n\nCheck browser console (F12) for more details.");
     }
-}
-
-async function testBiometric() {
-    alert("Test biometric login coming soon.\n\nWe will implement login with fingerprint in the next step.");
 }
 </script>
 </body>

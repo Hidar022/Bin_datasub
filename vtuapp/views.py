@@ -385,12 +385,22 @@ def referral(request):
 
 
 # ====================== WEBAUTHN (Biometric) ======================
+from webauthn import generate_registration_options, verify_registration_response, options_to_json
+
+# Temporary storage for challenges (in production, use Redis or database)
+webauthn_challenges = {}
+
 @login_required
 def webauthn_register_options(request):
     """Generate registration options for fingerprint/face ID"""
     try:
+        # Important: Use correct domain (especially on PythonAnywhere)
+        rp_id = request.get_host().split(':')[0]
+        if rp_id.endswith('.pythonanywhere.com'):
+            rp_id = 'hidar022.pythonanywhere.com'   # Change if your subdomain is different
+
         options = generate_registration_options(
-            rp_id=request.get_host().split(':')[0],
+            rp_id=rp_id,
             rp_name="Bin Datasub",
             user_id=str(request.user.id).encode(),
             user_name=request.user.username,
@@ -401,36 +411,38 @@ def webauthn_register_options(request):
 
         return JsonResponse(options_to_json(options))
     except Exception as e:
+        print(f"WebAuthn Options Error: {e}")  # Check server logs
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
 @csrf_exempt
 @login_required
 def webauthn_register_complete(request):
-    """Verify and save the biometric credential"""
+    """Verify the biometric credential"""
     try:
         data = json.loads(request.body)
         challenge = webauthn_challenges.get(request.user.id)
 
         if not challenge:
-            return JsonResponse({'status': 'error', 'message': 'Challenge expired'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'Challenge expired. Please try again.'}, status=400)
 
+        # Verify registration
         verification = verify_registration_response(
             credential=data,
             expected_challenge=challenge,
             expected_rp_id=request.get_host().split(':')[0],
-            expected_origin=request.build_absolute_uri('/'),
+            expected_origin=request.build_absolute_uri('/').rstrip('/'),
         )
 
-        # Save credential (for now just success message)
-        messages.success(request, '✅ Fingerprint / Face ID registered successfully!')
+        # TODO: Save the credential to database later
         webauthn_challenges.pop(request.user.id, None)
 
-        return JsonResponse({'status': 'success', 'message': 'Biometric registered successfully!'})
+        return JsonResponse({
+            'status': 'success', 
+            'message': '✅ Fingerprint / Face ID registered successfully!'
+        })
 
     except Exception as e:
+        print(f"WebAuthn Complete Error: {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
-
-# Temporary storage for challenges
-webauthn_challenges = {}
