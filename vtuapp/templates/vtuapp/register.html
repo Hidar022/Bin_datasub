@@ -55,32 +55,102 @@
         </div>
     </div>
 
-    <script>
-        const form = document.getElementById('registerForm');
-        const btn = document.getElementById('registerBtn');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
+<script>
+    const form = document.getElementById('registerForm');
+    const btn = document.getElementById('registerBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const messagesContainer = document.getElementById('messages-container');
 
-        form.addEventListener('submit', function(e) {
-            btn.disabled = true;
-            btnText.classList.add('hidden');
-            btnSpinner.classList.remove('hidden');
+    // Simple password strength checker
+    function isPasswordStrong(password) {
+        if (password.length < 8) return false;
+        if (!/[A-Z]/.test(password)) return false;
+        if (!/[0-9]/.test(password)) return false;
+        return true;
+    }
 
-            // Optional: You can keep normal form submit for register/login since they are simple
-            // But if you want full AJAX, we can change it later
-        });
+    function showMessage(message, type = 'error') {
+        const div = document.createElement('div');
+        div.className = `p-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${
+            type === 'success' 
+                ? 'bg-green-500/20 border border-green-500 text-green-300' 
+                : 'bg-red-500/20 border border-red-500 text-red-300'
+        }`;
+        div.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+            <span>${message}</span>
+        `;
+        messagesContainer.appendChild(div);
 
-        // Auto hide messages (if any)
-        function autoHideMessages() {
-            const messages = document.querySelectorAll('#messages-container > div');
-            messages.forEach(msg => {
-                setTimeout(() => {
-                    msg.style.opacity = '0';
-                    setTimeout(() => msg.remove(), 400);
-                }, 4000);
-            });
+        setTimeout(() => {
+            div.style.transition = 'opacity 0.4s';
+            div.style.opacity = '0';
+            setTimeout(() => div.remove(), 400);
+        }, 5000);
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        messagesContainer.innerHTML = '';
+
+        const passwordField = form.querySelector('input[name="password1"]') || form.querySelector('input[type="password"]');
+        const password = passwordField ? passwordField.value : '';
+
+        if (!isPasswordStrong(password)) {
+            showMessage('Weak password! Use at least 8 characters with 1 uppercase letter and 1 number.', 'error');
+            return;
         }
-        window.onload = autoHideMessages;
-    </script>
+
+        // Show spinner
+        btn.disabled = true;
+        btnText.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action || window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showMessage(data.message || '✅ Account created! Check your email for the OTP.', 'success');
+                
+                // Redirect to OTP verification page
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1800);
+                }
+            } 
+            else {
+                if (data.errors) {
+                    Object.values(data.errors).forEach(errArray => {
+                        errArray.forEach(err => showMessage(err));
+                    });
+                } else if (data.message) {
+                    showMessage(data.message);
+                } else {
+                    showMessage('Something went wrong. Please try again.');
+                }
+            }
+        } catch (err) {
+            showMessage('Network error. Please check your connection and try again.');
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
+        }
+    });
+</script>
 </body>
 </html>

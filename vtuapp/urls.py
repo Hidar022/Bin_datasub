@@ -8,6 +8,9 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
     
+    # OTP Verification (New)
+    path('verify-otp/', views.verify_otp, name='verify_otp'),
+
     # Services
     path('buy-airtime/', views.buy_airtime, name='buy_airtime'),
     path('buy-data/', views.buy_data, name='buy_data'),
@@ -39,7 +42,7 @@ urlpatterns = [
          auth_views.PasswordResetCompleteView.as_view(template_name='vtuapp/password_reset_complete.html'), 
          name='password_reset_complete'),
 
-    # WebAuthn Biometric Routes
+    # WebAuthn Biometric Routes (optional - you can keep or remove later)
     path('webauthn/register/', views.webauthn_register_options, name='webauthn_register_options'),
     path('webauthn/register/complete/', views.webauthn_register_complete, name='webauthn_register_complete'),
 

@@ -1,20 +1,27 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.http import JsonResponse
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.urls import reverse
 from django.conf import settings
 from decimal import Decimal
-import time
 import requests
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+
+# Your custom form and token
+from .forms import CustomUserCreationForm
 
 # Models
 from .models import Wallet, Transaction, DataPlan, Profile
 
-# Forms
+# Other forms from your forms.py
 from .forms import (
     AirtimeForm, DataForm, ElectricityForm, CableTVForm, 
     DataPurchaseForm
@@ -26,37 +33,204 @@ from django.contrib.auth.hashers import check_password, make_password
 def home_redirect(request):
     return redirect('login') if not request.user.is_authenticated else redirect('dashboard')
 
-
 # ====================== AUTH ======================
+import random
+from datetime import timedelta
+from django.utils import timezone
+
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
+
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Account created successfully!')
-            return redirect('dashboard')
-    else:
-        form = UserCreationForm()
+            # === NEW LOGIC: Check if email already exists ===
+            email = form.cleaned_data.get('email')
+            existing_user = User.objects.filter(email=email).first()
+
+            if existing_user:
+                if existing_user.is_active:
+                    # Email already exists and is verified
+                    return JsonResponse({
+                        'success': False,
+                        'message': '❌ This email is already registered. Please login instead.'
+                    }, status=400)
+                else:
+                    # Email exists but not verified → Resend OTP
+                    profile, _ = Profile.objects.get_or_create(user=existing_user)
+                    
+                    otp = str(random.randint(100000, 999999))
+                    profile.email_otp = otp
+                    profile.otp_created_at = timezone.now()
+                    profile.save()
+
+                    # Send OTP again
+                    subject = 'Your Bin Datasub Verification Code'
+                    html_message = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0a0a2e; color: white; border-radius: 16px;">
+                        <h2 style="color: #a855f7;">Bin Datasub</h2>
+                        <p>Hi {existing_user.username},</p>
+                        <p>Your verification code is:</p>
+                        <div style="background:#1a1a4a; padding:25px; text-align:center; font-size:42px; letter-spacing:8px; border-radius:12px; margin:20px 0;">
+                            <strong>{otp}</strong>
+                        </div>
+                        <p>This code expires in 10 minutes.</p>
+                    </div>
+                    """
+
+                    try:
+                        send_mail(subject, f"Your OTP is {otp}", settings.DEFAULT_FROM_EMAIL, [email], html_message=html_message)
+                    except Exception as e:
+                        print(f"Resend email failed: {e}")
+
+                    request.session['pending_user_id'] = existing_user.id
+
+                    return JsonResponse({
+                        'success': True,
+                        'message': '✅ We found your unverified account. A new verification code has been sent to your email.',
+                        'redirect_url': '/verify-otp/'
+                    })
+
+            # === Normal Registration (email doesn't exist) ===
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+
+            otp = str(random.randint(100000, 999999))
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.email_otp = otp
+            profile.otp_created_at = timezone.now()
+            profile.save()
+
+            # Send email (same as before)
+            subject = 'Your Bin Datasub Verification Code'
+            html_message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0a0a2e; color: white; border-radius: 16px;">
+                <h2 style="color: #a855f7;">Welcome to Bin Datasub</h2>
+                <p>Hi {user.username},</p>
+                <p>Your verification code is:</p>
+                <div style="background:#1a1a4a; padding:25px; text-align:center; font-size:42px; letter-spacing:8px; border-radius:12px; margin:20px 0;">
+                    <strong>{otp}</strong>
+                </div>
+                <p>This code expires in 10 minutes.</p>
+            </div>
+            """
+
+            try:
+                send_mail(subject, f"Your OTP is {otp}", settings.DEFAULT_FROM_EMAIL, [email], html_message=html_message)
+            except Exception as e:
+                print(f"Email error: {e}")
+
+            request.session['pending_user_id'] = user.id
+
+            return JsonResponse({
+                'success': True,
+                'message': '✅ Account created! We sent a 6-digit code to your email.',
+                'redirect_url': '/verify-otp/'
+            })
+
+        else:
+            # Clean error messages
+            error_list = []
+            for errors in form.errors.get_json_data().values():
+                for err in errors:
+                    error_list.append(err.get('message', str(err)) if isinstance(err, dict) else str(err))
+            
+            return JsonResponse({
+                'success': False,
+                'message': ' '.join(error_list) if error_list else 'Please correct the errors.'
+            }, status=400)
+
+    form = CustomUserCreationForm()
     return render(request, 'vtuapp/register.html', {'form': form})
 
+# New OTP Verification View
+def verify_otp(request):
+    if request.method == 'POST':
+        otp_input = request.POST.get('otp', '').strip()
+        user_id = request.session.get('pending_user_id')
 
+        if not user_id:
+            return JsonResponse({'success': False, 'message': 'Session expired. Please register again.'}, status=400)
+
+        try:
+            user = User.objects.get(id=user_id)
+            profile = Profile.objects.get(user=user)
+
+            if not profile.email_otp or not profile.otp_created_at:
+                return JsonResponse({'success': False, 'message': 'No OTP found. Please register again.'}, status=400)
+
+            # Check if OTP expired (10 minutes)
+            if timezone.now() - profile.otp_created_at > timedelta(minutes=10):
+                profile.email_otp = None
+                profile.otp_created_at = None
+                profile.save()
+                return JsonResponse({'success': False, 'message': '❌ OTP has expired. Please register again.'}, status=400)
+
+            if profile.email_otp == otp_input:
+                user.is_active = True
+                user.save()
+
+                profile.email_otp = None
+                profile.otp_created_at = None
+                profile.save()
+
+                login(request, user)
+                del request.session['pending_user_id']
+
+                return JsonResponse({
+                    'success': True,
+                    'message': '✅ Email verified successfully! Redirecting to dashboard...'
+                })
+            else:
+                return JsonResponse({'success': False, 'message': '❌ Incorrect OTP. Please try again.'}, status=400)
+
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'User not found. Please register again.'}, status=400)
+        except Profile.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Profile not found. Please register again.'}, status=400)
+        except Exception as e:
+            print(f"OTP Verification Error: {e}")   # ← This will show in your terminal
+            return JsonResponse({'success': False, 'message': f'Something went wrong: {str(e)}'}, status=400)
+
+    return render(request, 'vtuapp/verify_otp.html', {})
+
+# ====================== LOGIN VIEW ======================
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(data=request.POST)
+        
         if form.is_valid():
             user = form.get_user()
+            
+            if not user.is_active:
+                return JsonResponse({
+                    'success': False,
+                    'message': '❌ Please verify your email before logging in.'
+                }, status=400)
+
             login(request, user)
-            return redirect('dashboard')
+            return JsonResponse({
+                'success': True,
+                'message': 'Login successful!'
+            })
+
+        else:
+            # Invalid credentials
+            return JsonResponse({
+                'success': False,
+                'message': '❌ Invalid username or password.'
+            }, status=400)
+
     else:
         form = AuthenticationForm()
+
     return render(request, 'vtuapp/login.html', {'form': form})
 
-
+# ====================== LOGOUT VIEW ======================
 def logout_view(request):
     logout(request)
+    messages.info(request, "Logged out successfully.")
     return redirect('login')
-
 
 # ====================== DASHBOARD ======================
 @login_required
@@ -109,17 +283,33 @@ def settings_page(request):
         elif section == 'pin':
             old_pin = request.POST.get('old_pin')
             new_pin = request.POST.get('new_pin')
-
             wallet = request.user.wallet
-            if not wallet.check_pin(old_pin):
-                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'})
+
+            # --- Logic for First Time PIN Creation ---
+            if not wallet.pin:
+                if len(new_pin) == 4 and new_pin.isdigit():
+                    wallet.set_pin(new_pin)
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': '✅ Transaction PIN created successfully!'
+                    })
+                else:
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': '❌ PIN must be exactly 4 digits'
+                    }, status=400)
+
+            # --- Logic for Normal PIN Change ---
+            if not wallet.check_pin(old_pin): 
+                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
             elif len(new_pin) != 4 or not new_pin.isdigit():
-                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'})
+                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'}, status=400)
             else:
                 wallet.set_pin(new_pin)
-                return JsonResponse({'status': 'success', 'message': '✅ Transaction PIN updated successfully!'})
-
-        return JsonResponse({'status': 'error', 'message': 'Invalid section'})
+                return JsonResponse({
+                    'status': 'success', 
+                    'message': '✅ Transaction PIN updated successfully!'
+                })
 
     has_pin = bool(request.user.wallet.pin)
     return render(request, 'vtuapp/settings.html', {'has_pin': has_pin})
@@ -213,6 +403,13 @@ def buy_airtime(request):
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
 
+            # NEW CHECK: If user has no PIN yet
+            if not wallet.pin:
+                return JsonResponse({
+                    'status': 'no_pin',
+                    'message': "You haven't created your Transaction PIN yet. Please create one first."
+                }, status=400)
+
             if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
@@ -249,6 +446,13 @@ def buy_data(request):
         if form.is_valid():
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
+
+             # NEW CHECK: If user has no PIN yet
+            if not wallet.pin:
+                return JsonResponse({
+                    'status': 'no_pin',
+                    'message': "You haven't created your Transaction PIN yet. Please create one first."
+                }, status=400)
 
             if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)

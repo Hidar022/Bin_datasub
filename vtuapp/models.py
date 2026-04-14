@@ -63,13 +63,16 @@ class Wallet(models.Model):
         return check_password(raw_pin, self.pin)
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=15, blank=True)
-    dob = models.DateField(null=True, blank=True)
+    dob = models.DateField(blank=True, null=True)
+   
+    email_otp = models.CharField(max_length=6, blank=True, null=True)
+    otp_created_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return self.user.username
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -93,5 +96,6 @@ class BiometricCredential(models.Model):
     def __str__(self):
         return f"Biometric for {self.user.username}"
     
+
     def __str__(self):
         return f"{self.network} - {self.name} - ₦{self.price}"

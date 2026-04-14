@@ -10,16 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 
-# Load the .env file
-load_dotenv()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Tell load_dotenv exactly where the file is (in your main project folder)
+load_dotenv(BASE_DIR / '.env')
 # Your current STATIC_URL is fine, but make sure it has a leading slash
 STATIC_URL = '/static/'
 
@@ -42,7 +44,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 # Paystack Settings
-SECRET_KEY = os.getenv('SECRET_KEY')
+# Force a key to see if the site opens
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Use them for Paystack too
@@ -54,6 +57,28 @@ PAYSTACK_CALLBACK_URL = 'http://127.0.0.1:8000/fund-wallet/callback/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+
+# Email Configuration (Gmail example - use App Password)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'aliyubinahmad2022@gmail.com'     
+EMAIL_HOST_PASSWORD = 'zgib qdxs nohh albq'  # Generate from Google Account > Security > App passwords
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Session - User must re-login after closing browser
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7   # 7 days max (optional)
+SESSION_COOKIE_HTTPONLY = True
+# Automatic Security Switching
+if DEBUG:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # Production settings for hidar022.pythonanywhere.com
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 # Application definition
 
 INSTALLED_APPS = [
