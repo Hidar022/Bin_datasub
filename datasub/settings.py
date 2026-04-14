@@ -64,10 +64,11 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'aliyubinahmad2022@gmail.com'     
-EMAIL_HOST_PASSWORD = 'zgib qdxs nohh albq'  # Generate from Google Account > Security > App passwords
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '') # Generate from Google Account > Security > App passwords
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Session - User must re-login after closing browser
+CSRF_TRUSTED_ORIGINS = ['https://hidar022.pythonanywhere.com']
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7   # 7 days max (optional)
 SESSION_COOKIE_HTTPONLY = True
