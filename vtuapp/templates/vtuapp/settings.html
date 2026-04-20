@@ -48,7 +48,7 @@
                         <form id="profileForm" class="space-y-6">
                             {% csrf_token %}
                             <input type="hidden" name="section" value="profile">
-
+                            <!-- ... your profile fields ... -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
@@ -68,10 +68,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                                     <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
-                                        pattern="[0-9]+" 
-                                        inputmode="numeric"
-                                        onkeypress="return event.charCode >= 48 && event.charCode <= 57"
-                                        maxlength="15"
+                                        pattern="[0-9]+" inputmode="numeric" maxlength="15"
                                         class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
                                 </div>
                                 <div class="md:col-span-2">
@@ -81,8 +78,7 @@
                                 </div>
                             </div>
 
-                            <button type="submit" id="profileBtn"
-                                    class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                            <button type="submit" id="profileBtn" class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
                                 <span id="profileBtnText">SAVE CHANGES</span>
                                 <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
                             </button>
@@ -97,67 +93,63 @@
                             <form id="passwordForm" class="space-y-6">
                                 {% csrf_token %}
                                 <input type="hidden" name="section" value="password">
-                                <input type="password" name="old_password" placeholder="Current Password" 
-                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                <input type="password" name="new_password" placeholder="New Password" 
-                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                <input type="password" name="confirm_password" placeholder="Confirm New Password" 
-                                       class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                <input type="password" name="old_password" placeholder="Current Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                <input type="password" name="new_password" placeholder="New Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                <input type="password" name="confirm_password" placeholder="Confirm New Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
                                 <div class="mt-4 text-right">
-                                    <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300 transition-all">
-                                        Forgot Password?
-                                    </a>
+                                    <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300">Forgot Password?</a>
                                 </div>
-                                <button type="submit" id="passwordBtn"
-                                        class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                                <button type="submit" id="passwordBtn" class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
                                     <span id="passwordBtnText">UPDATE PASSWORD</span>
                                     <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
                                 </button>
                             </form>
                         </div>
 
-                        <!-- Change Transaction PIN -->
-                        <div class="bg-[#1a1a4a] rounded-3xl p-8">
-                            <h3 class="text-xl font-semibold mb-2">
-                                {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-6">
-                                {% if has_pin %}
-                                    Keep your account secure by updating your PIN regularly.
-                                {% else %}
-                                    You haven't set a PIN yet. Create one to authorize transactions.
-                                {% endif %}
-                            </p>
+                    <!-- Change Transaction PIN -->
+                    <div id="pin-section" class="bg-[#1a1a4a] rounded-3xl p-8">
+                        <h3 class="text-xl font-semibold mb-2">
+                            {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-6">
+                            {% if has_pin %}
+                                Keep your account secure by updating your PIN regularly.
+                            {% else %}
+                                You haven't set a PIN yet. Create one to authorize transactions.
+                            {% endif %}
+                        </p>
 
-                            <form id="pinForm" class="space-y-6">
-                                {% csrf_token %}
-                                <input type="hidden" name="section" value="pin">
+                        <form id="pinForm" class="space-y-6">
+                            {% csrf_token %}
+                            <input type="hidden" name="section" value="pin">
 
-                                {% if has_pin %}
-                                    <div class="space-y-2">
-                                        <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">Current 4-Digit PIN</label>
-                                        <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
-                                            class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono transition-all">
-                                    </div>
-                                {% endif %}
-
+                            {% if has_pin %}
                                 <div class="space-y-2">
-                                    <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">
-                                        {% if has_pin %}New 4-Digit PIN{% else %}Set 4-Digit PIN{% endif %}
-                                    </label>
-                                    <input type="password" name="new_pin" maxlength="4" placeholder="••••" required
-                                        class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono transition-all">
+                                    <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">Current 4-Digit PIN</label>
+                                    <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
+                                        class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono"
+                                        onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 </div>
+                            {% endif %}
 
-                                <button type="submit" id="pinBtn"
-                                        class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-bold uppercase tracking-wider flex items-center justify-center gap-3 hover:scale-[1.02] transition-transform active:scale-95">
-                                    <span id="pinBtnText">
-                                        {% if has_pin %}UPDATE TRANSACTION PIN{% else %}CREATE TRANSACTION PIN{% endif %}
-                                    </span>
-                                    <i id="pinSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                                </button>
-                            </form>
-                        </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">
+                                    {% if has_pin %}New 4-Digit PIN{% else %}Set 4-Digit PIN{% endif %}
+                                </label>
+                                <input type="password" name="new_pin" maxlength="4" placeholder="••••" required
+                                    class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono"
+                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            </div>
+
+                            <button type="submit" id="pinBtn" class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-bold uppercase tracking-wider flex items-center justify-center gap-3 hover:scale-[1.02]">
+                                <span id="pinBtnText">
+                                    {% if has_pin %}UPDATE TRANSACTION PIN{% else %}CREATE TRANSACTION PIN{% endif %}
+                                </span>
+                                <i id="pinSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                            </button>
+                        </form>
                     </div>
 
                     <!-- Biometric Tab -->
@@ -168,14 +160,10 @@
                             <p class="text-gray-300 max-w-md mx-auto mb-10">
                                 Use your fingerprint or face ID for faster and more secure login and purchases.
                             </p>
-                            
-                            <button onclick="registerBiometric()" 
-                                    class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
+                            <button onclick="registerBiometric()" class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
                                 Register Fingerprint / Face ID
                             </button>
-                            
-                            <button onclick="testBiometric()" 
-                                    class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
+                            <button onclick="testBiometric()" class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
                                 Test Biometric Login
                             </button>
                         </div>
@@ -194,7 +182,6 @@
             document.getElementById('tab-' + tab).classList.add('active');
         }
 
-        // 🔥 FLOATING TOAST - Always visible on screen (no scrolling issue)
         function showMessage(type, message) {
             const oldToast = document.getElementById('global-toast');
             if (oldToast) oldToast.remove();
@@ -212,7 +199,6 @@
 
             document.body.appendChild(toast);
 
-            // Auto hide after 5 seconds
             setTimeout(() => {
                 toast.style.transition = 'all 0.4s ease';
                 toast.style.opacity = '0';
@@ -221,7 +207,7 @@
             }, 5000);
         }
 
-        // Handle all form submissions with AJAX
+        // Handle all form submissions
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -251,12 +237,20 @@
                     showMessage(data.status || 'error', data.message || 'Something went wrong');
                     
                     if (data.status === 'success') {
-                        setTimeout(() => location.reload(), 1800);
+                        // If user just created PIN and came from airtime/data, go back
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const nextPage = urlParams.get('next');
+                        
+                        if (nextPage === 'airtime') {
+                            setTimeout(() => window.location.href = "{% url 'buy_airtime' %}", 1200);
+                        } else if (nextPage === 'data') {
+                            setTimeout(() => window.location.href = "{% url 'buy_data' %}", 1200);
+                        } else {
+                            setTimeout(() => location.reload(), 1500);
+                        }
                     }
                 })
-                .catch(() => {
-                    showMessage('error', 'Connection error. Please try again.');
-                })
+                .catch(() => showMessage('error', 'Connection error. Please try again.'))
                 .finally(() => {
                     if (text && spinner) {
                         text.classList.remove('hidden');
@@ -267,75 +261,34 @@
             });
         });
 
-        function enableBiometric() {
-            alert("Biometric setup (WebAuthn) is ready for the next phase.");
-        }
+        // Auto switch tab + smooth scroll when coming from no_pin
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hash = window.location.hash;
+
+            if (hash === '#pin-section' || urlParams.get('next')) {
+                switchTab(1);   // Open Security tab
+
+                setTimeout(() => {
+                    const pinSection = document.getElementById('pin-section');
+                    if (pinSection) {
+                        pinSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // Highlight effect
+                        pinSection.style.transition = 'all 0.8s';
+                        pinSection.style.boxShadow = '0 0 0 5px rgba(34, 211, 238, 0.7)';
+                        setTimeout(() => pinSection.style.boxShadow = '', 2800);
+                    }
+                }, 700);
+            }
+        });
 
         window.onload = () => switchTab(0);
     </script>
 
     <!-- Biometric Script -->
     <script>
-    async function registerBiometric() {
-        try {
-            console.log("Starting biometric registration...");
-
-            const response = await fetch('/webauthn/register/', {
-                method: 'GET',
-                headers: { 
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            });
-
-            const text = await response.text();
-            console.log("Server response:", text);
-
-            if (!response.ok) {
-                showMessage('error', "Server returned error: " + text.substring(0, 150));
-                return;
-            }
-
-            let options;
-            try {
-                options = JSON.parse(text);
-            } catch (e) {
-                showMessage('error', "Invalid response from server");
-                return;
-            }
-
-            if (options.status === 'error') {
-                showMessage('error', options.message || "Server error");
-                return;
-            }
-
-            const credential = await navigator.credentials.create({
-                publicKey: options
-            });
-
-            const completeResponse = await fetch('/webauthn/register/complete/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify(credential)
-            });
-
-            const result = await completeResponse.json();
-
-            if (result.status === 'success') {
-                showMessage('success', '✅ Fingerprint / Face ID registered successfully!');
-            } else {
-                showMessage('error', result.message || 'Registration failed');
-            }
-
-        } catch (err) {
-            console.error("Biometric error:", err);
-            showMessage('error', "Biometric registration failed. Check console for details.");
-        }
-    }
-
+    async function registerBiometric() { ... }  // Keep your existing biometric code
     function testBiometric() {
         showMessage('error', "Test Biometric not implemented yet.");
     }

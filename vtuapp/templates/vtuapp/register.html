@@ -28,8 +28,7 @@
             <h1 class="text-3xl font-bold text-center mb-2">Create Account</h1>
             <p class="text-cyan-300 text-center mb-8">Join Nigeria’s fastest VTU platform</p>
 
-            <!-- Messages -->
-            <div id="messages-container" class="space-y-3 mb-6"></div>
+            <!-- Messages now use floating toast -->
 
             <form id="registerForm" method="POST" class="space-y-6">
                 {% csrf_token %}
@@ -60,9 +59,8 @@
     const btn = document.getElementById('registerBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
-    const messagesContainer = document.getElementById('messages-container');
 
-    // Simple password strength checker
+    // Password strength checker
     function isPasswordStrong(password) {
         if (password.length < 8) return false;
         if (!/[A-Z]/.test(password)) return false;
@@ -70,30 +68,34 @@
         return true;
     }
 
+    // Premium Floating Toast
     function showMessage(message, type = 'error') {
-        const div = document.createElement('div');
-        div.className = `p-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${
-            type === 'success' 
-                ? 'bg-green-500/20 border border-green-500 text-green-300' 
-                : 'bg-red-500/20 border border-red-500 text-red-300'
-        }`;
-        div.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${message}</span>
+        const oldToast = document.getElementById('global-toast');
+        if (oldToast) oldToast.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'global-toast';
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
+                           text-white max-w-xs border-l-4 transition-all
+                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
+            <span class="font-medium">${message}</span>
         `;
-        messagesContainer.appendChild(div);
+
+        document.body.appendChild(toast);
 
         setTimeout(() => {
-            div.style.transition = 'opacity 0.4s';
-            div.style.opacity = '0';
-            setTimeout(() => div.remove(), 400);
+            toast.style.transition = 'all 0.4s ease';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-15px)';
+            setTimeout(() => toast.remove(), 500);
         }, 5000);
     }
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-
-        messagesContainer.innerHTML = '';
 
         const passwordField = form.querySelector('input[name="password1"]') || form.querySelector('input[type="password"]');
         const password = passwordField ? passwordField.value : '';
@@ -124,7 +126,6 @@
             if (response.ok && data.success) {
                 showMessage(data.message || '✅ Account created! Check your email for the OTP.', 'success');
                 
-                // Redirect to OTP verification page
                 if (data.redirect_url) {
                     setTimeout(() => {
                         window.location.href = data.redirect_url;

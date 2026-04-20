@@ -82,7 +82,6 @@
 <script>
     let selectedPlanId = null;
 
-    // Select plan card
     document.querySelectorAll('.plan-card').forEach(card => {
         card.addEventListener('click', function() {
             document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('border-cyan-400', 'bg-cyan-400/10'));
@@ -92,7 +91,6 @@
         });
     });
 
-    // Confirm button → show PIN modal
     document.getElementById('confirmBtn').addEventListener('click', function() {
         if (!selectedPlanId) {
             showMessage('error', "Please select a data plan first");
@@ -107,9 +105,7 @@
         document.getElementById('pinInput').value = '';
     }
 
-    // 🔥 IMPROVED FLOATING TOAST (always visible)
     function showMessage(type, message) {
-        // Remove any old toast first
         const oldToast = document.getElementById('global-toast');
         if (oldToast) oldToast.remove();
 
@@ -126,7 +122,6 @@
 
         document.body.appendChild(toast);
 
-        // Auto hide after 5 seconds with smooth animation
         setTimeout(() => {
             toast.style.transition = 'all 0.4s ease';
             toast.style.opacity = '0';
@@ -135,7 +130,7 @@
         }, 5000);
     }
 
-    // 🔥 UPDATED verifyPin with NO_PIN redirect
+    // Premium verifyPin with smart redirect
     function verifyPin() {
         const pin = document.getElementById('pinInput').value.trim();
         if (pin.length !== 4) {
@@ -161,27 +156,41 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'no_pin') {
-                showMessage('error', data.message);
+                showMessage('error', data.message || "You need to create your Transaction PIN first");
                 setTimeout(() => {
-                    window.location.href = "{% url 'settings' %}#security";
-                }, 1700);
+                    window.location.href = "{% url 'settings' %}?next=data#pin-section";
+                }, 1600);
             } 
             else if (data.status === 'success') {
                 showMessage('success', data.message);
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1700);
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1600);
             } 
             else {
                 showMessage('error', data.message || 'Something went wrong');
             }
         })
-        .catch(() => {
-            showMessage('error', 'Connection error. Please try again.');
-        })
+        .catch(() => showMessage('error', 'Connection error. Please try again.'))
         .finally(() => {
             btn.innerHTML = originalText;
             btn.disabled = false;
         });
     }
+
+    // Force phone input to accept only numbers
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.querySelector('input[name="phone"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('keypress', function(e) {
+                if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+
+            phoneInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+        }
+    });
 </script>
 </body>
 </html>

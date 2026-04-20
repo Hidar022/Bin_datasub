@@ -20,8 +20,6 @@
         </a>
 
         <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-            
-            <!-- Messages Container -->
             <div id="messages-container" class="space-y-3 mb-8"></div>
 
             <h1 class="text-3xl font-bold mb-2">Buy Airtime</h1>
@@ -73,9 +71,7 @@
         document.getElementById('pinInput').value = '';
     }
 
-    // 🔥 IMPROVED FLOATING TOAST (always visible)
     function showMessage(type, message) {
-        // Remove any old toast first
         const oldToast = document.getElementById('global-toast');
         if (oldToast) oldToast.remove();
 
@@ -92,7 +88,6 @@
 
         document.body.appendChild(toast);
 
-        // Auto hide after 5 seconds with smooth animation
         setTimeout(() => {
             toast.style.transition = 'all 0.4s ease';
             toast.style.opacity = '0';
@@ -101,7 +96,7 @@
         }, 5000);
     }
 
-    // 🔥 UPDATED verifyPin with NO_PIN redirect
+    // Premium verifyPin for Airtime
     function verifyPin() {
         const pin = document.getElementById('pinInput').value.trim();
         if (pin.length !== 4) {
@@ -126,27 +121,41 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'no_pin') {
-                showMessage('error', data.message);
+                showMessage('error', data.message || "You need to create your Transaction PIN first");
                 setTimeout(() => {
-                    window.location.href = "{% url 'settings' %}#security";
-                }, 1700);
+                    window.location.href = "{% url 'settings' %}?next=airtime#pin-section";
+                }, 1600);
             } 
             else if (data.status === 'success') {
                 showMessage('success', data.message);
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1700);
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1600);
             } 
             else {
                 showMessage('error', data.message || 'Something went wrong');
             }
         })
-        .catch(() => {
-            showMessage('error', 'Connection error. Please try again.');
-        })
+        .catch(() => showMessage('error', 'Connection error. Please try again.'))
         .finally(() => {
             confirmBtn.innerHTML = originalText;
             confirmBtn.disabled = false;
         });
     }
+    // Force phone input to accept only numbers
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.querySelector('input[name="phone"]');
+    if (phoneInput) {
+        phoneInput.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // Optional: Also prevent pasting non-numeric values
+        phoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+});
 </script>
 </body>
 </html>
