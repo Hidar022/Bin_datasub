@@ -41,53 +41,53 @@
 
                 <!-- Content -->
                 <div class="lg:col-span-9">
-                    <div id="messages-container" class="space-y-3 mb-6"></div>
+                    <!-- Messages now show as floating toast -->
 
-                <!-- Profile Tab -->
-                <div id="tab-content-0" class="tab-content">
-                    <form id="profileForm" class="space-y-6">
-                        {% csrf_token %}
-                        <input type="hidden" name="section" value="profile">
+                    <!-- Profile Tab -->
+                    <div id="tab-content-0" class="tab-content">
+                        <form id="profileForm" class="space-y-6">
+                            {% csrf_token %}
+                            <input type="hidden" name="section" value="profile">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                                <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
-                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                                    <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
+                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                                    <input type="text" value="{{ request.user.username }}" disabled
+                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 rounded-3xl px-6 py-5">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                                    <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
+                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                                    <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
+                                        pattern="[0-9]+" 
+                                        inputmode="numeric"
+                                        onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                        maxlength="15"
+                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
+                                    <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
+                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                                <input type="text" value="{{ request.user.username }}" disabled
-                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                                <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
-                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-                                <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
-                                    pattern="[0-9]+" 
-                                    inputmode="numeric"
-                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
-                                    maxlength="15"
-                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
-                                <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
-                                    class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                            </div>
-                        </div>
 
-                        <button type="submit" id="profileBtn"
-                                class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
-                            <span id="profileBtnText">SAVE CHANGES</span>
-                            <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                        </button>
-                    </form>
-                </div>
+                            <button type="submit" id="profileBtn"
+                                    class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
+                                <span id="profileBtnText">SAVE CHANGES</span>
+                                <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                            </button>
+                        </form>
+                    </div>
 
                     <!-- Security Tab -->
                     <div id="tab-content-1" class="tab-content hidden space-y-10">
@@ -103,7 +103,7 @@
                                        class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
                                 <input type="password" name="confirm_password" placeholder="Confirm New Password" 
                                        class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                       <div class="mt-4 text-right">
+                                <div class="mt-4 text-right">
                                     <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300 transition-all">
                                         Forgot Password?
                                     </a>
@@ -117,7 +117,7 @@
                         </div>
 
                         <!-- Change Transaction PIN -->
-                       <div class="bg-[#1a1a4a] rounded-3xl p-8">
+                        <div class="bg-[#1a1a4a] rounded-3xl p-8">
                             <h3 class="text-xl font-semibold mb-2">
                                 {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
                             </h3>
@@ -160,26 +160,26 @@
                         </div>
                     </div>
 
-                <!-- Biometric Tab -->
-                <div id="tab-content-2" class="tab-content hidden">
-                    <div class="bg-[#1a1a4a] rounded-3xl p-10 text-center">
-                        <i class="fas fa-fingerprint text-8xl text-cyan-400 mb-8"></i>
-                        <h3 class="text-3xl font-bold mb-4">Biometric Authentication</h3>
-                        <p class="text-gray-300 max-w-md mx-auto mb-10">
-                            Use your fingerprint or face ID for faster and more secure login and purchases.
-                        </p>
-                        
-                        <button onclick="registerBiometric()" 
-                                class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
-                            Register Fingerprint / Face ID
-                        </button>
-                        
-                        <button onclick="testBiometric()" 
-                                class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
-                            Test Biometric Login
-                        </button>
+                    <!-- Biometric Tab -->
+                    <div id="tab-content-2" class="tab-content hidden">
+                        <div class="bg-[#1a1a4a] rounded-3xl p-10 text-center">
+                            <i class="fas fa-fingerprint text-8xl text-cyan-400 mb-8"></i>
+                            <h3 class="text-3xl font-bold mb-4">Biometric Authentication</h3>
+                            <p class="text-gray-300 max-w-md mx-auto mb-10">
+                                Use your fingerprint or face ID for faster and more secure login and purchases.
+                            </p>
+                            
+                            <button onclick="registerBiometric()" 
+                                    class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
+                                Register Fingerprint / Face ID
+                            </button>
+                            
+                            <button onclick="testBiometric()" 
+                                    class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
+                                Test Biometric Login
+                            </button>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -194,17 +194,31 @@
             document.getElementById('tab-' + tab).classList.add('active');
         }
 
+        // 🔥 FLOATING TOAST - Always visible on screen (no scrolling issue)
         function showMessage(type, message) {
-            const container = document.getElementById('messages-container');
-            const div = document.createElement('div');
-            div.className = `px-6 py-4 rounded-2xl text-sm flex items-center gap-3 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
-            div.textContent = message;
-            container.appendChild(div);
+            const oldToast = document.getElementById('global-toast');
+            if (oldToast) oldToast.remove();
 
+            const toast = document.createElement('div');
+            toast.id = 'global-toast';
+            toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
+                               text-white max-w-xs border-l-4 transition-all
+                               ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto hide after 5 seconds
             setTimeout(() => {
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 400);
-            }, 4000);
+                toast.style.transition = 'all 0.4s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-15px)';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
         }
 
         // Handle all form submissions with AJAX
@@ -235,8 +249,9 @@
                 .then(response => response.json())
                 .then(data => {
                     showMessage(data.status || 'error', data.message || 'Something went wrong');
+                    
                     if (data.status === 'success') {
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => location.reload(), 1800);
                     }
                 })
                 .catch(() => {
@@ -258,74 +273,72 @@
 
         window.onload = () => switchTab(0);
     </script>
-<script>
-async function registerBiometric() {
-    try {
-        console.log("Starting biometric registration...");
 
-        const response = await fetch('/webauthn/register/', {
-            method: 'GET',
-            headers: { 
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        });
-
-        const text = await response.text();
-        console.log("Server response:", text);
-
-        if (!response.ok) {
-            alert("Server returned error: " + text.substring(0, 300));
-            return;
-        }
-
-        let options;
+    <!-- Biometric Script -->
+    <script>
+    async function registerBiometric() {
         try {
-            options = JSON.parse(text);
-        } catch (e) {
-            alert("Invalid JSON from server: " + text.substring(0, 200));
-            return;
+            console.log("Starting biometric registration...");
+
+            const response = await fetch('/webauthn/register/', {
+                method: 'GET',
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const text = await response.text();
+            console.log("Server response:", text);
+
+            if (!response.ok) {
+                showMessage('error', "Server returned error: " + text.substring(0, 150));
+                return;
+            }
+
+            let options;
+            try {
+                options = JSON.parse(text);
+            } catch (e) {
+                showMessage('error', "Invalid response from server");
+                return;
+            }
+
+            if (options.status === 'error') {
+                showMessage('error', options.message || "Server error");
+                return;
+            }
+
+            const credential = await navigator.credentials.create({
+                publicKey: options
+            });
+
+            const completeResponse = await fetch('/webauthn/register/complete/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(credential)
+            });
+
+            const result = await completeResponse.json();
+
+            if (result.status === 'success') {
+                showMessage('success', '✅ Fingerprint / Face ID registered successfully!');
+            } else {
+                showMessage('error', result.message || 'Registration failed');
+            }
+
+        } catch (err) {
+            console.error("Biometric error:", err);
+            showMessage('error', "Biometric registration failed. Check console for details.");
         }
-
-        if (options.status === 'error') {
-            alert("Server error: " + options.message);
-            return;
-        }
-
-        // Try to create credential
-        console.log("Calling navigator.credentials.create...");
-        const credential = await navigator.credentials.create({
-            publicKey: options
-        });
-
-        console.log("Credential created:", credential);
-
-        // Send to server
-        const completeResponse = await fetch('/webauthn/register/complete/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify(credential)
-        });
-
-        const resultText = await completeResponse.text();
-        console.log("Complete response:", resultText);
-
-        const result = JSON.parse(resultText);
-
-        if (result.status === 'success') {
-            alert('✅ Fingerprint / Face ID registered successfully!');
-        } else {
-            alert('Registration failed: ' + result.message);
-        }
-
-    } catch (err) {
-        console.error("Biometric error:", err);
-        alert("Biometric registration failed:\n" + err.message + "\n\nCheck browser console (F12) for more details.");
     }
-}
-</script>
+
+    function testBiometric() {
+        showMessage('error', "Test Biometric not implemented yet.");
+    }
+    </script>
 </body>
 </html>

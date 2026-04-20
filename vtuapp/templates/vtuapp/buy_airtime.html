@@ -60,66 +60,93 @@
         </div>
     </div>
 
-    <script>
-        const confirmBtn = document.getElementById('confirmBtn');
+<script>
+    const confirmBtn = document.getElementById('confirmBtn');
 
-        confirmBtn.addEventListener('click', function() {
-            document.getElementById('pinModal').classList.remove('hidden');
-            document.getElementById('pinInput').focus();
-        });
+    confirmBtn.addEventListener('click', function() {
+        document.getElementById('pinModal').classList.remove('hidden');
+        document.getElementById('pinInput').focus();
+    });
 
-        function closePinModal() {
-            document.getElementById('pinModal').classList.add('hidden');
-            document.getElementById('pinInput').value = '';
+    function closePinModal() {
+        document.getElementById('pinModal').classList.add('hidden');
+        document.getElementById('pinInput').value = '';
+    }
+
+    // 🔥 IMPROVED FLOATING TOAST (always visible)
+    function showMessage(type, message) {
+        // Remove any old toast first
+        const oldToast = document.getElementById('global-toast');
+        if (oldToast) oldToast.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'global-toast';
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
+                           text-white max-w-xs border-l-4 transition-all
+                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
+            <span class="font-medium">${message}</span>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto hide after 5 seconds with smooth animation
+        setTimeout(() => {
+            toast.style.transition = 'all 0.4s ease';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-15px)';
+            setTimeout(() => toast.remove(), 500);
+        }, 5000);
+    }
+
+    // 🔥 UPDATED verifyPin with NO_PIN redirect
+    function verifyPin() {
+        const pin = document.getElementById('pinInput').value.trim();
+        if (pin.length !== 4) {
+            showMessage('error', "PIN must be exactly 4 digits");
+            return;
         }
 
-        function showMessage(type, message) {
-            const container = document.getElementById('messages-container');
-            const div = document.createElement('div');
-            div.className = `px-6 py-4 rounded-2xl text-sm flex items-center gap-3 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
-            div.textContent = message;
-            container.appendChild(div);
+        closePinModal();
 
-            setTimeout(() => {
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 400);
-            }, 4000);
-        }
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+        confirmBtn.disabled = true;
 
-        function verifyPin() {
-            const pin = document.getElementById('pinInput').value.trim();
-            if (pin.length !== 4) {
-                alert("PIN must be exactly 4 digits");
-                return;
+        const formData = new FormData(document.getElementById('airtimeForm'));
+        formData.append('pin', pin);
+
+        fetch("{% url 'buy_airtime' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'no_pin') {
+                showMessage('error', data.message);
+                setTimeout(() => {
+                    window.location.href = "{% url 'settings' %}#security";
+                }, 1700);
+            } 
+            else if (data.status === 'success') {
+                showMessage('success', data.message);
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1700);
+            } 
+            else {
+                showMessage('error', data.message || 'Something went wrong');
             }
-
-            closePinModal();
-
-            const originalText = confirmBtn.innerHTML;
-            confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-            confirmBtn.disabled = true;
-
-            const formData = new FormData(document.getElementById('airtimeForm'));
-            formData.append('pin', pin);
-
-            fetch("{% url 'buy_airtime' %}", {
-                method: "POST",
-                body: formData,
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            })
-            .then(response => response.json())
-            .then(data => {
-                showMessage(data.status || 'error', data.message || 'Something went wrong');
-                if (data.status === 'success') {
-                    setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1500);
-                }
-            })
-            .catch(() => showMessage('error', 'Connection error. Please try again.'))
-            .finally(() => {
-                confirmBtn.innerHTML = originalText;
-                confirmBtn.disabled = false;
-            });
-        }
-    </script>
+        })
+        .catch(() => {
+            showMessage('error', 'Connection error. Please try again.');
+        })
+        .finally(() => {
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+        });
+    }
+</script>
 </body>
 </html>
