@@ -1,85 +1,83 @@
-{% load widget_tweaks %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bin Datasub - Buy Data</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
-        .plan-card { transition: all 0.3s ease; }
-        .plan-card:hover { transform: translateY(-4px); border-color: #22d3ee; }
-        .modal { animation: modalPop 0.3s ease; }
-        @keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
-    <div class="max-w-2xl mx-auto px-4">
-        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+{% extends 'vtuapp/base.html' %}
+{% load widget_tweaks %}  
 
-        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-            <div id="messages-container" class="space-y-3 mb-8"></div>
+{% block title %}Buy Data - Bin Datasub{% endblock %}
 
-            <h1 class="text-3xl font-bold mb-2">Buy Data Bundle</h1>
-            <p class="text-cyan-300 mb-8">Select network and plan</p>
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-6">
+    
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
 
-            <form id="dataForm" class="space-y-8">
-                {% csrf_token %}
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
+        
+        <div id="messages-container" class="space-y-3 mb-8"></div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Network</label>
-                    {{ form.network|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white" }}
-                </div>
+        <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Buy Data Bundle</h1>
+        <p class="text-gray-600 dark:text-cyan-300 mb-8">Select network and plan</p>
 
-                <div id="plans-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[120px]">
-                    {% for plan in plans %}
-                    <div class="plan-card bg-[#1a1a4a] border border-purple-500/50 rounded-3xl p-5 cursor-pointer" 
-                         data-plan-id="{{ plan.id }}" data-network="{{ plan.network }}">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-semibold">{{ plan.name }}</p>
-                                <p class="text-cyan-300">{{ plan.data_amount }} • {{ plan.validity }}</p>
-                            </div>
-                            <p class="text-2xl font-bold text-emerald-400">₦{{ plan.price }}</p>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="col-span-2 text-center text-gray-400 py-8">No plans available yet.</p>
-                    {% endfor %}
-                </div>
+        <form id="dataForm" class="space-y-8">
+            {% csrf_token %}
 
-                {{ form.plan|add_class:"hidden" }}
-                {{ form.phone|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400" }}
-
-                <button type="button" id="confirmBtn"
-                        class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3">
-                    CONFIRM & PURCHASE
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- PIN Modal -->
-    <div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-8 w-full max-w-md mx-4 modal">
-            <h3 class="text-2xl font-bold text-center mb-6">Enter 4-Digit PIN</h3>
-            <input type="password" id="pinInput" maxlength="4"
-                   class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none"
-                   placeholder="••••">
-
-            <div class="mt-8 flex gap-4">
-                <button onclick="closePinModal()" class="flex-1 py-4 rounded-3xl border border-gray-500 font-medium">Cancel</button>
-                <button onclick="verifyPin()" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-400 py-4 rounded-3xl font-semibold">Verify PIN</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Network</label>
+                {{ form.network|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
             </div>
+
+            <!-- Plans Container -->
+            <div id="plans-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[120px]">
+                {% for plan in plans %}
+                <div class="plan-card bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-5 cursor-pointer hover:border-cyan-400 transition-all" 
+                     data-plan-id="{{ plan.id }}" data-network="{{ plan.network }}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">{{ plan.name }}</p>
+                            <p class="text-gray-500 dark:text-cyan-300">{{ plan.data_amount }} • {{ plan.validity }}</p>
+                        </div>
+                        <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₦{{ plan.price }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="col-span-2 text-center text-gray-500 py-8">No plans available yet.</p>
+                {% endfor %}
+            </div>
+
+            {{ form.plan|add_class:"hidden" }}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                {{ form.phone|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
+            </div>
+
+            <button type="button" id="confirmBtn"
+                    class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white">
+                CONFIRM & PURCHASE
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- PIN Modal -->
+<div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-8 w-full max-w-md mx-4">
+        <h3 class="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Enter 4-Digit PIN</h3>
+        <input type="password" id="pinInput" maxlength="4"
+               class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none text-gray-900 dark:text-white"
+               placeholder="••••">
+
+        <div class="mt-8 flex gap-4">
+            <button onclick="closePinModal()" 
+                    class="flex-1 py-4 rounded-3xl border border-gray-400 dark:border-gray-500 font-medium text-gray-700 dark:text-gray-300">
+                Cancel
+            </button>
+            <button onclick="verifyPin()" 
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-400 py-4 rounded-3xl font-semibold text-white">
+                Verify PIN
+            </button>
         </div>
     </div>
-
+</div>
 <script>
     let selectedPlanId = null;
 
@@ -193,5 +191,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}

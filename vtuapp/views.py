@@ -38,6 +38,13 @@ import random
 from datetime import timedelta
 from django.utils import timezone
 
+from django.shortcuts import render
+
+def home(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'vtuapp/index.html')
+    
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)

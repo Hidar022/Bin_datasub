@@ -1,67 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bin Datasub - Referral</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-purple { box-shadow: 0 0 25px #a855f7; }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
-    <div class="max-w-lg mx-auto px-4">
-        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+{% extends 'vtuapp/base.html' %}
+{% block title %}Refer & Earn - Bin Datasub{% endblock %}
 
-        <div class="bg-[#12123a] border border-purple-400 rounded-3xl p-8 neon-purple">
-            <div class="text-center mb-10">
-                <i class="fas fa-gift text-6xl text-purple-400 mb-4"></i>
-                <h1 class="text-4xl font-bold">Refer & Earn</h1>
-                <p class="text-cyan-300 mt-3">Invite friends and earn rewards when they register and fund their wallet</p>
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-400 rounded-3xl p-8 neon-purple">
+        
+        <div class="text-center mb-10">
+            <div class="mx-auto w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <i class="fas fa-gift text-6xl text-purple-500"></i>
             </div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">Refer & Earn</h1>
+            <p class="text-gray-600 dark:text-cyan-300 mt-3 max-w-sm mx-auto">
+                Invite friends and earn ₦500 when they register and fund their wallet
+            </p>
+        </div>
 
-            <div class="bg-[#1a1a4a] rounded-3xl p-8 mb-8">
-                <p class="text-sm text-gray-400 mb-2">Your Referral Code</p>
-                <div class="flex items-center justify-between bg-[#0a0a2e] rounded-2xl p-5 font-mono text-2xl tracking-wider">
-                    <span id="ref-code">{{ referral_code }}</span>
-                    <button onclick="copyReferralCode()" class="text-cyan-400 hover:text-cyan-300">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-[#1a1a4a] rounded-3xl p-8">
-                <p class="text-sm text-gray-400 mb-2">Your Referral Link</p>
-                <div class="flex items-center justify-between bg-[#0a0a2e] rounded-2xl p-5 text-sm break-all">
-                    <span id="ref-link">{{ referral_link }}</span>
-                    <button onclick="copyReferralLink()" class="text-cyan-400 hover:text-cyan-300">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="mt-10 text-center text-sm text-gray-400">
-                <p>You earn ₦500 when your friend registers and funds their wallet for the first time.</p>
+        <!-- Referral Code -->
+        <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-3xl p-8 mb-8">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Your Referral Code</p>
+            <div class="flex items-center justify-between bg-white dark:bg-[#0a0a2e] rounded-2xl p-5 font-mono text-2xl tracking-wider border border-gray-200 dark:border-gray-700">
+                <span id="ref-code">{{ referral_code }}</span>
+                <button onclick="copyReferralCode()" 
+                        class="text-cyan-500 hover:text-cyan-600 transition-colors">
+                    <i class="fas fa-copy text-xl"></i>
+                </button>
             </div>
         </div>
+
+        <!-- Referral Link -->
+        <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-3xl p-8">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Your Referral Link</p>
+            <div class="flex items-center justify-between bg-white dark:bg-[#0a0a2e] rounded-2xl p-5 text-sm break-all border border-gray-200 dark:border-gray-700">
+                <span id="ref-link" class="text-gray-700 dark:text-gray-300">{{ referral_link }}</span>
+                <button onclick="copyReferralLink()" 
+                        class="text-cyan-500 hover:text-cyan-600 transition-colors">
+                    <i class="fas fa-copy text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1a4a]/50 rounded-2xl p-6">
+            <p>You earn <strong class="text-emerald-600 dark:text-emerald-400">₦500</strong> when your friend registers and funds their wallet for the first time.</p>
+        </div>
     </div>
+</div>
 
-    <script>
-        function copyReferralCode() {
-            const code = document.getElementById('ref-code').textContent;
-            navigator.clipboard.writeText(code);
-            alert('Referral code copied!');
-        }
+<script>
+    function copyReferralCode() {
+        const code = document.getElementById('ref-code').textContent.trim();
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('Referral code copied successfully!');
+        });
+    }
 
-        function copyReferralLink() {
-            const link = document.getElementById('ref-link').textContent;
-            navigator.clipboard.writeText(link);
-            alert('Referral link copied!');
-        }
-    </script>
-</body>
-</html>
+    function copyReferralLink() {
+        const link = document.getElementById('ref-link').textContent.trim();
+        navigator.clipboard.writeText(link).then(() => {
+            showToast('Referral link copied successfully!');
+        });
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-sm shadow-2xl z-[9999]';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transition = 'all 0.3s';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+</script>
+{% endblock %}

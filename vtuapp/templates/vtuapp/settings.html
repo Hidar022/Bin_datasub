@@ -1,32 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bin Datasub - Settings</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
-        .sidebar-tab { transition: all 0.3s; }
-        .sidebar-tab.active { background-color: #1a1a4a; border-left: 4px solid #22d3ee; }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
-    <div class="max-w-6xl mx-auto px-4">
-        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+{% extends 'vtuapp/base.html' %}
+{% block title %}Settings - Bin Datasub{% endblock %}
 
-        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-            <h1 class="text-3xl md:text-4xl font-bold mb-2">Settings</h1>
-            <p class="text-cyan-300 mb-8">Manage your account and security</p>
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <!-- Sidebar -->
-                <div class="lg:col-span-3 bg-[#1a1a4a] rounded-3xl p-4">
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
+        <p class="text-gray-600 dark:text-cyan-300 mb-8">Manage your account and security</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Sidebar -->
+            <div class="lg:col-span-3">
+                <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-3xl p-4 sticky top-24">
                     <div class="flex lg:flex-col gap-2">
                         <button onclick="switchTab(0)" class="sidebar-tab active flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-0">
                             <i class="fas fa-user"></i> <span class="hidden sm:inline">Profile</span>
@@ -39,84 +28,87 @@
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Content -->
-                <div class="lg:col-span-9">
-                    <!-- Messages now show as floating toast -->
+            <!-- Content Area -->
+            <div class="lg:col-span-9">
+                
+                <!-- Profile Tab -->
+                <div id="tab-content-0" class="tab-content">
+                    <form id="profileForm" method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        <input type="hidden" name="section" value="profile">
 
-                    <!-- Profile Tab -->
-                    <div id="tab-content-0" class="tab-content">
-                        <form id="profileForm" class="space-y-6">
-                            {% csrf_token %}
-                            <input type="hidden" name="section" value="profile">
-                            <!-- ... your profile fields ... -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                                    <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
-                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                                    <input type="text" value="{{ request.user.username }}" disabled
-                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                                    <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
-                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-                                    <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
-                                        pattern="[0-9]+" inputmode="numeric" maxlength="15"
-                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
-                                        class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
-                                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                                <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
+                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
+                                <input type="text" value="{{ request.user.username }}" disabled
+                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                                <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
+                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                                <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
+                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
+                                <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
+                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                            </div>
+                        </div>
 
-                            <button type="submit" id="profileBtn" class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
-                                <span id="profileBtnText">SAVE CHANGES</span>
-                                <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        <button type="submit" id="profileBtn" 
+                                class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
+                            <span id="profileBtnText">SAVE CHANGES</span>
+                            <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Security Tab -->
+                <div id="tab-content-1" class="tab-content hidden space-y-10">
+                    
+                    <!-- Change Account Password -->
+                    <div class="bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-gray-700 rounded-3xl p-8">
+                        <h3 class="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Change Account Password</h3>
+                        <form id="passwordForm" class="space-y-6">
+                            {% csrf_token %}
+                            <input type="hidden" name="section" value="password">
+                            <input type="password" name="old_password" placeholder="Current Password" 
+                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            <input type="password" name="new_password" placeholder="New Password" 
+                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            <input type="password" name="confirm_password" placeholder="Confirm New Password" 
+                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                            
+                            <button type="submit" id="passwordBtn" 
+                                    class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
+                                <span id="passwordBtnText">UPDATE PASSWORD</span>
+                                <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
                             </button>
                         </form>
                     </div>
 
-                    <!-- Security Tab -->
-                    <div id="tab-content-1" class="tab-content hidden space-y-10">
-                        <!-- Change Account Password -->
-                        <div class="bg-[#1a1a4a] rounded-3xl p-8">
-                            <h3 class="text-xl font-semibold mb-6">Change Account Password</h3>
-                            <form id="passwordForm" class="space-y-6">
-                                {% csrf_token %}
-                                <input type="hidden" name="section" value="password">
-                                <input type="password" name="old_password" placeholder="Current Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                <input type="password" name="new_password" placeholder="New Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                <input type="password" name="confirm_password" placeholder="Confirm New Password" class="w-full bg-[#12123a] border border-purple-500/50 rounded-3xl px-6 py-5">
-                                <div class="mt-4 text-right">
-                                    <a href="{% url 'password_reset' %}" class="text-sm text-cyan-400 hover:text-cyan-300">Forgot Password?</a>
-                                </div>
-                                <button type="submit" id="passwordBtn" class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold flex items-center justify-center gap-3">
-                                    <span id="passwordBtnText">UPDATE PASSWORD</span>
-                                    <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                                </button>
-                            </form>
-                        </div>
-
-                    <!-- Change Transaction PIN -->
-                    <div id="pin-section" class="bg-[#1a1a4a] rounded-3xl p-8">
-                        <h3 class="text-xl font-semibold mb-2">
+                    <!-- Transaction PIN Section -->
+                    <div id="pin-section" class="bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-gray-700 rounded-3xl p-8">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
                             {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
                         </h3>
-                        <p class="text-gray-400 text-sm mb-6">
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-6">
                             {% if has_pin %}
                                 Keep your account secure by updating your PIN regularly.
                             {% else %}
-                                You haven't set a PIN yet. Create one to authorize transactions.
+                                Create a 4-digit PIN to authorize all transactions.
                             {% endif %}
                         </p>
 
@@ -125,26 +117,23 @@
                             <input type="hidden" name="section" value="pin">
 
                             {% if has_pin %}
-                                <div class="space-y-2">
-                                    <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">Current 4-Digit PIN</label>
-                                    <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
-                                        class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono"
-                                        onkeypress="return event.charCode >= 48 && event.charCode <= 57"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                </div>
+                            <div>
+                                <label class="text-xs uppercase tracking-widest text-gray-500 dark:text-cyan-400">Current PIN</label>
+                                <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
+                                       class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
+                            </div>
                             {% endif %}
 
-                            <div class="space-y-2">
-                                <label class="text-xs text-cyan-400 uppercase tracking-widest ml-4">
-                                    {% if has_pin %}New 4-Digit PIN{% else %}Set 4-Digit PIN{% endif %}
+                            <div>
+                                <label class="text-xs uppercase tracking-widest text-gray-500 dark:text-cyan-400">
+                                    {% if has_pin %}New PIN{% else %}Set PIN{% endif %}
                                 </label>
                                 <input type="password" name="new_pin" maxlength="4" placeholder="••••" required
-                                    class="w-full bg-[#12123a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono"
-                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                       class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
                             </div>
 
-                            <button type="submit" id="pinBtn" class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-bold uppercase tracking-wider flex items-center justify-center gap-3 hover:scale-[1.02]">
+                            <button type="submit" id="pinBtn" 
+                                    class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-bold text-white flex items-center justify-center gap-3">
                                 <span id="pinBtnText">
                                     {% if has_pin %}UPDATE TRANSACTION PIN{% else %}CREATE TRANSACTION PIN{% endif %}
                                 </span>
@@ -152,20 +141,27 @@
                             </button>
                         </form>
                     </div>
+                </div>
 
-                    <!-- Biometric Tab -->
-                    <div id="tab-content-2" class="tab-content hidden">
-                        <div class="bg-[#1a1a4a] rounded-3xl p-10 text-center">
-                            <i class="fas fa-fingerprint text-8xl text-cyan-400 mb-8"></i>
-                            <h3 class="text-3xl font-bold mb-4">Biometric Authentication</h3>
-                            <p class="text-gray-300 max-w-md mx-auto mb-10">
-                                Use your fingerprint or face ID for faster and more secure login and purchases.
-                            </p>
-                            <button onclick="registerBiometric()" class="bg-gradient-to-r from-cyan-400 to-blue-500 px-12 py-5 rounded-3xl text-lg font-semibold mb-4">
-                                Register Fingerprint / Face ID
+                <!-- Biometric Tab - Premium Look -->
+                <div id="tab-content-2" class="tab-content hidden">
+                    <div class="bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a4a] dark:to-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-12 text-center">
+                        <div class="mx-auto w-24 h-24 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center mb-8">
+                            <i class="fas fa-fingerprint text-7xl text-cyan-500"></i>
+                        </div>
+                        <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Biometric Authentication</h3>
+                        <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto mb-10 leading-relaxed">
+                            Enable fingerprint or face recognition for faster and more secure login and transaction approval.
+                        </p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button onclick="registerBiometric()" 
+                                    class="bg-gradient-to-r from-cyan-400 to-blue-500 px-10 py-5 rounded-3xl text-lg font-semibold text-white hover:scale-105 transition-all">
+                                Register Biometric
                             </button>
-                            <button onclick="testBiometric()" class="bg-gray-700 hover:bg-gray-600 px-12 py-5 rounded-3xl text-lg font-semibold">
-                                Test Biometric Login
+                            <button onclick="testBiometric()" 
+                                    class="border border-gray-300 dark:border-gray-600 px-10 py-5 rounded-3xl text-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                                Test Biometric
                             </button>
                         </div>
                     </div>
@@ -173,126 +169,42 @@
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById('tab-content-' + tab).classList.remove('hidden');
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById('tab-content-' + tab).classList.remove('hidden');
 
-            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-        }
-
-        function showMessage(type, message) {
-            const oldToast = document.getElementById('global-toast');
-            if (oldToast) oldToast.remove();
-
-            const toast = document.createElement('div');
-            toast.id = 'global-toast';
-            toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
-                               text-white max-w-xs border-l-4 transition-all
-                               ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
-
-            toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
-                <span class="font-medium">${message}</span>
-            `;
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.transition = 'all 0.4s ease';
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-15px)';
-                setTimeout(() => toast.remove(), 500);
-            }, 5000);
-        }
-
-        // Handle all form submissions
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                let btn = this.querySelector('button[type="submit"]');
-                let text = btn.querySelector('span');
-                let spinner = btn.querySelector('i');
-
-                if (text && spinner) {
-                    text.classList.add('hidden');
-                    spinner.classList.remove('hidden');
-                    btn.disabled = true;
-                }
-
-                const formData = new FormData(this);
-
-                fetch("{% url 'settings' %}", {
-                    method: "POST",
-                    body: formData,
-                    headers: { 
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    showMessage(data.status || 'error', data.message || 'Something went wrong');
-                    
-                    if (data.status === 'success') {
-                        // If user just created PIN and came from airtime/data, go back
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const nextPage = urlParams.get('next');
-                        
-                        if (nextPage === 'airtime') {
-                            setTimeout(() => window.location.href = "{% url 'buy_airtime' %}", 1200);
-                        } else if (nextPage === 'data') {
-                            setTimeout(() => window.location.href = "{% url 'buy_data' %}", 1200);
-                        } else {
-                            setTimeout(() => location.reload(), 1500);
-                        }
-                    }
-                })
-                .catch(() => showMessage('error', 'Connection error. Please try again.'))
-                .finally(() => {
-                    if (text && spinner) {
-                        text.classList.remove('hidden');
-                        spinner.classList.add('hidden');
-                        btn.disabled = false;
-                    }
-                });
-            });
-        });
-
-        // Auto switch tab + smooth scroll when coming from no_pin
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const hash = window.location.hash;
-
-            if (hash === '#pin-section' || urlParams.get('next')) {
-                switchTab(1);   // Open Security tab
-
-                setTimeout(() => {
-                    const pinSection = document.getElementById('pin-section');
-                    if (pinSection) {
-                        pinSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                        // Highlight effect
-                        pinSection.style.transition = 'all 0.8s';
-                        pinSection.style.boxShadow = '0 0 0 5px rgba(34, 211, 238, 0.7)';
-                        setTimeout(() => pinSection.style.boxShadow = '', 2800);
-                    }
-                }, 700);
-            }
-        });
-
-        window.onload = () => switchTab(0);
-    </script>
-
-    <!-- Biometric Script -->
-    <script>
-    async function registerBiometric() { ... }  // Keep your existing biometric code
-    function testBiometric() {
-        showMessage('error', "Test Biometric not implemented yet.");
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
     }
-    </script>
-</body>
-</html>
+
+    function showMessage(type, message) {
+        const oldToast = document.getElementById('global-toast');
+        if (oldToast) oldToast.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'global-toast';
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
+                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span>${message}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // Tab switching on load
+    document.addEventListener('DOMContentLoaded', () => {
+        switchTab(0);
+        
+        const hash = window.location.hash;
+        if (hash === '#pin-section') {
+            switchTab(1);
+            setTimeout(() => {
+                document.getElementById('pin-section').scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        }
+    });
+</script>
+{% endblock %}

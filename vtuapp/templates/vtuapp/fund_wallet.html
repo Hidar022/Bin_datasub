@@ -1,108 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bin Datasub - Fund Wallet</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
-        .amount-btn {
-            transition: all 0.3s ease;
-        }
-        .amount-btn:hover {
-            transform: scale(1.08);
-            background-color: #1f1d4a;
-        }
-        .amount-btn.active {
-            background-color: #22d3ee;
-            color: black;
-            font-weight: 600;
-        }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
-    <div class="max-w-lg mx-auto px-4">
-        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+{% extends 'vtuapp/base.html' %}
+{% block title %}Fund Wallet - Bin Datasub{% endblock %}
 
-        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-            <div class="text-center mb-8">
-                <i class="fas fa-wallet text-6xl text-cyan-400 mb-4"></i>
-                <h1 class="text-3xl font-bold">Fund Your Wallet</h1>
-                <p class="text-cyan-300">Instant funding with Paystack • Full Credit</p>
-            </div>
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-6">
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
 
-            <!-- Info Box -->
-            <div class="bg-emerald-900/30 border border-emerald-500/50 rounded-2xl p-5 mb-8 text-center">
-                <p class="text-emerald-400 text-sm font-medium">
-                    ✅ You get <strong>Full Credit</strong>. We absorb the Paystack fee.
-                </p>
-            </div>
-
-            <form method="POST" id="fundForm">
-                {% csrf_token %}
-
-                <!-- Quick Amounts -->
-                <div class="mb-8">
-                    <p class="text-sm text-gray-400 mb-4">Quick Select Amount</p>
-                    <div class="grid grid-cols-3 gap-3">
-                        <button type="button" onclick="selectAmount(1000)"  class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">1,000</button>
-                        <button type="button" onclick="selectAmount(2000)"  class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">2,000</button>
-                        <button type="button" onclick="selectAmount(5000)"  class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">5,000</button>
-                        <button type="button" onclick="selectAmount(10000)" class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">10,000</button>
-                        <button type="button" onclick="selectAmount(20000)" class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">20,000</button>
-                        <button type="button" onclick="selectAmount(50000)" class="amount-btn bg-[#1a1a4a] border border-purple-500/50 py-4 rounded-2xl text-lg">50,000</button>
-                    </div>
-                </div>
-
-                <!-- Custom Amount -->
-                <div class="mb-8">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Or Enter Custom Amount</label>
-                    <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-3xl text-cyan-400">₦</span>
-                        <input type="number" id="amount" name="amount" 
-                               class="w-full bg-[#1a1a4a] border border-cyan-400/70 focus:border-cyan-400 rounded-3xl pl-14 pr-6 py-6 text-3xl font-bold outline-none text-white"
-                               placeholder="5000" min="100" step="50" required>
-                    </div>
-                </div>
-
-                <button type="submit" id="fundBtn"
-                        class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 hover:from-emerald-600 hover:to-cyan-500 py-6 rounded-3xl text-xl font-bold flex items-center justify-center gap-3 transition-all">
-                    <span id="btnText">PROCEED TO PAYSTACK</span>
-                    <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                </button>
-            </form>
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
+        <div class="text-center mb-8">
+            <i class="fas fa-wallet text-6xl text-cyan-400 mb-4"></i>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Fund Your Wallet</h1>
+            <p class="text-gray-600 dark:text-cyan-300">Instant funding with Paystack • Full Credit</p>
         </div>
+
+        <div class="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-500/50 rounded-2xl p-5 mb-8 text-center">
+            <p class="text-emerald-700 dark:text-emerald-400 text-sm font-medium">
+                ✅ You get <strong>Full Credit</strong>. We absorb the Paystack fee.
+            </p>
+        </div>
+
+        <form method="POST" id="fundForm">
+            {% csrf_token %}
+
+            <!-- Quick Amounts -->
+            <div class="mb-8">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Quick Select Amount</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <button type="button" onclick="selectAmount(1000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">1,000</button>
+                    <button type="button" onclick="selectAmount(2000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">2,000</button>
+                    <button type="button" onclick="selectAmount(5000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">5,000</button>
+                    <button type="button" onclick="selectAmount(10000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">10,000</button>
+                    <button type="button" onclick="selectAmount(20000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">20,000</button>
+                    <button type="button" onclick="selectAmount(50000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">50,000</button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Or Enter Custom Amount</label>
+                <div class="relative">
+                    <span class="absolute left-6 top-1/2 -translate-y-1/2 text-3xl text-cyan-400">₦</span>
+                    <input type="number" id="amount" name="amount" 
+                           class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-cyan-400 focus:border-cyan-400 rounded-3xl pl-14 pr-6 py-6 text-3xl font-bold outline-none text-gray-900 dark:text-white"
+                           placeholder="5000" min="100" step="50" required>
+                </div>
+            </div>
+
+            <button type="submit" id="fundBtn"
+                    class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 hover:from-emerald-600 hover:to-cyan-500 py-6 rounded-3xl text-xl font-bold flex items-center justify-center gap-3 transition-all text-white">
+                <span id="btnText">PROCEED TO PAYSTACK</span>
+                <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
+            </button>
+        </form>
     </div>
+</div>
 
-    <script>
-        function selectAmount(val) {
-            document.getElementById('amount').value = val;
-            
-            // Highlight active button
-            document.querySelectorAll('.amount-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (parseInt(btn.textContent.replace(/,/g, '')) === val) {
-                    btn.classList.add('active');
-                }
-            });
-        }
+<script>
+    function selectAmount(val) {
+        document.getElementById('amount').value = val;
+        document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('border-cyan-400', 'ring-2', 'ring-cyan-400'));
+        event.currentTarget.classList.add('border-cyan-400', 'ring-2', 'ring-cyan-400');
+    }
 
-        // Loading spinner on form submit
-        document.getElementById('fundForm').addEventListener('submit', function() {
-            const btn = document.getElementById('fundBtn');
-            const text = document.getElementById('btnText');
-            const spinner = document.getElementById('btnSpinner');
+    document.getElementById('fundForm').addEventListener('submit', function() {
+        const btn = document.getElementById('fundBtn');
+        const text = document.getElementById('btnText');
+        const spinner = document.getElementById('btnSpinner');
 
-            text.classList.add('hidden');
-            spinner.classList.remove('hidden');
-            btn.disabled = true;
-        });
-    </script>
-</body>
-</html>
+        text.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

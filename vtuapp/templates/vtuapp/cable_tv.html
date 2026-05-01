@@ -1,124 +1,115 @@
+{% extends 'vtuapp/base.html' %}
 {% load widget_tweaks %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bin Datasub - Cable TV</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-purple { box-shadow: 0 0 25px #a855f7; }
-        input, select { color: white !important; }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen py-8">
-    <div class="max-w-lg mx-auto px-4">
-        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-400 mb-8 hover:text-cyan-300">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
 
-        <div class="bg-[#12123a] border border-purple-400 rounded-3xl p-6 md:p-8 neon-purple">
-            <div id="messages-container" class="space-y-3 mb-8"></div>
+{% block title %}Cable TV - Bin Datasub{% endblock %}
 
-            <h1 class="text-3xl font-bold mb-2">Cable TV Subscription</h1>
-            <p class="text-cyan-300 mb-6">Renew DSTV, GOTV, Startimes & more</p>
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-6">
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
 
-            <form id="cableForm" class="space-y-6">
-                {% csrf_token %}
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-400 rounded-3xl p-6 md:p-8 neon-purple">
+        <div id="messages-container" class="space-y-3 mb-8"></div>
 
-                {% for field in form %}
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ field.label }}</label>
-                    {{ field|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all" }}
-                </div>
-                {% endfor %}
+        <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Cable TV Subscription</h1>
+        <p class="text-gray-600 dark:text-cyan-300 mb-6">Renew DSTV, GOTV, Startimes & more</p>
 
-                <button type="button" id="confirmBtn"
-                        class="w-full bg-gradient-to-r from-purple-500 to-pink-400 hover:from-purple-600 hover:to-pink-500 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3">
-                    CONFIRM & RENEW SUBSCRIPTION
-                </button>
-            </form>
-        </div>
-    </div>
+        <form id="cableForm" class="space-y-6">
+            {% csrf_token %}
 
-    <!-- PIN Modal -->
-    <div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="bg-[#12123a] border border-cyan-400 rounded-3xl p-8 w-full max-w-md mx-4 modal">
-            <h3 class="text-2xl font-bold text-center mb-6">Enter 4-Digit PIN</h3>
-            <input type="password" id="pinInput" maxlength="4"
-                   class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none"
-                   placeholder="••••" autocomplete="off">
-
-            <div class="mt-8 flex gap-4">
-                <button onclick="closePinModal()" class="flex-1 py-4 rounded-3xl border border-gray-500 font-medium">Cancel</button>
-                <button onclick="verifyPin()" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-400 py-4 rounded-3xl font-semibold">Verify PIN</button>
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ field.label }}</label>
+                {{ field|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 text-base outline-none transition-all" }}
             </div>
+            {% endfor %}
+
+            <button type="button" id="confirmBtn"
+                    class="w-full bg-gradient-to-r from-purple-500 to-pink-400 hover:from-purple-600 hover:to-pink-500 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white">
+                CONFIRM & RENEW SUBSCRIPTION
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- PIN Modal -->
+<div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-8 w-full max-w-md mx-4">
+        <h3 class="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Enter 4-Digit PIN</h3>
+        <input type="password" id="pinInput" maxlength="4"
+               class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none text-gray-900 dark:text-white"
+               placeholder="••••" autocomplete="off">
+
+        <div class="mt-8 flex gap-4">
+            <button onclick="closePinModal()" class="flex-1 py-4 rounded-3xl border border-gray-400 dark:border-gray-500 font-medium text-gray-700 dark:text-gray-300">Cancel</button>
+            <button onclick="verifyPin()" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-400 py-4 rounded-3xl font-semibold text-white">Verify PIN</button>
         </div>
     </div>
+</div>
 
-    <script>
-        const confirmBtn = document.getElementById('confirmBtn');
+<script>
+    const confirmBtn = document.getElementById('confirmBtn');
 
-        confirmBtn.addEventListener('click', function() {
-            document.getElementById('pinModal').classList.remove('hidden');
-            document.getElementById('pinInput').focus();
-        });
+    confirmBtn.addEventListener('click', function() {
+        document.getElementById('pinModal').classList.remove('hidden');
+        document.getElementById('pinInput').focus();
+    });
 
-        function closePinModal() {
-            document.getElementById('pinModal').classList.add('hidden');
-            document.getElementById('pinInput').value = '';
+    function closePinModal() {
+        document.getElementById('pinModal').classList.add('hidden');
+        document.getElementById('pinInput').value = '';
+    }
+
+    function showMessage(type, message) {
+        const oldToast = document.getElementById('global-toast');
+        if (oldToast) oldToast.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'global-toast';
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
+                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span>${message}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function verifyPin() {
+        const pin = document.getElementById('pinInput').value.trim();
+        if (pin.length !== 4) {
+            showMessage('error', "PIN must be exactly 4 digits");
+            return;
         }
 
-        function showMessage(type, message) {
-            const container = document.getElementById('messages-container');
-            const div = document.createElement('div');
-            div.className = `px-6 py-4 rounded-2xl text-sm flex items-center gap-3 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
-            div.textContent = message;
-            container.appendChild(div);
+        closePinModal();
 
-            setTimeout(() => {
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 400);
-            }, 4000);
-        }
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+        confirmBtn.disabled = true;
 
-        function verifyPin() {
-            const pin = document.getElementById('pinInput').value.trim();
-            if (pin.length !== 4) {
-                alert("PIN must be exactly 4 digits");
-                return;
+        const formData = new FormData(document.getElementById('cableForm'));
+        formData.append('pin', pin);
+
+        fetch("{% url 'cable_tv' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('success', data.message);
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1500);
+            } else {
+                showMessage('error', data.message || 'Something went wrong');
             }
-
-            closePinModal();
-
-            const originalText = confirmBtn.innerHTML;
-            confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-            confirmBtn.disabled = true;
-
-            const formData = new FormData(document.getElementById('cableForm'));
-            formData.append('pin', pin);
-
-            fetch("{% url 'cable_tv' %}", {
-                method: "POST",
-                body: formData,
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            })
-            .then(response => response.json())
-            .then(data => {
-                showMessage(data.status || 'error', data.message || 'Something went wrong');
-                if (data.status === 'success') {
-                    setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1500);
-                }
-            })
-            .catch(() => showMessage('error', 'Connection error'))
-            .finally(() => {
-                confirmBtn.innerHTML = originalText;
-                confirmBtn.disabled = false;
-            });
-        }
-    </script>
-</body>
-</html>
+        })
+        .catch(() => showMessage('error', 'Connection error'))
+        .finally(() => {
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

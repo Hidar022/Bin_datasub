@@ -1,142 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bin Datasub - Services</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-cyan { box-shadow: 0 0 25px #22d3ee; }
-        .neon-purple { box-shadow: 0 0 25px #a855f7; }
-        .neon-orange { box-shadow: 0 0 25px #f59e0b; }
-        .service-card {
-            transition: all 0.3s ease;
-        }
-        .service-card:hover {
-            transform: translateY(-8px) scale(1.03);
-        }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen">
-    <!-- Top Navigation (same as dashboard) -->
-    <nav class="bg-[#120f2e]/95 backdrop-blur-lg border-b border-purple-500/30 sticky top-0 z-50">
-        <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-2xl">📡</div>
-                    <span class="text-2xl md:text-3xl font-bold tracking-tighter header-glow">Bin Datasub</span>
-                </div>
+{% extends 'vtuapp/base.html' %}
+{% block title %}Services - Bin Datasub{% endblock %}
 
-                <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center gap-8 text-sm font-medium">
-                    <a href="{% url 'dashboard' %}" class="hover:text-cyan-300 transition-colors">Home</a>
-                    <a href="{% url 'services' %}" class="text-cyan-400 border-b-2 border-cyan-400 pb-1">Services</a>
-                    <a href="{% url 'transactions' %}" class="hover:text-cyan-300 transition-colors">Transactions</a>
-                    <a href="#" class="hover:text-cyan-300 transition-colors">Support</a>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <span class="hidden sm:inline font-medium">Hi, {{ request.user.username }}!</span>
-                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-400 rounded-2xl flex items-center justify-center text-lg">👤</div>
-                    
-                    <button id="hamburger" class="md:hidden hamburger flex flex-col gap-1.5 w-8">
-                        <span class="block w-6 h-0.5 bg-white rounded"></span>
-                        <span class="block w-6 h-0.5 bg-white rounded"></span>
-                        <span class="block w-6 h-0.5 bg-white rounded"></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Mobile Menu -->
-            <div id="mobile-menu" class="hidden md:hidden mt-4 pt-4 border-t border-purple-500/30">
-                <div class="flex flex-col gap-4 text-sm font-medium">
-                    <a href="{% url 'dashboard' %}" class="hover:text-cyan-300">Home</a>
-                    <a href="{% url 'services' %}" class="text-cyan-400">Services</a>
-                    <a href="{% url 'transactions' %}" class="hover:text-cyan-300">Transactions</a>
-                    <a href="#" class="hover:text-cyan-300">Support</a>
-                    <a href="{% url 'logout' %}" class="text-red-400">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-8">
-        <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold mb-3">Our Services</h1>
-            <p class="text-cyan-300 text-lg">Choose what you want to buy or pay for instantly</p>
-        </div>
-
-        <!-- Services Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Buy Data -->
-            <a href="{% url 'buy_data' %}" class="service-card bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center neon-purple">
-                <div class="mx-auto w-20 h-20 bg-cyan-400/10 rounded-2xl flex items-center justify-center mb-6">
-                    <i class="fas fa-wifi text-6xl text-cyan-400"></i>
-                </div>
-                <h3 class="text-3xl font-semibold mb-2">Buy Data</h3>
-                <p class="text-cyan-300 mb-8">Affordable data plans for all networks</p>
-                <button class="w-full bg-cyan-400 text-black py-4 rounded-2xl font-semibold hover:bg-cyan-300">
-                    Get Data Now
-                </button>
-            </a>
-
-            <!-- Buy Airtime -->
-            <a href="{% url 'buy_airtime' %}" class="service-card bg-[#12123a] border-2 border-cyan-400 rounded-3xl p-8 text-center neon-cyan">
-                <div class="mx-auto w-20 h-20 bg-blue-400/10 rounded-2xl flex items-center justify-center mb-6">
-                    <i class="fas fa-mobile-alt text-6xl text-blue-400"></i>
-                </div>
-                <h3 class="text-3xl font-semibold mb-2">Buy Airtime</h3>
-                <p class="text-cyan-300 mb-8">Instant airtime top-up</p>
-                <button class="w-full bg-blue-400 text-black py-4 rounded-2xl font-semibold hover:bg-blue-300">
-                    Buy Airtime
-                </button>
-            </a>
-
-            <!-- Pay Electricity -->
-            <a href="{% url 'pay_electricity' %}" class="service-card bg-[#12123a] border-2 border-orange-400 rounded-3xl p-8 text-center neon-orange">
-                <div class="mx-auto w-20 h-20 bg-orange-400/10 rounded-2xl flex items-center justify-center mb-6">
-                    <i class="fas fa-bolt text-6xl text-orange-400"></i>
-                </div>
-                <h3 class="text-3xl font-semibold mb-2">Pay Electricity</h3>
-                <p class="text-cyan-300 mb-8">Bill payment for all discos</p>
-                <button class="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold hover:bg-orange-600">
-                    Pay Bill
-                </button>
-            </a>
-
-            <!-- Cable TV -->
-            <a href="{% url 'cable_tv' %}" class="service-card bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center neon-purple">
-                <div class="mx-auto w-20 h-20 bg-purple-400/10 rounded-2xl flex items-center justify-center mb-6">
-                    <i class="fas fa-tv text-6xl text-purple-400"></i>
-                </div>
-                <h3 class="text-3xl font-semibold mb-2">Cable TV</h3>
-                <p class="text-cyan-300 mb-8">DSTV, GOTV, Startimes & more</p>
-                <button class="w-full bg-purple-500 text-white py-4 rounded-2xl font-semibold hover:bg-purple-600">
-                    Renew Subscription
-                </button>
-            </a>
-        </div>
-
-        <!-- Quick Tip -->
-        <div class="mt-16 text-center bg-[#12123a]/70 border border-purple-500/30 rounded-3xl p-8 max-w-2xl mx-auto">
-            <p class="text-cyan-300">
-                💡 All transactions are instant and reflected immediately in your wallet and transaction history.
-            </p>
-        </div>
+{% block content %}
+<div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-10">
+    
+    <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3">Our Services</h1>
+        <p class="text-gray-600 dark:text-cyan-300 text-lg">Choose what you want to buy or pay for instantly</p>
     </div>
 
-    <script>
-        // Hamburger Menu (same as dashboard)
-        const hamburger = document.getElementById('hamburger');
-        const mobileMenu = document.getElementById('mobile-menu');
+    <!-- Services Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            mobileMenu.classList.toggle('hidden');
-        });
-    </script>
-</body>
-</html>
+        <!-- Buy Data -->
+        <a href="{% url 'buy_data' %}" 
+           class="service-card group bg-white dark:bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-purple">
+            <div class="mx-auto w-20 h-20 bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-wifi text-6xl text-cyan-400"></i>
+            </div>
+            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Buy Data</h3>
+            <p class="text-gray-600 dark:text-cyan-300 mb-8">Affordable data plans for all networks</p>
+            <button class="w-full bg-cyan-400 text-black py-4 rounded-2xl font-semibold hover:bg-cyan-300 transition-all">
+                Get Data Now
+            </button>
+        </a>
+
+        <!-- Buy Airtime -->
+        <a href="{% url 'buy_airtime' %}" 
+           class="service-card group bg-white dark:bg-[#12123a] border-2 border-cyan-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-cyan">
+            <div class="mx-auto w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-mobile-alt text-6xl text-blue-400"></i>
+            </div>
+            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Buy Airtime</h3>
+            <p class="text-gray-600 dark:text-cyan-300 mb-8">Instant airtime top-up</p>
+            <button class="w-full bg-blue-400 text-black py-4 rounded-2xl font-semibold hover:bg-blue-300 transition-all">
+                Buy Airtime
+            </button>
+        </a>
+
+        <!-- Pay Electricity -->
+        <a href="{% url 'pay_electricity' %}" 
+           class="service-card group bg-white dark:bg-[#12123a] border-2 border-orange-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-orange">
+            <div class="mx-auto w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-bolt text-6xl text-orange-400"></i>
+            </div>
+            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Pay Electricity</h3>
+            <p class="text-gray-600 dark:text-cyan-300 mb-8">Bill payment for all discos</p>
+            <button class="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold hover:bg-orange-600 transition-all">
+                Pay Bill
+            </button>
+        </a>
+
+        <!-- Cable TV -->
+        <a href="{% url 'cable_tv' %}" 
+           class="service-card group bg-white dark:bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-purple">
+            <div class="mx-auto w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-tv text-6xl text-purple-400"></i>
+            </div>
+            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Cable TV</h3>
+            <p class="text-gray-600 dark:text-cyan-300 mb-8">DSTV, GOTV, Startimes & more</p>
+            <button class="w-full bg-purple-500 text-white py-4 rounded-2xl font-semibold hover:bg-purple-600 transition-all">
+                Renew Subscription
+            </button>
+        </a>
+    </div>
+
+    <!-- Quick Tip -->
+    <div class="mt-16 text-center bg-gray-100 dark:bg-[#12123a]/70 border border-purple-500/30 rounded-3xl p-8 max-w-2xl mx-auto">
+        <p class="text-gray-700 dark:text-cyan-300">
+            💡 All transactions are instant and reflected immediately in your wallet and transaction history.
+        </p>
+    </div>
+</div>
+{% endblock %}

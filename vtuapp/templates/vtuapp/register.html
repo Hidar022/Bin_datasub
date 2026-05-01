@@ -1,59 +1,46 @@
+{% extends 'vtuapp/base.html' %}
 {% load widget_tweaks %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bin Datasub - Register</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-glow { box-shadow: 0 0 25px #a855f7, 0 0 40px #a855f7; }
-        .neon-text { text-shadow: 0 0 15px #22d3ee; }
-        input { color: white !important; }
-        input::placeholder { color: #9ca3af !important; }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen flex items-center justify-center py-12">
-    <div class="max-w-md w-full mx-4">
-        <div class="flex justify-center mb-8">
+
+{% block title %}Register - Bin Datasub{% endblock %}
+
+{% block content %}
+<div class="min-h-[90vh] flex items-center justify-center py-12 px-4">
+    <div class="max-w-md w-full">
+        <div class="flex justify-center mb-10">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl font-bold">📡</div>
-                <span class="text-4xl font-bold tracking-tighter neon-text">Bin Datasub</span>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl">📡</div>
+                <span class="text-4xl font-bold tracking-tighter header-glow">Bin Datasub</span>
             </div>
         </div>
 
-        <div class="bg-[#12123a] border border-purple-500/50 rounded-3xl p-8 neon-glow">
-            <h1 class="text-3xl font-bold text-center mb-2">Create Account</h1>
-            <p class="text-cyan-300 text-center mb-8">Join Nigeria’s fastest VTU platform</p>
-
-            <!-- Messages now use floating toast -->
+        <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-8 shadow-xl">
+            <h1 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">Create Account</h1>
+            <p class="text-gray-600 dark:text-cyan-300 text-center mb-8">Join Nigeria’s fastest VTU platform</p>
 
             <form id="registerForm" method="POST" class="space-y-6">
                 {% csrf_token %}
 
                 {% for field in form %}
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ field.label }}</label>
-                    {{ field|add_class:"w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all" }}
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ field.label }}</label>
+                    {{ field|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 text-base outline-none transition-all" }}
                 </div>
                 {% endfor %}
 
                 <button type="submit" id="registerBtn"
-                        class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 transition-all">
+                        class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 text-white transition-all">
                     <span id="btnText">CREATE ACCOUNT</span>
                     <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
                 </button>
             </form>
 
-            <div class="mt-8 text-center text-gray-400">
+            <div class="mt-8 text-center text-gray-600 dark:text-gray-400">
                 Already have an account? 
-                <a href="{% url 'login' %}" class="text-cyan-400 hover:text-white font-medium">Login here →</a>
+                <a href="{% url 'login' %}" class="text-cyan-500 hover:text-cyan-600 font-medium">Login here →</a>
             </div>
         </div>
     </div>
+</div>
 
 <script>
     const form = document.getElementById('registerForm');
@@ -61,52 +48,23 @@
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
 
-    // Password strength checker
-    function isPasswordStrong(password) {
-        if (password.length < 8) return false;
-        if (!/[A-Z]/.test(password)) return false;
-        if (!/[0-9]/.test(password)) return false;
-        return true;
-    }
-
-    // Premium Floating Toast
     function showMessage(message, type = 'error') {
         const oldToast = document.getElementById('global-toast');
         if (oldToast) oldToast.remove();
 
         const toast = document.createElement('div');
         toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
-                           text-white max-w-xs border-l-4 transition-all
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
                            ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
 
-        toast.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
-            <span class="font-medium">${message}</span>
-        `;
-
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
         document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.transition = 'all 0.4s ease';
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-15px)';
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
+        setTimeout(() => toast.remove(), 5000);
     }
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const passwordField = form.querySelector('input[name="password1"]') || form.querySelector('input[type="password"]');
-        const password = passwordField ? passwordField.value : '';
-
-        if (!isPasswordStrong(password)) {
-            showMessage('Weak password! Use at least 8 characters with 1 uppercase letter and 1 number.', 'error');
-            return;
-        }
-
-        // Show spinner
         btn.disabled = true;
         btnText.classList.add('hidden');
         btnSpinner.classList.remove('hidden');
@@ -117,36 +75,23 @@
             const response = await fetch(form.action || window.location.href, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
 
             const data = await response.json();
 
             if (response.ok && data.success) {
-                showMessage(data.message || '✅ Account created! Check your email for the OTP.', 'success');
-                
-                if (data.redirect_url) {
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 1800);
-                }
-            } 
-            else {
+                showMessage(data.message || 'Account created successfully!', 'success');
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1800);
+            } else {
                 if (data.errors) {
-                    Object.values(data.errors).forEach(errArray => {
-                        errArray.forEach(err => showMessage(err));
-                    });
-                } else if (data.message) {
-                    showMessage(data.message);
+                    Object.values(data.errors).forEach(errs => errs.forEach(err => showMessage(err)));
                 } else {
-                    showMessage('Something went wrong. Please try again.');
+                    showMessage(data.message || 'Registration failed');
                 }
             }
         } catch (err) {
-            showMessage('Network error. Please check your connection and try again.');
-            console.error(err);
+            showMessage('Network error. Please try again.');
         } finally {
             btn.disabled = false;
             btnText.classList.remove('hidden');
@@ -154,5 +99,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}
