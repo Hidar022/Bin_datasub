@@ -119,6 +119,26 @@
         </div>
     </nav>
 
+    <!-- Django Messages -->
+    {% if messages %}
+    <div class="max-w-4xl mx-auto px-4 mt-4">
+        {% for message in messages %}
+        <div class="mb-4 px-6 py-4 rounded-2xl shadow-xl border-l-4 flex items-center gap-3 text-white
+                    {% if message.tags == 'error' %}bg-red-600 border-red-400
+                    {% elif message.tags == 'success' %}bg-emerald-600 border-emerald-400
+                    {% elif message.tags == 'warning' %}bg-yellow-600 border-yellow-400
+                    {% else %}bg-blue-600 border-blue-400{% endif %}">
+            <i class="fas 
+                {% if message.tags == 'error' %}fa-xmark-circle
+                {% elif message.tags == 'success' %}fa-check-circle
+                {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                {% else %}fa-info-circle{% endif %} text-xl"></i>
+            <span class="font-medium">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% block content %}
     {% endblock %}
 

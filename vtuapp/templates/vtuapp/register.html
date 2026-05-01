@@ -41,74 +41,114 @@
         </div>
     </div>
 </div>
-
 <script>
-    const form = document.getElementById('registerForm');
-    const btn = document.getElementById('registerBtn');
-    const btnText = document.getElementById('btnText');
-    const btnSpinner = document.getElementById('btnSpinner');
+const form = document.getElementById('registerForm');
+const btn = document.getElementById('registerBtn');
+const btnText = document.getElementById('btnText');
+const btnSpinner = document.getElementById('btnSpinner');
 
-    function showMessage(message, type = 'error') {
-        const oldToast = document.getElementById('global-toast');
-        if (oldToast) oldToast.remove();
+function showMessage(message, type = 'error') {
+    const oldToast = document.getElementById('global-toast');
+    if (oldToast) oldToast.remove();
 
-        const toast = document.createElement('div');
-        toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
-                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+    const toast = document.createElement('div');
+    toast.id = 'global-toast';
+    toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
+                       ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
 
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
+                       <span class="font-medium">${message}</span>`;
+
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// 🔥 Split backend message into clean errors
+function formatErrors(message) {
+    let errors = message.split('.');
+    return errors.map(e => e.trim()).filter(e => e.length > 0);
+}
+
+// 🔥 Highlight fields based on message
+function smartHighlight(message) {
+    document.querySelectorAll('input').forEach(i => i.classList.remove('border-red-500'));
+
+    if (message.toLowerCase().includes('username')) {
+        document.querySelector('[name="username"]')?.classList.add('border-red-500');
     }
+    if (message.toLowerCase().includes('password')) {
+        document.querySelectorAll('input[type="password"]').forEach(el => {
+            el.classList.add('border-red-500');
+        });
+    }
+    if (message.toLowerCase().includes('email')) {
+        document.querySelector('[name="email"]')?.classList.add('border-red-500');
+    }
+}
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-        btn.disabled = true;
-        btnText.classList.add('hidden');
-        btnSpinner.classList.remove('hidden');
+    btn.disabled = true;
+    btnText.classList.add('hidden');
+    btnSpinner.classList.remove('hidden');
 
-        const formData = new FormData(form);
+    const formData = new FormData(form);
 
-        try {
-            const response = await fetch(form.action || window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+    try {
+        const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
 
-            const data = await response.json();
+        let data = null;
 
-            if (response.ok && data.success) {
-                showMessage(data.message || 'Account created successfully!', 'success');
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1800);
-            } 
-            else {
-                // Better error handling
-                if (data.errors) {
-                    // Handle form validation errors from Django
-                    Object.keys(data.errors).forEach(key => {
-                        data.errors[key].forEach(err => {
-                            showMessage(err, 'error');
-                        });
-                    });
-                } 
-                else if (data.message) {
-                    showMessage(data.message, 'error');
-                } 
-                else {
-                    showMessage('Registration failed. Please check your information.', 'error');
-                }
-            }
-        } catch (err) {
-            showMessage('Network error. Please check your connection and try again.', 'error');
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btnText.classList.remove('hidden');
-            btnSpinner.classList.add('hidden');
+        // ✅ Safe JSON parsing (prevents "network error")
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.error("Non-JSON response:", text);
+            throw new Error("Invalid server response");
         }
-    });
+
+        // ✅ SUCCESS
+        if (response.ok && data.success) {
+            showMessage(data.message || 'Account created successfully!', 'success');
+
+            if (data.redirect_url) {
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
+            }
+
+        } else {
+            // 🔥 CLEAN ERROR HANDLING
+            if (data.message) {
+                const errors = formatErrors(data.message);
+
+                // Show as ONE clean message
+                showMessage(errors.join(', '), 'error');
+
+                // Highlight fields
+                smartHighlight(data.message);
+
+            } else {
+                showMessage('Registration failed. Try again.', 'error');
+            }
+        }
+
+    } catch (err) {
+        console.error(err);
+        showMessage('Server error or connection issue. Try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btnText.classList.remove('hidden');
+        btnSpinner.classList.add('hidden');
+    }
+});
 </script>
 {% endblock %}

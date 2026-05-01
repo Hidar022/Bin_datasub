@@ -57,10 +57,14 @@ def register(request):
             if existing_user:
                 if existing_user.is_active:
                     # Email already exists and is verified
-                    return JsonResponse({
-                        'success': False,
-                        'message': '❌ This email is already registered. Please login instead.'
-                    }, status=400)
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'success': False,
+                            'message': '❌ This email is already registered. Please login instead.'
+                        }, status=400)
+                    else:
+                        messages.error(request, 'This email is already registered. Please login instead.')
+                        return redirect('register')
                 else:
                     # Email exists but not verified → Resend OTP
                     profile, _ = Profile.objects.get_or_create(user=existing_user)
@@ -91,11 +95,15 @@ def register(request):
 
                     request.session['pending_user_id'] = existing_user.id
 
-                    return JsonResponse({
-                        'success': True,
-                        'message': '✅ We found your unverified account. A new verification code has been sent to your email.',
-                        'redirect_url': '/verify-otp/'
-                    })
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'success': True,
+                            'message': '✅ We found your unverified account. A new verification code has been sent to your email.',
+                            'redirect_url': '/verify-otp/'
+                        })
+                    else:
+                        messages.success(request, 'We found your unverified account. A new verification code has been sent to your email.')
+                        return redirect('verify_otp')
 
             # === Normal Registration (email doesn't exist) ===
             user = form.save(commit=False)
@@ -129,11 +137,15 @@ def register(request):
 
             request.session['pending_user_id'] = user.id
 
-            return JsonResponse({
-                'success': True,
-                'message': '✅ Account created! We sent a 6-digit code to your email.',
-                'redirect_url': '/verify-otp/'
-            })
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': '✅ Account created! We sent a 6-digit code to your email.',
+                    'redirect_url': '/verify-otp/'
+                })
+            else:
+                messages.success(request, 'Account created! We sent a 6-digit code to your email.')
+                return redirect('verify_otp')
 
         else:
             # Clean error messages
@@ -142,10 +154,15 @@ def register(request):
                 for err in errors:
                     error_list.append(err.get('message', str(err)) if isinstance(err, dict) else str(err))
             
-            return JsonResponse({
-                'success': False,
-                'message': ' '.join(error_list) if error_list else 'Please correct the errors.'
-            }, status=400)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': ' '.join(error_list) if error_list else 'Please correct the errors.'
+                }, status=400)
+            else:
+                for error in error_list:
+                    messages.error(request, error)
+                return redirect('register')
 
     form = CustomUserCreationForm()
     return render(request, 'vtuapp/register.html', {'form': form})
@@ -210,23 +227,35 @@ def login_view(request):
             user = form.get_user()
             
             if not user.is_active:
-                return JsonResponse({
-                    'success': False,
-                    'message': '❌ Please verify your email before logging in.'
-                }, status=400)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': '❌ Please verify your email before logging in.'
+                    }, status=400)
+                else:
+                    messages.error(request, 'Please verify your email before logging in.')
+                    return redirect('login')
 
             login(request, user)
-            return JsonResponse({
-                'success': True,
-                'message': 'Login successful!'
-            })
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Login successful!'
+                })
+            else:
+                messages.success(request, 'Login successful!')
+                return redirect('dashboard')
 
         else:
             # Invalid credentials
-            return JsonResponse({
-                'success': False,
-                'message': '❌ Invalid username or password.'
-            }, status=400)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': '❌ Invalid username or password.'
+                }, status=400)
+            else:
+                messages.error(request, 'Invalid username or password.')
+                return redirect('login')
 
     else:
         form = AuthenticationForm()
@@ -269,7 +298,11 @@ def settings_page(request):
                 profile.dob = request.POST.get('dob')
             profile.save()
 
-            return JsonResponse({'status': 'success', 'message': '✅ Profile updated successfully!'})
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'success', 'message': '✅ Profile updated successfully!'})
+            else:
+                messages.success(request, 'Profile updated successfully!')
+                return redirect('settings')
 
         elif section == 'password':
             old_password = request.POST.get('old_password')
@@ -277,15 +310,31 @@ def settings_page(request):
             confirm_password = request.POST.get('confirm_password')
 
             if not check_password(old_password, request.user.password):
-                return JsonResponse({'status': 'error', 'message': '❌ Current password is incorrect'})
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': '❌ Current password is incorrect'})
+                else:
+                    messages.error(request, 'Current password is incorrect')
+                    return redirect('settings')
             elif new_password != confirm_password:
-                return JsonResponse({'status': 'error', 'message': '❌ New passwords do not match'})
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': '❌ New passwords do not match'})
+                else:
+                    messages.error(request, 'New passwords do not match')
+                    return redirect('settings')
             elif len(new_password) < 6:
-                return JsonResponse({'status': 'error', 'message': '❌ Password must be at least 6 characters'})
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': '❌ Password must be at least 6 characters'})
+                else:
+                    messages.error(request, 'Password must be at least 6 characters')
+                    return redirect('settings')
             else:
                 request.user.set_password(new_password)
                 request.user.save()
-                return JsonResponse({'status': 'success', 'message': '✅ Account password updated successfully!'})
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'success', 'message': '✅ Account password updated successfully!'})
+                else:
+                    messages.success(request, 'Account password updated successfully!')
+                    return redirect('settings')
 
         elif section == 'pin':
             old_pin = request.POST.get('old_pin')
@@ -296,27 +345,47 @@ def settings_page(request):
             if not wallet.pin:
                 if len(new_pin) == 4 and new_pin.isdigit():
                     wallet.set_pin(new_pin)
-                    return JsonResponse({
-                        'status': 'success', 
-                        'message': '✅ Transaction PIN created successfully!'
-                    })
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'status': 'success', 
+                            'message': '✅ Transaction PIN created successfully!'
+                        })
+                    else:
+                        messages.success(request, 'Transaction PIN created successfully!')
+                        return redirect('settings')
                 else:
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': '❌ PIN must be exactly 4 digits'
-                    }, status=400)
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'status': 'error', 
+                            'message': '❌ PIN must be exactly 4 digits'
+                        }, status=400)
+                    else:
+                        messages.error(request, 'PIN must be exactly 4 digits')
+                        return redirect('settings')
 
             # --- Logic for Normal PIN Change ---
             if not wallet.check_pin(old_pin): 
-                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
+                else:
+                    messages.error(request, 'Current PIN is incorrect')
+                    return redirect('settings')
             elif len(new_pin) != 4 or not new_pin.isdigit():
-                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'}, status=400)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'}, status=400)
+                else:
+                    messages.error(request, 'New PIN must be exactly 4 digits')
+                    return redirect('settings')
             else:
                 wallet.set_pin(new_pin)
-                return JsonResponse({
-                    'status': 'success', 
-                    'message': '✅ Transaction PIN updated successfully!'
-                })
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': '✅ Transaction PIN updated successfully!'
+                    })
+                else:
+                    messages.success(request, 'Transaction PIN updated successfully!')
+                    return redirect('settings')
 
     has_pin = bool(request.user.wallet.pin)
     return render(request, 'vtuapp/settings.html', {'has_pin': has_pin})
