@@ -1,0 +1,22 @@
+[33m21f108b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: commit: Finalizing toggle button and cleaning repo
+[33ma9f6eb8[m HEAD@{1}: commit: Cleanup: ignored database and pycache
+[33m89604a2[m HEAD@{2}: rebase (finish): returning to refs/heads/main
+[33m89604a2[m HEAD@{3}: pull origin main --rebase (start): checkout 89604a2b13a82e20ca059d1497f930a9ec6249e0
+[33m47356e1[m HEAD@{4}: commit: adding toggle button for user experience
+[33m6f08884[m HEAD@{5}: commit: Fixed mobile zoom issue and updated VTU models
+[33m37c4345[m HEAD@{6}: commit: fix of pinch zoom on mobile phones
+[33m9c27a6f[m HEAD@{7}: commit: making input section mandatory to collect only integer numbers for data section and airtime section
+[33mfa8186c[m HEAD@{8}: commit: redirecting to create pin section for new users
+[33m527468e[m HEAD@{9}: commit: updating setting setup
+[33m199168a[m HEAD@{10}: commit: verifying users using there emails to avoid fake mails for security purpose
+[33mc283654[m HEAD@{11}: commit: gitignore
+[33m93db9a9[m HEAD@{12}: commit: Add .gitignore and stop tracking sensitive files
+[33mffc465d[m HEAD@{13}: commit: fixing webauthn
+[33ma401840[m HEAD@{14}: commit: updating webauthn
+[33me2419b5[m HEAD@{15}: commit: adding biometric settings
+[33m7a853c2[m HEAD@{16}: commit: Updating staticfiles
+[33mbfe6122[m HEAD@{17}: commit: Update ALLOWED_HOSTS for production
+[33mc7ea0c2[m HEAD@{18}: commit: deployment ready
+[33mb857b08[m HEAD@{19}: commit: fixing paystack payment method
+[33mebb5d42[m HEAD@{20}: Branch: renamed refs/heads/master to refs/heads/main
+[33mebb5d42[m HEAD@{22}: commit (initial): first commit
