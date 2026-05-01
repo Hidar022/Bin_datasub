@@ -53,6 +53,7 @@ function showMessage(message, type = 'error') {
 
     const toast = document.createElement('div');
     toast.id = 'global-toast';
+    // Added 'animate-bounce-in' for that premium feel you like
     toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
                        ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
 
@@ -60,29 +61,32 @@ function showMessage(message, type = 'error') {
                        <span class="font-medium">${message}</span>`;
 
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
 }
 
-// 🔥 Split backend message into clean errors
 function formatErrors(message) {
+    if (typeof message !== 'string') return ['An error occurred'];
     let errors = message.split('.');
     return errors.map(e => e.trim()).filter(e => e.length > 0);
 }
 
-// 🔥 Highlight fields based on message
 function smartHighlight(message) {
-    document.querySelectorAll('input').forEach(i => i.classList.remove('border-red-500'));
+    const msg = message.toLowerCase();
+    document.querySelectorAll('input').forEach(i => i.classList.remove('border-red-500', 'ring-1', 'ring-red-500'));
 
-    if (message.toLowerCase().includes('username')) {
-        document.querySelector('[name="username"]')?.classList.add('border-red-500');
+    if (msg.includes('username')) {
+        document.querySelector('[name="username"]')?.classList.add('border-red-500', 'ring-1', 'ring-red-500');
     }
-    if (message.toLowerCase().includes('password')) {
+    if (msg.includes('password')) {
         document.querySelectorAll('input[type="password"]').forEach(el => {
-            el.classList.add('border-red-500');
+            el.classList.add('border-red-500', 'ring-1', 'ring-red-500');
         });
     }
-    if (message.toLowerCase().includes('email')) {
-        document.querySelector('[name="email"]')?.classList.add('border-red-500');
+    if (msg.includes('email')) {
+        document.querySelector('[name="email"]')?.classList.add('border-red-500', 'ring-1', 'ring-red-500');
     }
 }
 
@@ -94,56 +98,59 @@ form.addEventListener('submit', async function(e) {
     btnSpinner.classList.remove('hidden');
 
     const formData = new FormData(form);
+    
+    // 🔥 FIX: Ensure trailing slash for PythonAnywhere/Django production
+    const currentPath = window.location.pathname;
+    const targetUrl = currentPath.endsWith('/') ? currentPath : currentPath + '/';
 
     try {
-        const response = await fetch(form.action || window.location.href, {
+        const response = await fetch(targetUrl, {
             method: 'POST',
             body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                // 🔥 FIX: Explicitly send CSRF token in header for AJAX
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+            }
         });
 
         let data = null;
-
-        // ✅ Safe JSON parsing (prevents "network error")
         const contentType = response.headers.get("content-type");
 
         if (contentType && contentType.includes("application/json")) {
             data = await response.json();
         } else {
-            const text = await response.text();
-            console.error("Non-JSON response:", text);
             throw new Error("Invalid server response");
         }
 
-        // ✅ SUCCESS
         if (response.ok && data.success) {
             showMessage(data.message || 'Account created successfully!', 'success');
-
             if (data.redirect_url) {
-                setTimeout(() => {
-                    window.location.href = data.redirect_url;
-                }, 1500);
+                setTimeout(() => { window.location.href = data.redirect_url; }, 1500);
             }
-
         } else {
-            // 🔥 CLEAN ERROR HANDLING
-            if (data.message) {
+            // Handle structured Django form errors if they exist
+            if (data.errors) {
+                let firstError = "";
+                Object.keys(data.errors).forEach(key => {
+                    const msg = data.errors[key][0];
+                    if (!firstError) firstError = msg;
+                    // Highlight the specific field
+                    document.querySelector(`[name="${key}"]`)?.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                });
+                showMessage(firstError, 'error');
+            } else if (data.message) {
                 const errors = formatErrors(data.message);
-
-                // Show as ONE clean message
                 showMessage(errors.join(', '), 'error');
-
-                // Highlight fields
                 smartHighlight(data.message);
-
             } else {
                 showMessage('Registration failed. Try again.', 'error');
             }
         }
 
     } catch (err) {
-        console.error(err);
-        showMessage('Server error or connection issue. Try again.', 'error');
+        console.error("Fetch Error:", err);
+        showMessage('Connection issue. Please check your data.', 'error');
     } finally {
         btn.disabled = false;
         btnText.classList.remove('hidden');
