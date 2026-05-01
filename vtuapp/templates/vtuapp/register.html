@@ -83,15 +83,27 @@
             if (response.ok && data.success) {
                 showMessage(data.message || 'Account created successfully!', 'success');
                 setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1800);
-            } else {
+            } 
+            else {
+                // Better error handling
                 if (data.errors) {
-                    Object.values(data.errors).forEach(errs => errs.forEach(err => showMessage(err)));
-                } else {
-                    showMessage(data.message || 'Registration failed');
+                    // Handle form validation errors from Django
+                    Object.keys(data.errors).forEach(key => {
+                        data.errors[key].forEach(err => {
+                            showMessage(err, 'error');
+                        });
+                    });
+                } 
+                else if (data.message) {
+                    showMessage(data.message, 'error');
+                } 
+                else {
+                    showMessage('Registration failed. Please check your information.', 'error');
                 }
             }
         } catch (err) {
-            showMessage('Network error. Please try again.');
+            showMessage('Network error. Please check your connection and try again.', 'error');
+            console.error(err);
         } finally {
             btn.disabled = false;
             btnText.classList.remove('hidden');

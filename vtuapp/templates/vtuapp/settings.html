@@ -180,7 +180,7 @@
         document.getElementById('tab-' + tab).classList.add('active');
     }
 
-    function showMessage(type, message) {
+    function showMessage(message, type = 'error') {
         const oldToast = document.getElementById('global-toast');
         if (oldToast) oldToast.remove();
 
@@ -189,12 +189,66 @@
         toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
                            ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
 
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span>${message}</span>`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
     }
 
-    // Tab switching on load
+    // Handle form submissions with better feedback
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const btn = this.querySelector('button[type="submit"]');
+            const text = btn ? btn.querySelector('span') : null;
+            const spinner = btn ? btn.querySelector('i') : null;
+
+            if (text && spinner) {
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                btn.disabled = true;
+            }
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("{% url 'settings' %}", {
+                    method: "POST",
+                    body: formData,
+                    headers: { 
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showMessage(data.message || 'Changes saved successfully!', 'success');
+                    
+                    const nextPage = new URLSearchParams(window.location.search).get('next');
+                    if (nextPage === 'airtime') {
+                        setTimeout(() => window.location.href = "{% url 'buy_airtime' %}", 1200);
+                    } else if (nextPage === 'data') {
+                        setTimeout(() => window.location.href = "{% url 'buy_data' %}", 1200);
+                    } else {
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } else {
+                    showMessage(data.message || 'Something went wrong', 'error');
+                }
+            } catch (err) {
+                showMessage('Connection error. Please try again.', 'error');
+            } finally {
+                if (text && spinner) {
+                    text.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                    btn.disabled = false;
+                }
+            }
+        });
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         switchTab(0);
         
@@ -202,7 +256,8 @@
         if (hash === '#pin-section') {
             switchTab(1);
             setTimeout(() => {
-                document.getElementById('pin-section').scrollIntoView({ behavior: 'smooth' });
+                const pinSection = document.getElementById('pin-section');
+                if (pinSection) pinSection.scrollIntoView({ behavior: 'smooth' });
             }, 300);
         }
     });
