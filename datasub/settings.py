@@ -41,7 +41,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # This allows both your phone/live site and your local computer
-ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', 'www.hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 # Paystack Settings
 # Force a key to see if the site opens
@@ -70,7 +70,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '') # Generate from Google Acc
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Session - User must re-login after closing browser
-CSRF_TRUSTED_ORIGINS = ['https://hidar022.pythonanywhere.com']
+CSRF_TRUSTED_ORIGINS = ['https://hidar022.pythonanywhere.com', 'https://www.hidar022.pythonanywhere.com']
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7   # 7 days max (optional)
 SESSION_COOKIE_HTTPONLY = True

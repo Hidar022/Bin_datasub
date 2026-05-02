@@ -98,9 +98,27 @@
 
         const formData = new FormData(form);
 
-        // 🔥 FIX: Ensure trailing slash for PythonAnywhere/Django production
-        const currentPath = window.location.pathname;
-        const targetUrl = currentPath.endsWith('/') ? currentPath : currentPath + '/';
+        // 🔥 FIX: Use form.action or fallback to current path
+        const targetUrl = form.action || window.location.href;
+        
+        console.log('Login attempt:', { targetUrl, formAction: form.action, location: window.location.href });
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        console.log('CSRF token element:', csrfToken, 'Value:', csrfToken?.value);
+        
+        if (!csrfToken || !csrfToken.value) {
+            console.error('CSRF token not found!');
+            showMessage('Page error. Please refresh and try again.');
+            return;
+        }
+
+        // 🔥 DEBUG: Test basic connectivity first
+        try {
+            const testResponse = await fetch(targetUrl, { method: 'HEAD' });
+            console.log('HEAD request status:', testResponse.status);
+        } catch (e) {
+            console.error('HEAD request failed:', e);
+        }
 
         try {
             const response = await fetch(targetUrl, {
@@ -109,21 +127,30 @@
                 headers: { 
                     'X-Requested-With': 'XMLHttpRequest',
                     // 🔥 FIX: Explicitly send CSRF token in header for AJAX
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                    'X-CSRFToken': csrfToken?.value || ''
                 }
             });
 
-            let data = null;
+            console.log('Response status:', response.status, 'Content-Type:', response.headers.get('content-type'));
 
             // ✅ Safe JSON parsing (prevents "network error")
             const contentType = response.headers.get("content-type");
+            console.log('Response content-type:', contentType);
 
             if (contentType && contentType.includes("application/json")) {
                 data = await response.json();
+                console.log('Parsed JSON data:', data);
             } else {
+                // Try to parse as JSON anyway, in case content-type is wrong
                 const text = await response.text();
-                console.error("Non-JSON response:", text);
-                throw new Error("Invalid server response");
+                console.log('Response text:', text);
+                try {
+                    data = JSON.parse(text);
+                    console.log('Parsed JSON from text:', data);
+                } catch (e) {
+                    console.error("Not JSON response:", text);
+                    throw new Error("Invalid server response");
+                }
             }
 
             if (response.ok && data.success) {
