@@ -98,36 +98,24 @@
 
         const formData = new FormData(form);
 
-        // 🔥 FIX: Use form.action or fallback to current path
-        const targetUrl = form.action || window.location.href;
+        // 🔥 FIX: Use form.action or fallback to current pathname
+        const targetUrl = form.action || window.location.pathname;
         
-        console.log('Login attempt:', { targetUrl, formAction: form.action, location: window.location.href });
-
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        console.log('CSRF token element:', csrfToken, 'Value:', csrfToken?.value);
-        
         if (!csrfToken || !csrfToken.value) {
             console.error('CSRF token not found!');
             showMessage('Page error. Please refresh and try again.');
             return;
         }
 
-        // 🔥 DEBUG: Test basic connectivity first
-        try {
-            const testResponse = await fetch(targetUrl, { method: 'HEAD' });
-            console.log('HEAD request status:', testResponse.status);
-        } catch (e) {
-            console.error('HEAD request failed:', e);
-        }
-
         try {
             const response = await fetch(targetUrl, {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: formData,
                 headers: { 
                     'X-Requested-With': 'XMLHttpRequest',
-                    // 🔥 FIX: Explicitly send CSRF token in header for AJAX
-                    'X-CSRFToken': csrfToken?.value || ''
+                    'X-CSRFToken': csrfToken.value
                 }
             });
 
@@ -141,7 +129,6 @@
                 data = await response.json();
                 console.log('Parsed JSON data:', data);
             } else {
-                // Try to parse as JSON anyway, in case content-type is wrong
                 const text = await response.text();
                 console.log('Response text:', text);
                 try {
@@ -149,7 +136,8 @@
                     console.log('Parsed JSON from text:', data);
                 } catch (e) {
                     console.error("Not JSON response:", text);
-                    throw new Error("Invalid server response");
+                    const errorDetail = text.replace(/<[^>]*>/g, '').trim().slice(0, 200);
+                    throw new Error(`Server returned ${response.status}: ${errorDetail}`);
                 }
             }
 

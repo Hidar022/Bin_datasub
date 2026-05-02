@@ -99,8 +99,8 @@ form.addEventListener('submit', async function(e) {
 
     const formData = new FormData(form);
     
-    // 🔥 FIX: Use form.action or fallback to current path
-    const targetUrl = form.action || window.location.href;
+    // 🔥 FIX: Use form.action or fallback to current pathname
+    const targetUrl = form.action || window.location.pathname;
     
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
     console.log('CSRF token element:', csrfToken, 'Value:', csrfToken?.value);
@@ -114,11 +114,11 @@ form.addEventListener('submit', async function(e) {
     try {
         const response = await fetch(targetUrl, {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData,
             headers: { 
                 'X-Requested-With': 'XMLHttpRequest',
-                // 🔥 FIX: Explicitly send CSRF token in header for AJAX
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                'X-CSRFToken': csrfToken.value 
             }
         });
 
@@ -132,7 +132,6 @@ form.addEventListener('submit', async function(e) {
             data = await response.json();
             console.log('Parsed JSON data:', data);
         } else {
-            // Try to parse as JSON anyway, in case content-type is wrong
             const text = await response.text();
             console.log('Response text:', text);
             try {
@@ -140,7 +139,8 @@ form.addEventListener('submit', async function(e) {
                 console.log('Parsed JSON from text:', data);
             } catch (e) {
                 console.error("Not JSON response:", text);
-                throw new Error("Invalid server response");
+                const errorDetail = text.replace(/<[^>]*>/g, '').trim().slice(0, 200);
+                throw new Error(`Server returned ${response.status}: ${errorDetail}`);
             }
         }
 

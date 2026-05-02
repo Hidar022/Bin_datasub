@@ -214,6 +214,7 @@
             try {
                 const response = await fetch("{% url 'settings' %}", {
                     method: "POST",
+                    credentials: 'same-origin',
                     body: formData,
                     headers: { 
                         "X-Requested-With": "XMLHttpRequest",
@@ -231,7 +232,11 @@
                 } else {
                     const text = await response.text();
                     console.error("Non-JSON response:", text);
-                    throw new Error("Invalid server response");
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Invalid server response: ${response.status}`);
+                    }
                 }
 
                 if (data.status === 'success') {
