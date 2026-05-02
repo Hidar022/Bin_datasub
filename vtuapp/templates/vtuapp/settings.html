@@ -221,7 +221,18 @@
                     }
                 });
 
-                const data = await response.json();
+                let data = null;
+
+                // ✅ Safe JSON parsing (prevents "network error")
+                const contentType = response.headers.get("content-type");
+
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error("Non-JSON response:", text);
+                    throw new Error("Invalid server response");
+                }
 
                 if (data.status === 'success') {
                     showMessage(data.message || 'Changes saved successfully!', 'success');
@@ -238,6 +249,7 @@
                     showMessage(data.message || 'Something went wrong', 'error');
                 }
             } catch (err) {
+                console.error('Settings error:', err);
                 showMessage('Connection error. Please try again.', 'error');
             } finally {
                 if (text && spinner) {

@@ -98,14 +98,33 @@
 
         const formData = new FormData(form);
 
+        // 🔥 FIX: Ensure trailing slash for PythonAnywhere/Django production
+        const currentPath = window.location.pathname;
+        const targetUrl = currentPath.endsWith('/') ? currentPath : currentPath + '/';
+
         try {
-            const response = await fetch(form.action || window.location.href, {
+            const response = await fetch(targetUrl, {
                 method: 'POST',
                 body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    // 🔥 FIX: Explicitly send CSRF token in header for AJAX
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                }
             });
 
-            const data = await response.json();
+            let data = null;
+
+            // ✅ Safe JSON parsing (prevents "network error")
+            const contentType = response.headers.get("content-type");
+
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                console.error("Non-JSON response:", text);
+                throw new Error("Invalid server response");
+            }
 
             if (response.ok && data.success) {
                 showMessage(data.message || 'Login successful!', 'success');
@@ -126,7 +145,8 @@
                 }
             }
         } catch (err) {
-            showMessage('Network error. Please try again.');
+            console.error('Login error:', err);
+            showMessage('Network error. Please check your connection and try again.');
         } finally {
             btn.disabled = false;
             btnText.classList.remove('hidden');

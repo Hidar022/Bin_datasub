@@ -46,7 +46,8 @@ ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
 # Paystack Settings
 # Force a key to see if the site opens
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = False  # Always False in production - NEVER True on live site
+# DEBUG = os.getenv('DEBUG', 'False') == 'True'  # Commented out - dangerous
 
 
 # Use them for Paystack too
