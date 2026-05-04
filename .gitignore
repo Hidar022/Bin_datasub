@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 staticfiles/
 venv/
+staticfiles/
+__pycache__/
+.env
