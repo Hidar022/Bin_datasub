@@ -55,6 +55,10 @@ class DataPlan(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     validity = models.CharField(max_length=50, default="30 Days")
     is_active = models.BooleanField(default=True)
+    
+    # ← Add this field
+    smeplug_plan_id = models.CharField(max_length=100, blank=True, null=True, 
+                                       help_text="Plan ID from Smeplug API")
 
     def __str__(self):
         return f"{self.network} - {self.name} - ₦{self.price}"

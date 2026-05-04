@@ -14,6 +14,7 @@ import requests
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
+from .services.api_service import VTUApiService 
 
 # Your custom form and token
 from .forms import CustomUserCreationForm
@@ -32,6 +33,39 @@ from django.contrib.auth.hashers import check_password, make_password
 
 def home_redirect(request):
     return redirect('login') if not request.user.is_authenticated else redirect('dashboard')
+
+@login_required
+def test_smeplug_connection(request):
+    """Test if Smeplug API is working"""
+    if not settings.SMEPLUG_API_KEY:
+        return JsonResponse({'error': 'SMEPLUG_API_KEY is missing in .env'}, status=400)
+    
+    if not settings.SMEPLUG_BASE_URL:
+        return JsonResponse({'error': 'SMEPLUG_BASE_URL is missing in .env'}, status=400)
+
+    service = VTUApiService()
+    
+    try:
+        response = requests.get(
+            f"{settings.SMEPLUG_BASE_URL}/data/prices",
+            headers={'Authorization': f'Bearer {settings.SMEPLUG_API_KEY}'},
+            timeout=15
+        )
+        
+        if response.status_code == 200:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Connected to Smeplug successfully!',
+                'data_sample': response.json()[:2] if isinstance(response.json(), list) else response.json()
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'HTTP Error {response.status_code}',
+                'body': response.text[:500]
+            })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400) 
 
 # ====================== AUTH ======================
 import random
@@ -522,41 +556,58 @@ def buy_data(request):
         if form.is_valid():
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
+            plan = form.cleaned_data['plan']
+            phone = form.cleaned_data['phone']
 
-             # NEW CHECK: If user has no PIN yet
+            # PIN Check
             if not wallet.pin:
-                return JsonResponse({
-                    'status': 'no_pin',
-                    'message': "You haven't created your Transaction PIN yet. Please create one first."
-                }, status=400)
+                return JsonResponse({'status': 'no_pin', 'message': "Create Transaction PIN first"}, status=400)
 
             if not wallet.check_pin(pin):
-                return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ Incorrect PIN'}, status=400)
 
-            plan = form.cleaned_data['plan']
-            amount = plan.price
+            # Balance Check
+            if wallet.balance < plan.price:
+                return JsonResponse({'status': 'error', 'message': '❌ Insufficient balance'}, status=400)
 
-            if wallet.balance >= amount:
-                wallet.balance -= amount
+            # Call API
+            service = VTUApiService()
+            result = service.buy_data(
+                network=plan.network,
+                phone=phone,
+                plan_code=plan.smeplug_plan_id,   # Must not be empty
+                amount=plan.price
+            )
+
+            if result['success']:
+                # Deduct money
+                wallet.balance -= plan.price
                 wallet.save()
 
+                # Save Transaction
                 Transaction.objects.create(
                     user=request.user,
                     transaction_type='Data',
-                    amount=amount,
-                    provider=plan.network,
-                    phone_or_meter=form.cleaned_data['phone'],
-                    status='Successful'
+                    amount=plan.price,
+                    provider=result['provider'],
+                    phone_or_meter=phone,
+                    status='Successful',
+                    transaction_id=result.get('transaction_id')
                 )
+
                 return JsonResponse({
                     'status': 'success',
                     'message': f'✅ {plan.name} purchased successfully!'
                 })
             else:
-                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': result['message']
+                }, status=400)
 
-        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Invalid form data'}, status=400)
 
+    # GET
     form = DataPurchaseForm()
     plans = DataPlan.objects.filter(is_active=True)
     return render(request, 'vtuapp/buy_data.html', {'form': form, 'plans': plans})
