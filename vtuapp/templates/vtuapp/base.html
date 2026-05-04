@@ -24,10 +24,13 @@
   <script>
     tailwind.config = { darkMode: 'class' };
 
+    // Check if it's a first-time visitor
     if (localStorage.getItem('theme') === null) {
-        localStorage.setItem('theme', 'dark');
-        document.documentElement.classList.add('dark');
+        // Set the default to light
+        localStorage.setItem('theme', 'light');
+        document.documentElement.classList.remove('dark');
     } else if (localStorage.getItem('theme') === 'dark') {
+        // Only add 'dark' if they specifically chose it before
         document.documentElement.classList.add('dark');
     }
 </script>
