@@ -36,17 +36,18 @@ class Wallet(models.Model):
 
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    transaction_type = models.CharField(max_length=50) # Airtime, Data, etc.
+    transaction_type = models.CharField(max_length=50) 
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     provider = models.CharField(max_length=100, blank=True)
     phone_or_meter = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=20, default='Successful')
+    transaction_id = models.CharField(max_length=100, blank=True, null=True) 
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.transaction_type} - ₦{self.amount}"
 
-class DataPlan(models.Model):
+class DataPlan(models.Model):                                                                                                                                                   
     network = models.CharField(max_length=20, choices=[
         ('MTN', 'MTN'), 
         ('Glo', 'Glo'), 

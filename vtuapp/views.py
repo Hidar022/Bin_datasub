@@ -539,6 +539,7 @@ def buy_airtime(request):
 def buy_data(request):
     if request.method == 'POST':
         try:
+            
             form = DataPurchaseForm(request.POST)
             if not form.is_valid():
                 return JsonResponse({'status': 'error', 'message': 'Please fill all fields correctly'}, status=400)
