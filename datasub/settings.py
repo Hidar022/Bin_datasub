@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Tell load_dotenv exactly where the file is (in your main project folder)
 load_dotenv(BASE_DIR / '.env')
-#STATIC_URL = '/static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -36,14 +36,13 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost', '.koyeb.app']
+ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost', '.vercel.app']
 
 # Add the wildcard to trusted origins too
 CSRF_TRUSTED_ORIGINS = [
     'https://hidar022.pythonanywhere.com', 
-    'https://*.koyeb.app'  # Add this
+    'https://*.vercel.app' 
 ]
-
 # Paystack Settings
 # Force a key to see if the site opens
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
