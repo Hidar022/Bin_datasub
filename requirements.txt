@@ -18,6 +18,7 @@ pycparser==3.0
 pyOpenSSL==26.0.0
 pypaystack2==2.0.3
 python-dotenv==1.2.2
+sendgrid==6.11.0
 requests==2.33.1
 six==1.17.0
 sqlparse==0.5.5

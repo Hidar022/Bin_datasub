@@ -64,14 +64,14 @@ VTPASS_SECRET_KEY = os.getenv('VTPASS_SECRET_KEY')
 VTPASS_BASE_URL = os.getenv('VTPASS_BASE_URL')
 
 
-# Email Configuration (Gmail example - use App Password)
+# Email Configuration - Switch to SendGrid for Vercel compatibility
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'aliyubinahmad2022@gmail.com'     
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '') # Generate from Google Account > Security > App passwords
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_USER = 'apikey'  # SendGrid uses 'apikey' as username
+EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY', '')  # Your SendGrid API key
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@yourdomain.com')  # Set this in env vars
 
 # Session - User must re-login after closing browser
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
