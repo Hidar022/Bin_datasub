@@ -107,29 +107,14 @@
     function showMessage(type, message) {
         const oldToast = document.getElementById('global-toast');
         if (oldToast) oldToast.remove();
-
         const toast = document.createElement('div');
         toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
-                           text-white max-w-xs border-l-4 transition-all
-                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
-
-        toast.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
-            <span class="font-medium">${message}</span>
-        `;
-
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span>${message}</span>`;
         document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.transition = 'all 0.4s ease';
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-15px)';
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
+        setTimeout(() => toast.remove(), 5000);
     }
 
-    // Premium verifyPin with smart redirect
     function verifyPin() {
         const pin = document.getElementById('pinInput').value.trim();
         if (pin.length !== 4) {
@@ -138,7 +123,6 @@
         }
 
         closePinModal();
-
         const btn = document.getElementById('confirmBtn');
         const originalText = btn.innerHTML;
         btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
@@ -146,107 +130,36 @@
 
         const formData = new FormData(document.getElementById('dataForm'));
         formData.append('pin', pin);
-
-        // Get CSRF token from the form
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
         fetch("{% url 'buy_data' %}", {
             method: "POST",
             body: formData,
-            headers: { 
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRFToken": csrfToken
-            }
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrfToken }
         })
-        .then(async response => {
-            try {
-                const text = await response.text();
-                let data = {};
-                
-                // Try to parse JSON
-                if (text && text.trim()) {
-                    try {
-                        data = JSON.parse(text);
-                    } catch (parseErr) {
-                        console.error('Failed to parse response:', text, parseErr);
-                        // If it's HTML (Django error page), extract a meaningful message
-                        if (text.includes('<html>') || text.includes('<!DOCTYPE')) {
-                            throw new Error('Server error occurred. Please check your connection and try again.');
-                        }
-                        throw new Error('Invalid server response: ' + text.substring(0, 100));
-                    }
-                } else {
-                    throw new Error('Empty response from server');
-                }
-                
-                return { httpStatus: response.status, data };
-            } catch (err) {
-                console.error('Response processing error:', err);
-                throw err;
-            }
+        .then(async r => {
+            const text = await r.text();
+            try { return JSON.parse(text); } catch(e) { throw new Error(text); }
         })
-        .then(({ httpStatus, data }) => {
-            // Log for debugging
-            console.log('Response received:', { httpStatus, data });
-            
-            // Check the data.status to determine action
+        .then(data => {
             if (data.status === 'no_pin') {
-                showMessage('error', data.message || "You need to create your Transaction PIN first");
-                setTimeout(() => {
-                    window.location.href = "{% url 'settings' %}?next=data#pin-section";
-                }, 1600);
-            } 
-            else if (data.status === 'success') {
-              // Success! Show message and redirect to the Receipt
-              console.log('Purchase successful:', data.message);
-              showMessage('success', data.message);
-    
-            // 🔥 The Magic Link: Redirects to the specific transaction receipt
-              setTimeout(() => {
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
-           } else {
-            window.location.href = "{% url 'dashboard' %}";
-           }
-             }, 2000);
-           }  
-            }
-            else if (data.status === 'error') {
-                // Explicit error status
-                showMessage('error', data.message || 'Purchase failed');
-                console.error('Purchase error:', data);
-            }
-            else {
-                // Unknown response
-                const errorText = data.message || data.error || 'Something went wrong';
-                showMessage('error', errorText);
-                console.error('Unknown response:', data);
+                showMessage('error', data.message);
+                setTimeout(() => window.location.href = "{% url 'settings' %}?next=data#pin-section", 1600);
+            } else if (data.status === 'success') {
+                showMessage('success', data.message);
+                setTimeout(() => { window.location.href = data.redirect_url || "{% url 'dashboard' %}"; }, 2000);
+            } else {
+                showMessage('error', data.message || 'Error occurred');
             }
         })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            showMessage('error', error.message || 'Connection error. Please try again.');
+        .catch(err => {
+            showMessage('error', "Server Error (500)");
+            console.error(err);
         })
         .finally(() => {
             btn.innerHTML = originalText;
             btn.disabled = false;
         });
     }
-
-    // Force phone input to accept only numbers
-    document.addEventListener('DOMContentLoaded', function() {
-        const phoneInput = document.querySelector('input[name="phone"]');
-        if (phoneInput) {
-            phoneInput.addEventListener('keypress', function(e) {
-                if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault();
-                }
-            });
-
-            phoneInput.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
-        }
-    });
 </script>
 {% endblock %}
