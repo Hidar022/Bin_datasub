@@ -132,9 +132,21 @@ def register(request):
             """
 
             try:
-                send_mail(subject, f"Your OTP is {otp}", settings.DEFAULT_FROM_EMAIL, [email], html_message=html_message)
+               send_mail(
+                   subject, 
+                   f"Your OTP is {otp}", 
+                   settings.DEFAULT_FROM_EMAIL, 
+                   [email], 
+                   html_message=html_message,
+                   fail_silently=False,  # <--- Add this!
+               )
             except Exception as e:
-                print(f"Email error: {e}")
+               # This will now show up in Vercel Logs much more clearly
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"CRITICAL EMAIL FAILURE: {e}")
+                   # Temporarily raise the error so Vercel shows a red screen with the message
+                raise e
 
             request.session['pending_user_id'] = user.id
 
@@ -539,7 +551,7 @@ def buy_airtime(request):
 def buy_data(request):
     if request.method == 'POST':
         try:
-                                                                                    
+
             form = DataPurchaseForm(request.POST)
             if not form.is_valid():
                 return JsonResponse({'status': 'error', 'message': 'Please fill all fields correctly'}, status=400)
