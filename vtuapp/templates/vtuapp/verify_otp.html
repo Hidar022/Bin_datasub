@@ -2,49 +2,55 @@
 {% load widget_tweaks %}
 
 {% block content %}
-<div class="flex items-center justify-center min-h-[80vh] py-12">
+<div class="flex items-center justify-center min-h-[80vh] py-12 transition-colors duration-300">
     <div class="max-w-md w-full mx-4">
         <!-- Logo Section -->
         <div class="flex justify-center mb-8">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl font-bold">📡</div>
-                <span class="text-4xl font-bold tracking-tighter neon-text">Bin Datasub</span>
+                <span class="text-4xl font-bold tracking-tighter text-gray-900 dark:text-white dark:neon-text">Bin Datasub</span>
             </div>
         </div>
 
         <!-- Card Section -->
-        <div class="bg-[#12123a] border border-purple-500/50 rounded-3xl p-8 neon-glow">
-            <h1 class="text-3xl font-bold text-center mb-2">Verify Your Email</h1>
-            <p class="text-cyan-300 text-center mb-8">Enter the 6-digit code sent to your email</p>
+        <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-8 shadow-xl dark:neon-glow transition-all duration-300">
+            <h1 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">Verify Your Email</h1>
+            <p class="text-gray-600 dark:text-cyan-300 text-center mb-8">Enter the 6-digit code sent to your email</p>
 
             <div id="messages-container" class="space-y-3 mb-6"></div>
 
             <form id="otpForm" method="POST" class="space-y-6">
                 {% csrf_token %}
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 text-center">Verification Code</label>
                     <input type="text" name="otp" id="otpInput" maxlength="6" 
-                           class="w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-3xl tracking-[12px] text-center outline-none transition-all"
+                           class="w-full bg-gray-50 dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-purple-500 dark:focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 text-3xl tracking-[12px] text-center outline-none transition-all"
                            placeholder="123456" required autocomplete="off">
                 </div>
 
                 <button type="submit" id="verifyBtn"
-                        class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 transition-all">
+                        class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-bold text-white text-lg flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-purple-500/25">
                     <span id="btnText">VERIFY EMAIL</span>
                     <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
                 </button>
             </form>
 
-            <div class="mt-6 text-center text-sm text-gray-400">
+            <div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                 Didn't receive the code? 
-                <button onclick="window.location.reload()" class="text-cyan-400 hover:text-white font-medium">Resend</button>
+                <button onclick="window.location.reload()" class="text-purple-600 dark:text-cyan-400 hover:underline font-bold transition-colors">Resend OTP</button>
             </div>
+        </div>
+
+        <!-- Back to login -->
+        <div class="mt-8 text-center">
+            <a href="{% url 'login' %}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white text-sm transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Login
+            </a>
         </div>
     </div>
 </div>
 
 <script>
-    // Keep your same script here, it's perfect as is!
     const form = document.getElementById('otpForm');
     const btn = document.getElementById('verifyBtn');
     const btnText = document.getElementById('btnText');
@@ -53,39 +59,52 @@
 
     function showMessage(message, type = 'error') {
         const div = document.createElement('div');
-        div.className = `p-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${
+        div.className = `p-4 rounded-2xl text-sm font-medium flex items-center gap-3 animate-pulse ${
             type === 'success' 
-                ? 'bg-green-500/20 border border-green-500 text-green-300' 
-                : 'bg-red-500/20 border border-red-500 text-red-300'
+                ? 'bg-green-500/10 border border-green-500 text-green-600 dark:text-green-300' 
+                : 'bg-red-500/10 border border-red-500 text-red-600 dark:text-red-300'
         }`;
         div.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+        messagesContainer.innerHTML = ''; // Clear old messages
         messagesContainer.appendChild(div);
-        setTimeout(() => { div.remove(); }, 5000);
     }
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // UI Loading State
         btn.disabled = true;
-        btnText.classList.add('hidden');
+        btnText.classList.add('opacity-0');
         btnSpinner.classList.remove('hidden');
+        
         const formData = new FormData(form);
 
         try {
-            const response = await fetch('/verify-otp/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            const response = await fetch('/verify-otp/', { 
+                method: 'POST', 
+                body: formData, 
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            });
             const data = await response.json();
+            
             if (response.ok && data.success) {
                 showMessage(data.message, 'success');
-                setTimeout(() => { window.location.href = "{% url 'dashboard' %}"; }, 1800);
+                setTimeout(() => { window.location.href = data.redirect_url || "{% url 'dashboard' %}"; }, 1500);
             } else {
-                showMessage(data.message || 'Invalid OTP.');
+                showMessage(data.message || 'Verification failed. Please try again.');
+                btn.disabled = false;
+                btnText.classList.remove('opacity-0');
+                btnSpinner.classList.add('hidden');
             }
         } catch (err) {
-            showMessage('Network error.');
-        } finally {
+            showMessage('Connection error. Please check your internet.');
             btn.disabled = false;
-            btnText.classList.remove('hidden');
+            btnText.classList.remove('opacity-0');
             btnSpinner.classList.add('hidden');
         }
     });
+
+    // Auto-focus input on load
+    window.onload = () => document.getElementById('otpInput').focus();
 </script>
 {% endblock %}
