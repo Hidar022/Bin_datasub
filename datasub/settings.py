@@ -15,6 +15,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -22,11 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Tell load_dotenv exactly where the file is (in your main project folder)
 load_dotenv(BASE_DIR / '.env')
-# Your current STATIC_URL is fine, but make sure it has a leading slash
-STATIC_URL = '/static/'
-
-# This tells Django where to gather all static files for production
+#STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # This tells Django where to look for your custom static files (CSS/JS)
 STATICFILES_DIRS = [
@@ -36,19 +35,19 @@ STATICFILES_DIRS = [
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
+ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', '127.0.0.1', 'localhost', '.koyeb.app']
 
-# This allows both your phone/live site and your local computer
-ALLOWED_HOSTS = ['hidar022.pythonanywhere.com', 'www.hidar022.pythonanywhere.com', '127.0.0.1', 'localhost']
+# Add the wildcard to trusted origins too
+CSRF_TRUSTED_ORIGINS = [
+    'https://hidar022.pythonanywhere.com', 
+    'https://*.koyeb.app'  # Add this
+]
 
 # Paystack Settings
 # Force a key to see if the site opens
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
-DEBUG = False  # Always False in production - NEVER True on live site
-# DEBUG = os.getenv('DEBUG', 'False') == 'True'  # Commented out - dangerous
-
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Use them for Paystack too
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
@@ -78,7 +77,6 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '') # Generate from Google Acc
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Session - User must re-login after closing browser
-CSRF_TRUSTED_ORIGINS = ['https://hidar022.pythonanywhere.com', 'https://www.hidar022.pythonanywhere.com']
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7   # 7 days max (optional)
 SESSION_COOKIE_HTTPONLY = True
@@ -105,6 +103,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,6 +141,10 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Add this right below the block above
+if os.getenv('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 
 # Password validation
