@@ -63,8 +63,6 @@ VTPASS_API_KEY = os.getenv('VTPASS_API_KEY')
 VTPASS_SECRET_KEY = os.getenv('VTPASS_SECRET_KEY')
 VTPASS_BASE_URL = os.getenv('VTPASS_BASE_URL')
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 
 # Email Configuration (Gmail example - use App Password)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
