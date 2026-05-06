@@ -1,8 +1,19 @@
-db.sqlite3
+# Compiled Python files (These change every time you run the server)
 __pycache__/
-*.pyc
-staticfiles/
+*.py[cod]
+*$py.class
+
+# Virtual Environments (This contains thousands of library files you don't need to push)
 venv/
-staticfiles/
-__pycache__/
+ENV/
+
+# Sensitive Information (Never push your API keys or Secret Keys!)
 .env
+.env.bak
+
+# Local Database (Pushing this can overwrite your group members' local data)
+db.sqlite3
+
+# Folder metadata
+.vscode/
+.idea/
