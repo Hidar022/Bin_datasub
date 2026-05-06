@@ -53,8 +53,8 @@ PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY') 
 
 
-# Optional: Redirect after payment
-PAYSTACK_CALLBACK_URL = 'http://127.0.0.1:8000/fund-wallet/callback/'
+# This will now look at your .env (locally) or your Vercel variables (live)
+PAYSTACK_CALLBACK_URL = os.getenv('PAYSTACK_CALLBACK_URL', 'http://127.0.0.1:8000/fund-wallet/callback/')
 
 SMEPLUG_API_KEY = os.getenv('SMEPLUG_API_KEY')
 SMEPLUG_BASE_URL = os.getenv('SMEPLUG_BASE_URL')
