@@ -49,5 +49,4 @@ urlpatterns = [
 
     # Root
     path('', views.home_redirect, name='home'),
-    path('test-smeplug/', views.test_smeplug_connection, name='test_smeplug'),
 ]

@@ -48,17 +48,25 @@ class Transaction(models.Model):
 
 class DataPlan(models.Model):
     network = models.CharField(max_length=20, choices=[
-        ('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')
+        ('MTN', 'MTN'), 
+        ('Glo', 'Glo'), 
+        ('Airtel', 'Airtel'), 
+        ('9mobile', '9mobile')
     ])
     name = models.CharField(max_length=100)
     data_amount = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     validity = models.CharField(max_length=50, default="30 Days")
     is_active = models.BooleanField(default=True)
-    
-    # ← Add this field
-    smeplug_plan_id = models.CharField(max_length=100, blank=True, null=True, 
-                                       help_text="Plan ID from Smeplug API")
+
+    # ==================== NEW FIELDS FOR API ====================
+    network_id = models.IntegerField(default=1, help_text="1=MTN, 2=Airtel, 3=9mobile, 4=Glo")
+    smeplug_plan_id = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True, 
+        help_text="Plan ID from Smeplug (e.g: 1, AIR1000, 9MOB500)"
+    )
 
     def __str__(self):
         return f"{self.network} - {self.name} - ₦{self.price}"

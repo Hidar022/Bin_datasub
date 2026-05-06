@@ -1,78 +1,45 @@
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from django.contrib import messages
-from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.urls import reverse
-from django.conf import settings
-from decimal import Decimal
-import requests
+# 1. Standard Library Imports
 import json
-from django.views.decorators.csrf import csrf_exempt
+import random
+import traceback
+import requests
+from decimal import Decimal
+from datetime import timedelta
+
+# 2. Django Core Imports
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.views.decorators.csrf import csrf_exempt
+
+# 3. Local Project Imports (Services, Models, and Forms)
 from .services.api_service import VTUApiService 
-
-# Your custom form and token
-from .forms import CustomUserCreationForm
-
-# Models
 from .models import Wallet, Transaction, DataPlan, Profile
-
-# Other forms from your forms.py
 from .forms import (
-    AirtimeForm, DataForm, ElectricityForm, CableTVForm, 
+    CustomUserCreationForm,
+    AirtimeForm, 
+    DataForm, 
+    ElectricityForm, 
+    CableTVForm, 
     DataPurchaseForm
 )
-
-from django.contrib.auth.hashers import check_password, make_password
-
 
 def home_redirect(request):
     return redirect('login') if not request.user.is_authenticated else redirect('dashboard')
 
-@login_required
-def test_smeplug_connection(request):
-    """Test if Smeplug API is working"""
-    if not settings.SMEPLUG_API_KEY:
-        return JsonResponse({'error': 'SMEPLUG_API_KEY is missing in .env'}, status=400)
-    
-    if not settings.SMEPLUG_BASE_URL:
-        return JsonResponse({'error': 'SMEPLUG_BASE_URL is missing in .env'}, status=400)
-
-    service = VTUApiService()
-    
-    try:
-        response = requests.get(
-            f"{settings.SMEPLUG_BASE_URL}/data/prices",
-            headers={'Authorization': f'Bearer {settings.SMEPLUG_API_KEY}'},
-            timeout=15
-        )
-        
-        if response.status_code == 200:
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Connected to Smeplug successfully!',
-                'data_sample': response.json()[:2] if isinstance(response.json(), list) else response.json()
-            })
-        else:
-            return JsonResponse({
-                'status': 'error',
-                'message': f'HTTP Error {response.status_code}',
-                'body': response.text[:500]
-            })
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400) 
 
 # ====================== AUTH ======================
-import random
-from datetime import timedelta
-from django.utils import timezone
-
-from django.shortcuts import render
 
 def home(request):
     if request.user.is_authenticated:
@@ -506,112 +473,158 @@ def fund_wallet_callback(request):
 
 # ====================== PURCHASE VIEWS ======================
 @login_required
+@csrf_exempt
 def buy_airtime(request):
     if request.method == 'POST':
-        form = AirtimeForm(request.POST)
-        if form.is_valid():
-            pin = form.cleaned_data.get('pin') or request.POST.get('pin')
-            wallet = request.user.wallet
+        try:
+            form = AirtimeForm(request.POST)
+            if form.is_valid():
+                pin = form.cleaned_data.get('pin') or request.POST.get('pin')
+                wallet = request.user.wallet
+                amount = form.cleaned_data['amount']
+                phone = form.cleaned_data['phone']
+                network_name = form.cleaned_data['network'].upper()
 
-            # NEW CHECK: If user has no PIN yet
-            if not wallet.pin:
-                return JsonResponse({
-                    'status': 'no_pin',
-                    'message': "You haven't created your Transaction PIN yet. Please create one first."
-                }, status=400)
+                # 1. Security & Balance Checks
+                if not wallet.pin:
+                    return JsonResponse({'status': 'no_pin', 'message': "Create Transaction PIN first"}, status=400)
+                if not wallet.check_pin(pin):
+                    return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
+                if wallet.balance < amount:
+                    return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
 
-            if not wallet.check_pin(pin):
-                return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
+                # 2. Map Network Name to SMEPlug IDs
+                network_map = {'MTN': 1, 'GLO': 2, 'AIRTEL': 3, '9MOBILE': 4}
+                net_id = network_map.get(network_name, 1)
 
-            amount = form.cleaned_data['amount']
-            if wallet.balance >= amount:
-                wallet.balance -= amount
-                wallet.save()
+                # 3. Call API
+                service = VTUApiService()
+                result = service.buy_airtime(network_id=net_id, phone=phone, amount=amount)
 
-                Transaction.objects.create(
-                    user=request.user,
-                    transaction_type='Airtime',
-                    amount=amount,
-                    provider=form.cleaned_data['network'],
-                    phone_or_meter=form.cleaned_data['phone'],
-                    status='Successful'
-                )
-                return JsonResponse({
-                    'status': 'success',
-                    'message': f'✅ ₦{amount} Airtime sent successfully!'
-                })
-            else:
-                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
+                if result['success']:
+                    # Deduct from user wallet
+                    try:
+                        wallet.balance -= amount
+                        wallet.save()
+                    except Exception as wallet_err:
+                        print(f"Wallet update error: {wallet_err}")
+                        # Still proceed since API call succeeded
+                    
+                    # Record Transaction
+                    try:
+                        Transaction.objects.create(
+                            user=request.user,
+                            transaction_type='Airtime',
+                            amount=amount,
+                            provider=network_name,
+                            phone_or_meter=phone,
+                            status='Successful',
+                            transaction_id=result.get('transaction_id')
+                        )
+                    except Exception as tx_err:
+                        print(f"Transaction recording error: {tx_err}")
+                        # Still return success since purchase went through
+                    
+                    return JsonResponse({'status': 'success', 'message': f'✅ ₦{amount} Airtime sent to {phone}!'})
+                else:
+                    return JsonResponse({'status': 'error', 'message': result['message']}, status=400)
+            
+            return JsonResponse({'status': 'error', 'message': '❌ Invalid form data'}, status=400)
         
-        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
+        except Exception as e:
+            print(f"Buy airtime exception: {traceback.format_exc()}")
+            return JsonResponse({'status': 'error', 'message': f'Server error: {str(e)}'}, status=500)
 
     form = AirtimeForm()
     return render(request, 'vtuapp/buy_airtime.html', {'form': form})
 
 
 @login_required
+@csrf_exempt
 def buy_data(request):
     if request.method == 'POST':
-        form = DataPurchaseForm(request.POST)
-        if form.is_valid():
+        try:
+            form = DataPurchaseForm(request.POST)
+            if not form.is_valid():
+                return JsonResponse({'status': 'error', 'message': 'Please fill all fields correctly'}, status=400)
+
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
             wallet = request.user.wallet
             plan = form.cleaned_data['plan']
             phone = form.cleaned_data['phone']
+
+            print("=== BUY DATA DEBUG ===")
+            print(f"Plan: {plan.name} | Price: {plan.price}")
+            print(f"network_id: {plan.network_id} | smeplug_plan_id: {plan.smeplug_plan_id}")
+            print(f"Phone: {phone}")
 
             # PIN Check
             if not wallet.pin:
                 return JsonResponse({'status': 'no_pin', 'message': "Create Transaction PIN first"}, status=400)
 
             if not wallet.check_pin(pin):
-                return JsonResponse({'status': 'error', 'message': '❌ Incorrect PIN'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             # Balance Check
             if wallet.balance < plan.price:
-                return JsonResponse({'status': 'error', 'message': '❌ Insufficient balance'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
 
-            # Call API
+            # === API CALL ===
             service = VTUApiService()
             result = service.buy_data(
-                network=plan.network,
+                network_id=plan.network_id,      # Correct parameter name
+                plan_id=plan.smeplug_plan_id,
                 phone=phone,
-                plan_code=plan.smeplug_plan_id,   # Must not be empty
                 amount=plan.price
             )
 
-            if result['success']:
-                # Deduct money
-                wallet.balance -= plan.price
-                wallet.save()
+            print(f"API Result: {result}")
 
-                # Save Transaction
-                Transaction.objects.create(
-                    user=request.user,
-                    transaction_type='Data',
-                    amount=plan.price,
-                    provider=result['provider'],
-                    phone_or_meter=phone,
-                    status='Successful',
-                    transaction_id=result.get('transaction_id')
-                )
+            if result['success']:
+                # Deduct balance
+                try:
+                    wallet.balance -= plan.price
+                    wallet.save()
+                except Exception as wallet_err:
+                    print(f"Wallet update error: {wallet_err}")
+                    # Still proceed since API call succeeded
+                
+                try:
+                    Transaction.objects.create(
+                        user=request.user,
+                        transaction_type='Data',
+                        amount=plan.price,
+                        provider='smeplug',
+                        phone_or_meter=phone,
+                        status='Successful',
+                        transaction_id=result.get('transaction_id')
+                    )
+                except Exception as tx_err:
+                    print(f"Transaction recording error: {tx_err}")
+                    # Still return success since purchase went through
 
                 return JsonResponse({
                     'status': 'success',
-                    'message': f'✅ {plan.name} purchased successfully!'
+                    'message': f'✅ {plan.name} purchased successfully to {phone}!'
                 })
             else:
                 return JsonResponse({
                     'status': 'error',
-                    'message': result['message']
+                    'message': result.get('message', 'Purchase failed')
                 }, status=400)
 
-        return JsonResponse({'status': 'error', 'message': 'Invalid form data'}, status=400)
+        except Exception as e:
+            print("=== BUY DATA CRASHED ===")
+            print(traceback.format_exc())
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Server error occurred: {str(e)}'
+            }, status=500)
 
     # GET
     form = DataPurchaseForm()
     plans = DataPlan.objects.filter(is_active=True)
     return render(request, 'vtuapp/buy_data.html', {'form': form, 'plans': plans})
-
 
 @login_required
 def pay_electricity(request):

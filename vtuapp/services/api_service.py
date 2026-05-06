@@ -1,92 +1,113 @@
 import requests
 import logging
 from django.conf import settings
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class VTUApiService:
-    """Main Service - Smeplug Primary, VTpass Backup"""
+    """Smeplug Primary (VTpass later)"""
 
     def __init__(self):
-        self.smeplug_key = settings.SMEPLUG_API_KEY
-        self.smeplug_url = settings.SMEPLUG_BASE_URL
+        self.api_key = settings.SMEPLUG_API_KEY
+        self.base_url = settings.SMEPLUG_BASE_URL.rstrip('/')
 
-        self.vtpass_key = settings.VTPASS_API_KEY
-        self.vtpass_secret = settings.VTPASS_SECRET_KEY
-        self.vtpass_url = settings.VTPASS_BASE_URL
-
-    # ===================== SMEPLUG =====================
-    def _smeplug_post(self, endpoint, payload):
-        url = f"{self.smeplug_url}/{endpoint}"
+    def buy_data(self, network_id, plan_id, phone, amount):
+        url = f"{self.base_url}/data/purchase"
         headers = {
-            'Authorization': f'Bearer {self.smeplug_key}',
+            'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         }
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
-            logger.info(f"Smeplug {endpoint} -> {resp.status_code}")
-            return resp.json() if resp.text else None
-        except Exception as e:
-            logger.error(f"Smeplug Error: {e}")
-            return None
 
-    # ===================== VTPASS (Backup) =====================
-    def _vtpass_post(self, endpoint, payload):
-        if not self.vtpass_key:
-            return None
-        url = f"{self.vtpass_url}/{endpoint}"
-        headers = {
-            'api-key': self.vtpass_key,
-            'secret-key': self.vtpass_secret,
-            'Content-Type': 'application/json'
-        }
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
-            return resp.json()
-        except Exception as e:
-            logger.error(f"VTpass Error: {e}")
-            return None
+        # Force international format
+        if str(phone).startswith('0'):
+            phone = '234' + str(phone)[1:]
 
-    # ===================== MAIN BUY DATA =====================
-    def buy_data(self, network, phone, plan_code, amount):
         payload = {
-            "network": network.lower(),
-            "phone": phone,
-            "plan": plan_code,
-            "amount": str(amount)
+            "network_id": int(network_id),
+            "plan_id": str(plan_id),
+            "phone": phone
         }
 
-        # Try Smeplug First
-        result = self._smeplug_post("data", payload)
+        print("=== FINAL PAYLOAD TO SMEPLUG ===")
+        print(payload)
+        print("================================")
 
-        if result and result.get('status') == 'success':
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            print(f"Status Code: {response.status_code}")
+            print("Full Response:", response.text)
+
+            # 1. Safely parse JSON so 'data' always exists
+            try:
+                data = response.json()
+            except ValueError:
+                data = {}
+
+            # 2. Check for success (200 OK and status: True)
+            if response.status_code == 200:
+                if data.get('status') is True:
+                    # Accessing nested data dictionary safely
+                    inner_data = data.get('data', {})
+                    return {
+                        'success': True,
+                        'provider': 'smeplug',
+                        'transaction_id': inner_data.get('reference'),
+                        'message': inner_data.get('msg', 'Success')
+                    }
+
+            # 3. Handle failures safely
+            # Smeplug usually puts errors in 'msg' or 'message'
+            error_msg = data.get('msg') or data.get('message') or f"Status {response.status_code}: Purchase failed"
             return {
-                'success': True,
-                'provider': 'smeplug',
-                'transaction_id': result.get('transaction_id'),
-                'message': 'Data purchase successful'
+                'success': False, 
+                'message': error_msg
             }
 
-        # If Smeplug fails, try VTpass (if keys exist)
-        if self.vtpass_key:
-            logger.warning("Smeplug failed → Trying VTpass backup")
-            vt_payload = {
-                "serviceID": network.lower(),
-                "phone": phone,
-                "amount": str(amount),
-                "request_id": f"VTU{int(datetime.now().timestamp())}"
+        except Exception as e:
+            print(f"Exception in buy_data: {e}")
+            return {
+                'success': False, 
+                'message': 'Connection error or Timeout. Check SMEPlug dashboard.'
             }
-            vt_result = self._vtpass_post("pay", vt_payload)
-            if vt_result and vt_result.get('response_code') == "0000":
-                return {
-                    'success': True,
-                    'provider': 'vtpass',
-                    'transaction_id': vt_result.get('request_id'),
-                    'message': 'Data purchase successful (VTpass)'
-                }
 
-        return {
-            'success': False,
-            'message': 'Service temporarily unavailable. Please try again shortly.'
+    def buy_airtime(self, network_id, phone, amount):
+        url = f"{self.base_url}/airtime/purchase"
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
         }
+
+        if str(phone).startswith('0'):
+            phone = '234' + str(phone)[1:]
+
+        payload = {
+            "network_id": int(network_id),
+            "amount": int(amount),
+            "phone": phone
+        }
+
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            
+            # === THE FIX: Always initialize data ===
+            try:
+                data = response.json()
+            except ValueError:
+                data = {}
+
+            if response.status_code == 200:
+                if data.get('status') is True:
+                    inner_data = data.get('data', {})
+                    return {
+                        'success': True,
+                        'transaction_id': inner_data.get('reference'),
+                        'message': inner_data.get('msg', 'Airtime successful!')
+                    }
+
+            # Safely get the error message even if status is not 200
+            error_msg = data.get('msg') or data.get('message') or f"Error {response.status_code}"
+            return {'success': False, 'message': error_msg}
+            
+        except Exception as e:
+            # This is where your 'Connection Error' was coming from
+            return {'success': False, 'message': f'API Error: {str(e)}'}

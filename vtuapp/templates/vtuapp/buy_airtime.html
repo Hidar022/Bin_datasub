@@ -98,24 +98,72 @@
         const formData = new FormData(document.getElementById('airtimeForm'));
         formData.append('pin', pin);
 
+        // Get CSRF token from the form
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
         fetch("{% url 'buy_airtime' %}", {
             method: "POST",
             body: formData,
-            headers: { "X-Requested-With": "XMLHttpRequest" }
+            headers: { 
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrfToken
+            }
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(async response => {
+            try {
+                const text = await response.text();
+                let data = {};
+                
+                // Try to parse JSON
+                if (text && text.trim()) {
+                    try {
+                        data = JSON.parse(text);
+                    } catch (parseErr) {
+                        console.error('Failed to parse response:', text, parseErr);
+                        // If it's HTML (Django error page), extract a meaningful message
+                        if (text.includes('<html>') || text.includes('<!DOCTYPE')) {
+                            throw new Error('Server error occurred. Please check your connection and try again.');
+                        }
+                        throw new Error('Invalid server response: ' + text.substring(0, 100));
+                    }
+                } else {
+                    throw new Error('Empty response from server');
+                }
+                
+                return { httpStatus: response.status, data };
+            } catch (err) {
+                console.error('Response processing error:', err);
+                throw err;
+            }
+        })
+        .then(({ httpStatus, data }) => {
+            // Log for debugging
+            console.log('Response received:', { httpStatus, data });
+            
+            // Check the data.status to determine action
             if (data.status === 'no_pin') {
                 showMessage('error', data.message || "You need to create your Transaction PIN first");
                 setTimeout(() => window.location.href = "{% url 'settings' %}?next=airtime#pin-section", 1600);
             } else if (data.status === 'success') {
+                // Success! Show message and redirect
+                console.log('Purchase successful:', data.message);
                 showMessage('success', data.message);
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1600);
+                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 2000);
+            } else if (data.status === 'error') {
+                // Explicit error status
+                showMessage('error', data.message || 'Purchase failed');
+                console.error('Purchase error:', data);
             } else {
-                showMessage('error', data.message || 'Something went wrong');
+                // Unknown response
+                const errorText = data.message || data.error || 'Something went wrong';
+                showMessage('error', errorText);
+                console.error('Unknown response:', data);
             }
         })
-        .catch(() => showMessage('error', 'Connection error. Please try again.'))
+        .catch(error => {
+            console.error('Fetch error:', error);
+            showMessage('error', error.message || 'Connection error. Please try again.');
+        })
         .finally(() => {
             confirmBtn.innerHTML = originalText;
             confirmBtn.disabled = false;
