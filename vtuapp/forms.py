@@ -1,8 +1,7 @@
 from django import forms
 from .models import DataPlan
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm # Fixed Import here
 from django.contrib.auth.models import User
-
 
 class AirtimeForm(forms.Form):
     NETWORK_CHOICES = [('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')]
@@ -34,25 +33,29 @@ class DataPurchaseForm(forms.Form):
     phone = forms.CharField(max_length=11, widget=forms.TextInput(attrs={'placeholder': '08012345678'}))
     pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
+# --- AUTH FORMS ---
 
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={
-            'class': 'w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all'
-        })
-    )
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ['username', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({
-                'class': 'w-full bg-[#1a1a4a] border border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-white placeholder-gray-400 text-base outline-none transition-all'
-            })
+        # Placeholders for the Register Page
+        self.fields['username'].widget.attrs.update({'placeholder': 'Choose a username'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'aliyu@example.com'})
+        if 'password1' in self.fields:
+            self.fields['password1'].widget.attrs.update({'placeholder': 'Create password'})
+        if 'password2' in self.fields:
+            self.fields['password2'].widget.attrs.update({'placeholder': 'Confirm password'})
 
-    # REMOVED the strict clean_email — we handle it in the view now
-    # def clean_email(self): ...   ← Delete this method completely
+class LoginForm(AuthenticationForm):
+    username = forms.CharField(widget=forms.TextInput(attrs={
+        'placeholder': 'Your username'
+    }))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={
+        'placeholder': '••••••••'
+    }))
