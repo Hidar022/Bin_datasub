@@ -1,22 +1,10 @@
+{% extends 'base.html' %}
 {% load widget_tweaks %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Email - Bin Datasub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .neon-glow { box-shadow: 0 0 25px #a855f7, 0 0 40px #a855f7; }
-        .neon-text { text-shadow: 0 0 15px #22d3ee; }
-        input { color: white !important; }
-        input::placeholder { color: #9ca3af !important; }
-    </style>
-</head>
-<body class="bg-[#0a0a2e] text-white min-h-screen flex items-center justify-center py-12">
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[80vh] py-12">
     <div class="max-w-md w-full mx-4">
+        <!-- Logo Section -->
         <div class="flex justify-center mb-8">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl font-bold">📡</div>
@@ -24,6 +12,7 @@
             </div>
         </div>
 
+        <!-- Card Section -->
         <div class="bg-[#12123a] border border-purple-500/50 rounded-3xl p-8 neon-glow">
             <h1 class="text-3xl font-bold text-center mb-2">Verify Your Email</h1>
             <p class="text-cyan-300 text-center mb-8">Enter the 6-digit code sent to your email</p>
@@ -52,8 +41,10 @@
             </div>
         </div>
     </div>
+</div>
 
 <script>
+    // Keep your same script here, it's perfect as is!
     const form = document.getElementById('otpForm');
     const btn = document.getElementById('verifyBtn');
     const btnText = document.getElementById('btnText');
@@ -67,52 +58,29 @@
                 ? 'bg-green-500/20 border border-green-500 text-green-300' 
                 : 'bg-red-500/20 border border-red-500 text-red-300'
         }`;
-        div.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${message}</span>
-        `;
+        div.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
         messagesContainer.appendChild(div);
-
-        setTimeout(() => {
-            div.style.transition = 'opacity 0.4s';
-            div.style.opacity = '0';
-            setTimeout(() => div.remove(), 400);
-        }, 5000);
+        setTimeout(() => { div.remove(); }, 5000);
     }
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        messagesContainer.innerHTML = '';
-
         btn.disabled = true;
         btnText.classList.add('hidden');
         btnSpinner.classList.remove('hidden');
-
         const formData = new FormData(form);
 
         try {
-            const response = await fetch('/verify-otp/', {   // ← Hardcode the URL for safety
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                    // Do NOT set Content-Type — browser will set it correctly with FormData
-                }
-            });
-
+            const response = await fetch('/verify-otp/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'}});
             const data = await response.json();
-
             if (response.ok && data.success) {
                 showMessage(data.message, 'success');
-                setTimeout(() => {
-                    window.location.href = "{% url 'dashboard' %}";
-                }, 1800);
+                setTimeout(() => { window.location.href = "{% url 'dashboard' %}"; }, 1800);
             } else {
-                showMessage(data.message || 'Invalid OTP. Please try again.');
+                showMessage(data.message || 'Invalid OTP.');
             }
         } catch (err) {
-            console.error(err);
-            showMessage('Network error. Please check your connection and try again.');
+            showMessage('Network error.');
         } finally {
             btn.disabled = false;
             btnText.classList.remove('hidden');
@@ -120,5 +88,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}
