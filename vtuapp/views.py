@@ -502,35 +502,30 @@ def buy_airtime(request):
                 result = service.buy_airtime(network_id=net_id, phone=phone, amount=amount)
 
                 if result['success']:
-                    # Deduct from user wallet
-                    try:
-                        wallet.balance -= amount
-                        wallet.save()
-                    except Exception as wallet_err:
-                        print(f"Wallet update error: {wallet_err}")
-                        # Still proceed since API call succeeded
+                    wallet.balance -= amount
+                    wallet.save()
                     
-                    # Record Transaction
-                    try:
-                        Transaction.objects.create(
-                            user=request.user,
-                            transaction_type='Airtime',
-                            amount=amount,
-                            provider=network_name,
-                            phone_or_meter=phone,
-                            status='Successful',
-                            transaction_id=result.get('transaction_id')
-                        )
-                    except Exception as tx_err:
-                        print(f"Transaction recording error: {tx_err}")
-                        # Still return success since purchase went through
+                    # 🔥 CHANGE: Capture the transaction object in a variable
+                    new_tx = Transaction.objects.create(
+                        user=request.user,
+                        transaction_type='Airtime',
+                        amount=amount,
+                        provider=network_name,
+                        phone_or_meter=phone,
+                        status='Successful',
+                        transaction_id=result.get('transaction_id')
+                    )
                     
-                    return JsonResponse({'status': 'success', 'message': f'✅ ₦{amount} Airtime sent to {phone}!'})
+                    # 🔥 CHANGE: Return the redirect_url for the receipt
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': f'✅ ₦{amount} Airtime sent!',
+                        'redirect_url': reverse('receipt_detail', kwargs={'pk': new_tx.pk})
+                    })
                 else:
                     return JsonResponse({'status': 'error', 'message': result['message']}, status=400)
             
             return JsonResponse({'status': 'error', 'message': '❌ Invalid form data'}, status=400)
-        
         except Exception as e:
             print(f"Buy airtime exception: {traceback.format_exc()}")
             return JsonResponse({'status': 'error', 'message': f'Server error: {str(e)}'}, status=500)
@@ -581,47 +576,34 @@ def buy_data(request):
             print(f"API Result: {result}")
 
             if result['success']:
-                # Deduct balance
-                try:
-                    wallet.balance -= plan.price
-                    wallet.save()
-                except Exception as wallet_err:
-                    print(f"Wallet update error: {wallet_err}")
-                    # Still proceed since API call succeeded
+                wallet.balance -= plan.price
+                wallet.save()
                 
-                try:
-                    Transaction.objects.create(
-                        user=request.user,
-                        transaction_type='Data',
-                        amount=plan.price,
-                        provider='smeplug',
-                        phone_or_meter=phone,
-                        status='Successful',
-                        transaction_id=result.get('transaction_id')
-                    )
-                except Exception as tx_err:
-                    print(f"Transaction recording error: {tx_err}")
-                    # Still return success since purchase went through
+                # 🔥 CHANGE: Capture transaction object
+                new_tx = Transaction.objects.create(
+                    user=request.user,
+                    transaction_type='Data',
+                    amount=plan.price,
+                    provider=plan.network.name if hasattr(plan, 'network') else 'smeplug',
+                    phone_or_meter=phone,
+                    status='Successful',
+                    transaction_id=result.get('transaction_id')
+                )
 
+                # 🔥 CHANGE: Return redirect_url
                 return JsonResponse({
                     'status': 'success',
-                    'message': f'✅ {plan.name} purchased successfully to {phone}!'
+                    'message': f'✅ {plan.name} purchased!',
+                    'redirect_url': reverse('receipt_detail', kwargs={'pk': new_tx.pk})
                 })
             else:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': result.get('message', 'Purchase failed')
-                }, status=400)
+                # ... (error handling) ...
+                return JsonResponse({'status': 'error', 'message': result.get('message')}, status=400)
 
         except Exception as e:
-            print("=== BUY DATA CRASHED ===")
-            print(traceback.format_exc())
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Server error occurred: {str(e)}'
-            }, status=500)
+            # ... (exception handling) ...
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-    # GET
     form = DataPurchaseForm()
     plans = DataPlan.objects.filter(is_active=True)
     return render(request, 'vtuapp/buy_data.html', {'form': form, 'plans': plans})
@@ -705,6 +687,17 @@ def cable_tv(request):
 def transactions_history(request):
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')
     return render(request, 'vtuapp/transactions.html', {'transactions': transactions})
+
+@login_required
+def transaction_receipt(request, pk):
+    # We use get_object_or_404 to handle invalid IDs gracefully
+    from django.shortcuts import get_object_or_404
+    
+    transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+    
+    return render(request, 'vtuapp/transaction_receipt.html', {
+        'transaction': transaction
+    })
 
 @login_required
 def services_page(request):

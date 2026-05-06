@@ -22,6 +22,7 @@ urlpatterns = [
     path('fund-wallet/', views.fund_wallet, name='fund_wallet'),
     path('fund-wallet/callback/', views.fund_wallet_callback, name='fund_wallet_callback'),
     path('transactions/', views.transactions_history, name='transactions'),
+    path('receipt/<int:pk>/', views.transaction_receipt, name='receipt_detail'),
     
     # Other pages
     path('services/', views.services_page, name='services'),

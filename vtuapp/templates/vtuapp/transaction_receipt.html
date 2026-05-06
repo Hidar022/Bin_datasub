@@ -1,0 +1,58 @@
+{% extends 'vtuapp/base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 transition-colors duration-300">
+    <!-- The Card: White in light mode, Dark Blue in dark mode -->
+    <div class="max-w-md w-full bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-8 text-center shadow-xl dark:shadow-2xl relative overflow-hidden transition-all">
+        
+        <!-- Status Icon Section -->
+        <div class="mb-6">
+            {% if transaction.status == 'Successful' %}
+                <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto border border-emerald-200 dark:border-emerald-500/30">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-4">Transaction Successful</h2>
+            {% else %}
+                <div class="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto border border-red-200 dark:border-red-500/30">
+                    <i class="fas fa-times"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-4">Transaction Failed</h2>
+            {% endif %}
+        </div>
+
+        <!-- Details Box -->
+        <div class="space-y-4 text-left bg-gray-50 dark:bg-[#1a1a4a] p-6 rounded-2xl border border-gray-100 dark:border-white/5 transition-colors">
+            <div class="flex justify-between border-b border-gray-200 dark:border-white/5 pb-2">
+                <span class="text-gray-500 dark:text-gray-400">Amount:</span> 
+                <span class="text-gray-900 dark:text-white font-bold">₦{{ transaction.amount }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-200 dark:border-white/5 pb-2">
+                <span class="text-gray-500 dark:text-gray-400">Service:</span> 
+                <span class="text-gray-900 dark:text-white">{{ transaction.transaction_type }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-200 dark:border-white/5 pb-2">
+                <span class="text-gray-500 dark:text-gray-400">Provider:</span> 
+                <span class="text-gray-900 dark:text-white capitalize">{{ transaction.provider }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-200 dark:border-white/5 pb-2">
+                <span class="text-gray-500 dark:text-gray-400">Recipient:</span> 
+                <span class="text-gray-900 dark:text-white">{{ transaction.phone_or_meter }}</span>
+            </div>
+            <div class="flex justify-between pt-1">
+                <span class="text-gray-500 dark:text-gray-400">Reference:</span> 
+                <span class="text-cyan-600 dark:text-cyan-400 text-xs font-mono font-bold">#{{ transaction.id }}</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 space-y-3">
+            <button onclick="window.print()" class="w-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-white py-4 rounded-2xl font-medium transition-all">
+                <i class="fas fa-download mr-2"></i> Save Receipt
+            </button>
+            <a href="{% url 'dashboard' %}" class="block w-full bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-purple-500 dark:to-cyan-400 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/20 dark:shadow-cyan-500/20">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

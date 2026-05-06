@@ -197,10 +197,19 @@
                 }, 1600);
             } 
             else if (data.status === 'success') {
-                // Success! Show message and redirect
-                console.log('Purchase successful:', data.message);
-                showMessage('success', data.message);
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 2000);
+              // Success! Show message and redirect to the Receipt
+              console.log('Purchase successful:', data.message);
+              showMessage('success', data.message);
+    
+            // 🔥 The Magic Link: Redirects to the specific transaction receipt
+              setTimeout(() => {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+           } else {
+            window.location.href = "{% url 'dashboard' %}";
+           }
+             }, 2000);
+           }  
             }
             else if (data.status === 'error') {
                 // Explicit error status

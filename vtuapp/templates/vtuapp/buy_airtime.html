@@ -144,11 +144,20 @@
             if (data.status === 'no_pin') {
                 showMessage('error', data.message || "You need to create your Transaction PIN first");
                 setTimeout(() => window.location.href = "{% url 'settings' %}?next=airtime#pin-section", 1600);
-            } else if (data.status === 'success') {
-                // Success! Show message and redirect
-                console.log('Purchase successful:', data.message);
-                showMessage('success', data.message);
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 2000);
+            else if (data.status === 'success') {
+            // Success! Show message and redirect to the Receipt
+               console.log('Purchase successful:', data.message);
+               showMessage('success', data.message);
+
+           // 🔥 Redirect to the receipt page sent by the backend
+               setTimeout(() => {
+             if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+            } else {
+            window.location.href = "{% url 'dashboard' %}";
+                }
+              }, 2000);
+            }
             } else if (data.status === 'error') {
                 // Explicit error status
                 showMessage('error', data.message || 'Purchase failed');
