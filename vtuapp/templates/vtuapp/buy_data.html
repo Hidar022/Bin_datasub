@@ -4,42 +4,42 @@
 {% block title %}Buy Data - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 py-6">
-    
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+<div class="max-w-4xl mx-auto px-4 md:px-6 py-8">
+
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10 shadow-sm">
         
         <div id="messages-container" class="space-y-3 mb-8"></div>
 
-        <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Buy Data Bundle</h1>
-        <p class="text-gray-600 dark:text-cyan-300 mb-8">Select network and plan</p>
+        <h1 class="text-4xl font-bold mb-2 text-gray-900 dark:text-white">Buy Data Bundle</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">Select network and preferred plan</p>
 
-        <form id="dataForm" class="space-y-8">
+        <form id="dataForm" class="mt-10 space-y-8">
             {% csrf_token %}
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Network</label>
-                {{ form.network|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
+                {{ form.network|add_class:"w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
             </div>
 
             <!-- Plans Container -->
             <div id="plans-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 min-h-[120px]">
                 {% for plan in plans %}
-                <div class="plan-card bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-5 cursor-pointer hover:border-cyan-400 transition-all" 
+                <div class="plan-card bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-6 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all" 
                      data-plan-id="{{ plan.id }}" data-network="{{ plan.network }}">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="font-semibold text-gray-900 dark:text-white">{{ plan.name }}</p>
-                            <p class="text-gray-500 dark:text-cyan-300">{{ plan.data_amount }} • {{ plan.validity }}</p>
+                            <p class="text-gray-500 dark:text-gray-400">{{ plan.data_amount }} • {{ plan.validity }}</p>
                         </div>
-                        <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₦{{ plan.price }}</p>
+                        <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">₦{{ plan.price }}</p>
                     </div>
                 </div>
                 {% empty %}
-                <p class="col-span-2 text-center text-gray-500 py-8">No plans available yet.</p>
+                <p class="col-span-2 text-center text-gray-500 py-12">No plans available yet.</p>
                 {% endfor %}
             </div>
 
@@ -47,11 +47,11 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
-                {{ form.phone|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
+                {{ form.phone|add_class:"w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 outline-none transition-all" }}
             </div>
 
             <button type="button" id="confirmBtn"
-                    class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white">
+                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white transition-all">
                 CONFIRM & PURCHASE
             </button>
         </form>
@@ -60,31 +60,33 @@
 
 <!-- PIN Modal -->
 <div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-8 w-full max-w-md mx-4">
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 w-full max-w-md mx-4">
         <h3 class="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Enter 4-Digit PIN</h3>
         <input type="password" id="pinInput" maxlength="4"
-               class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none text-gray-900 dark:text-white"
+               class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none text-gray-900 dark:text-white"
                placeholder="••••">
 
         <div class="mt-8 flex gap-4">
             <button onclick="closePinModal()" 
-                    class="flex-1 py-4 rounded-3xl border border-gray-400 dark:border-gray-500 font-medium text-gray-700 dark:text-gray-300">
+                    class="flex-1 py-4 rounded-3xl border border-gray-300 dark:border-gray-600 font-medium text-gray-700 dark:text-gray-300">
                 Cancel
             </button>
             <button onclick="verifyPin()" 
-                    class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-400 py-4 rounded-3xl font-semibold text-white">
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-3xl font-semibold text-white">
                 Verify PIN
             </button>
         </div>
     </div>
 </div>
+
 <script>
+    // Your existing script remains unchanged
     let selectedPlanId = null;
 
     document.querySelectorAll('.plan-card').forEach(card => {
         card.addEventListener('click', function() {
-            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('border-cyan-400', 'bg-cyan-400/10'));
-            this.classList.add('border-cyan-400', 'bg-cyan-400/10');
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('border-indigo-500', 'bg-indigo-500/10'));
+            this.classList.add('border-indigo-500', 'bg-indigo-500/10');
             selectedPlanId = this.getAttribute('data-plan-id');
             document.querySelector('select[name="plan"]').value = selectedPlanId;
         });

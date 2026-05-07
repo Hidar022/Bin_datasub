@@ -2,73 +2,56 @@
 {% block title %}Services - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-10">
-    
+<div class="max-w-screen-2xl mx-auto px-4 md:px-6 py-12">
+
     <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3">Our Services</h1>
-        <p class="text-gray-600 dark:text-cyan-300 text-lg">Choose what you want to buy or pay for instantly</p>
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">Our Services</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-3 text-lg">Fast, reliable and affordable VTU services</p>
     </div>
 
-    <!-- Services Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <!-- Buy Data -->
         <a href="{% url 'buy_data' %}" 
-           class="service-card group bg-white dark:bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-purple">
-            <div class="mx-auto w-20 h-20 bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <i class="fas fa-wifi text-6xl text-cyan-400"></i>
+           class="group bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 hover:shadow-xl hover:-translate-y-1 transition-all">
+            <div class="mx-auto w-20 h-20 bg-indigo-100 dark:bg-indigo-500/10 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-wifi text-6xl text-indigo-600 dark:text-indigo-400"></i>
             </div>
-            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Buy Data</h3>
-            <p class="text-gray-600 dark:text-cyan-300 mb-8">Affordable data plans for all networks</p>
-            <button class="w-full bg-cyan-400 text-black py-4 rounded-2xl font-semibold hover:bg-cyan-300 transition-all">
-                Get Data Now
-            </button>
+            <h3 class="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-2">Buy Data</h3>
+            <p class="text-center text-gray-600 dark:text-gray-400">MTN, Airtel, Glo, 9mobile at cheap rates</p>
         </a>
 
-        <!-- Buy Airtime -->
         <a href="{% url 'buy_airtime' %}" 
-           class="service-card group bg-white dark:bg-[#12123a] border-2 border-cyan-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-cyan">
-            <div class="mx-auto w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <i class="fas fa-mobile-alt text-6xl text-blue-400"></i>
+           class="group bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 hover:shadow-xl hover:-translate-y-1 transition-all">
+            <div class="mx-auto w-20 h-20 bg-cyan-100 dark:bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-mobile-alt text-6xl text-cyan-600 dark:text-cyan-400"></i>
             </div>
-            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Buy Airtime</h3>
-            <p class="text-gray-600 dark:text-cyan-300 mb-8">Instant airtime top-up</p>
-            <button class="w-full bg-blue-400 text-black py-4 rounded-2xl font-semibold hover:bg-blue-300 transition-all">
-                Buy Airtime
-            </button>
+            <h3 class="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-2">Buy Airtime</h3>
+            <p class="text-center text-gray-600 dark:text-gray-400">Instant top-up for all networks</p>
         </a>
 
-        <!-- Pay Electricity -->
         <a href="{% url 'pay_electricity' %}" 
-           class="service-card group bg-white dark:bg-[#12123a] border-2 border-orange-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-orange">
-            <div class="mx-auto w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <i class="fas fa-bolt text-6xl text-orange-400"></i>
+           class="group bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 hover:shadow-xl hover:-translate-y-1 transition-all">
+            <div class="mx-auto w-20 h-20 bg-amber-100 dark:bg-amber-500/10 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-bolt text-6xl text-amber-600 dark:text-amber-400"></i>
             </div>
-            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Pay Electricity</h3>
-            <p class="text-gray-600 dark:text-cyan-300 mb-8">Bill payment for all discos</p>
-            <button class="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold hover:bg-orange-600 transition-all">
-                Pay Bill
-            </button>
+            <h3 class="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-2">Pay Electricity</h3>
+            <p class="text-center text-gray-600 dark:text-gray-400">All Discos in Nigeria</p>
         </a>
 
-        <!-- Cable TV -->
         <a href="{% url 'cable_tv' %}" 
-           class="service-card group bg-white dark:bg-[#12123a] border-2 border-purple-400 rounded-3xl p-8 text-center hover:scale-105 transition-all neon-purple">
-            <div class="mx-auto w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <i class="fas fa-tv text-6xl text-purple-400"></i>
+           class="group bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 hover:shadow-xl hover:-translate-y-1 transition-all">
+            <div class="mx-auto w-20 h-20 bg-purple-100 dark:bg-purple-500/10 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i class="fas fa-tv text-6xl text-purple-600 dark:text-purple-400"></i>
             </div>
-            <h3 class="text-3xl font-semibold mb-3 text-gray-900 dark:text-white">Cable TV</h3>
-            <p class="text-gray-600 dark:text-cyan-300 mb-8">DSTV, GOTV, Startimes & more</p>
-            <button class="w-full bg-purple-500 text-white py-4 rounded-2xl font-semibold hover:bg-purple-600 transition-all">
-                Renew Subscription
-            </button>
+            <h3 class="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-2">Cable TV</h3>
+            <p class="text-center text-gray-600 dark:text-gray-400">DSTV, GOTV, Startimes & more</p>
         </a>
     </div>
 
     <!-- Quick Tip -->
-    <div class="mt-16 text-center bg-gray-100 dark:bg-[#12123a]/70 border border-purple-500/30 rounded-3xl p-8 max-w-2xl mx-auto">
-        <p class="text-gray-700 dark:text-cyan-300">
-            💡 All transactions are instant and reflected immediately in your wallet and transaction history.
+    <div class="mt-16 max-w-2xl mx-auto bg-gradient-to-br from-gray-50 to-white dark:from-[#1A1A2E] dark:to-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-8 text-center">
+        <p class="text-gray-700 dark:text-gray-300 text-lg">
+            💡 All transactions are processed instantly and reflected immediately.
         </p>
     </div>
 </div>

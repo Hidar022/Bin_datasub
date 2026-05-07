@@ -2,55 +2,59 @@
 {% block title %}Support - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 py-8">
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+<div class="max-w-2xl mx-auto px-4 md:px-6 py-10">
+
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-8 neon-cyan">
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
         
         <div class="text-center mb-10">
-            <i class="fas fa-headset text-6xl text-cyan-400 mb-4"></i>
+            <div class="w-20 h-20 mx-auto bg-cyan-100 dark:bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-5">
+                <i class="fas fa-headset text-6xl text-cyan-600 dark:text-cyan-400"></i>
+            </div>
             <h1 class="text-4xl font-bold text-gray-900 dark:text-white">24/7 Support</h1>
-            <p class="text-gray-600 dark:text-cyan-300 mt-2">We're here to help you anytime</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">We're always ready to help you</p>
         </div>
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" class="space-y-8">
             {% csrf_token %}
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
                 <input type="text" name="subject" required
-                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400">
+                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
                 <textarea name="message" rows="6" required
-                          class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 resize-y"></textarea>
+                          class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white resize-y"></textarea>
             </div>
 
             <button type="submit"
-                    class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white">
+                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-6 rounded-3xl text-lg font-semibold text-white flex items-center justify-center gap-3">
                 <i class="fas fa-paper-plane"></i> SEND MESSAGE
             </button>
         </form>
 
-        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-sm">
-            <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-2xl p-6">
-                <i class="fas fa-phone text-3xl text-cyan-400 mb-3"></i>
-                <p class="font-medium text-gray-900 dark:text-white">Call Us</p>
+        <!-- Contact Info -->
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
+                <i class="fas fa-phone text-3xl text-cyan-500 mb-3"></i>
+                <p class="font-medium">Call Us</p>
                 <p class="text-gray-600 dark:text-gray-400">+234 903 804 7335</p>
             </div>
-            <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-2xl p-6">
-                <i class="fas fa-envelope text-3xl text-cyan-400 mb-3"></i>
-                <p class="font-medium text-gray-900 dark:text-white">Email</p>
-                <p class="text-gray-600 dark:text-gray-400">support@bindatasub.com</p>
+            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
+                <i class="fas fa-envelope text-3xl text-cyan-500 mb-3"></i>
+                <p class="font-medium">Email</p>
+                <p class="text-gray-600 dark:text-gray-400">aliyubinahmad2020@gmail.com</p>
             </div>
-            <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-2xl p-6">
-                <i class="fas fa-clock text-3xl text-cyan-400 mb-3"></i>
-                <p class="font-medium text-gray-900 dark:text-white">Response Time</p>
-                <p class="text-gray-600 dark:text-gray-400">Within 5 minutes</p>
+            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
+                <i class="fas fa-clock text-3xl text-cyan-500 mb-3"></i>
+                <p class="font-medium">Response Time</p>
+                <p class="text-gray-600 dark:text-gray-400">Within 5 mins</p>
             </div>
         </div>
     </div>

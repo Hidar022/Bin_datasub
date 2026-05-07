@@ -2,40 +2,44 @@
 {% block title %}Settings - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+<div class="max-w-6xl mx-auto px-4 md:px-6 py-8">
+
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
-        <p class="text-gray-600 dark:text-cyan-300 mb-8">Manage your account and security</p>
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Account Settings</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">Manage your profile and security preferences</p>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
             
-            <!-- Sidebar -->
+            <!-- Sidebar Navigation -->
             <div class="lg:col-span-3">
-                <div class="bg-gray-100 dark:bg-[#1a1a4a] rounded-3xl p-4 sticky top-24">
-                    <div class="flex lg:flex-col gap-2">
-                        <button onclick="switchTab(0)" class="sidebar-tab active flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-0">
-                            <i class="fas fa-user"></i> <span class="hidden sm:inline">Profile</span>
+                <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-3 sticky top-24">
+                    <div class="flex flex-col gap-2">
+                        <button onclick="switchTab(0)" class="sidebar-tab active flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-0">
+                            <i class="fas fa-user"></i> 
+                            <span>Profile</span>
                         </button>
-                        <button onclick="switchTab(1)" class="sidebar-tab flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-1">
-                            <i class="fas fa-shield-alt"></i> <span class="hidden sm:inline">Security</span>
+                        <button onclick="switchTab(1)" class="sidebar-tab flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-1">
+                            <i class="fas fa-shield-alt"></i> 
+                            <span>Security</span>
                         </button>
-                        <button onclick="switchTab(2)" class="sidebar-tab flex-1 lg:flex-none text-left px-6 py-4 rounded-2xl flex items-center gap-3" id="tab-2">
-                            <i class="fas fa-fingerprint"></i> <span class="hidden sm:inline">Biometric</span>
+                        <button onclick="switchTab(2)" class="sidebar-tab flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-2">
+                            <i class="fas fa-fingerprint"></i> 
+                            <span>Biometric</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Content Area -->
+            <!-- Main Content -->
             <div class="lg:col-span-9">
                 
                 <!-- Profile Tab -->
                 <div id="tab-content-0" class="tab-content">
-                    <form id="profileForm" method="POST" class="space-y-6">
+                    <form id="profileForm" method="POST" class="space-y-8">
                         {% csrf_token %}
                         <input type="hidden" name="section" value="profile">
 
@@ -43,32 +47,32 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
                                 <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
                                 <input type="text" value="{{ request.user.username }}" disabled
-                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                                 <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
                                 <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
                                 <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
-                                       class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
                             </div>
                         </div>
 
                         <button type="submit" id="profileBtn" 
-                                class="mt-10 w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
+                                class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-cyan-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3 hover:brightness-110 transition-all">
                             <span id="profileBtnText">SAVE CHANGES</span>
                             <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
                         </button>
@@ -78,37 +82,37 @@
                 <!-- Security Tab -->
                 <div id="tab-content-1" class="tab-content hidden space-y-10">
                     
-                    <!-- Change Account Password -->
-                    <div class="bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-gray-700 rounded-3xl p-8">
-                        <h3 class="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Change Account Password</h3>
+                    <!-- Change Password -->
+                    <div class="bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-8">
+                        <h3 class="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Change Account Password</h3>
                         <form id="passwordForm" class="space-y-6">
                             {% csrf_token %}
                             <input type="hidden" name="section" value="password">
                             <input type="password" name="old_password" placeholder="Current Password" 
-                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
                             <input type="password" name="new_password" placeholder="New Password" 
-                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
                             <input type="password" name="confirm_password" placeholder="Confirm New Password" 
-                                   class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5">
+                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
                             
                             <button type="submit" id="passwordBtn" 
-                                    class="mt-8 w-full bg-gradient-to-r from-purple-500 to-pink-400 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
+                                    class="mt-8 w-full bg-gradient-to-r from-purple-600 to-pink-600 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
                                 <span id="passwordBtnText">UPDATE PASSWORD</span>
                                 <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
                             </button>
                         </form>
                     </div>
 
-                    <!-- Transaction PIN Section -->
-                    <div id="pin-section" class="bg-white dark:bg-[#1a1a4a] border border-gray-200 dark:border-gray-700 rounded-3xl p-8">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                    <!-- Transaction PIN -->
+                    <div id="pin-section" class="bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-8">
+                        <h3 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">
                             {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
                         </h3>
-                        <p class="text-gray-600 dark:text-gray-400 text-sm mb-6">
+                        <p class="text-gray-600 dark:text-gray-400 mb-8">
                             {% if has_pin %}
-                                Keep your account secure by updating your PIN regularly.
+                                Update your PIN regularly to keep your account secure.
                             {% else %}
-                                Create a 4-digit PIN to authorize all transactions.
+                                Create a secure 4-digit PIN for authorizing transactions.
                             {% endif %}
                         </p>
 
@@ -118,24 +122,24 @@
 
                             {% if has_pin %}
                             <div>
-                                <label class="text-xs uppercase tracking-widest text-gray-500 dark:text-cyan-400">Current PIN</label>
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current PIN</label>
                                 <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
-                                       class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
                             </div>
                             {% endif %}
 
                             <div>
-                                <label class="text-xs uppercase tracking-widest text-gray-500 dark:text-cyan-400">
-                                    {% if has_pin %}New PIN{% else %}Set PIN{% endif %}
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {% if has_pin %}New PIN{% else %}Set New PIN{% endif %}
                                 </label>
                                 <input type="password" name="new_pin" maxlength="4" placeholder="••••" required
-                                       class="w-full bg-white dark:bg-[#12123a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
+                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
                             </div>
 
                             <button type="submit" id="pinBtn" 
-                                    class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-400 py-5 rounded-3xl font-bold text-white flex items-center justify-center gap-3">
+                                    class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
                                 <span id="pinBtnText">
-                                    {% if has_pin %}UPDATE TRANSACTION PIN{% else %}CREATE TRANSACTION PIN{% endif %}
+                                    {% if has_pin %}UPDATE PIN{% else %}CREATE PIN{% endif %}
                                 </span>
                                 <i id="pinSpinner" class="fas fa-spinner fa-spin hidden"></i>
                             </button>
@@ -143,21 +147,21 @@
                     </div>
                 </div>
 
-                <!-- Biometric Tab - Premium Look -->
+                <!-- Biometric Tab -->
                 <div id="tab-content-2" class="tab-content hidden">
-                    <div class="bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a4a] dark:to-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-12 text-center">
-                        <div class="mx-auto w-24 h-24 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center mb-8">
+                    <div class="bg-gradient-to-br from-gray-50 to-white dark:from-[#25253A] dark:to-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-12 text-center">
+                        <div class="mx-auto w-28 h-28 bg-cyan-100 dark:bg-cyan-900/30 rounded-3xl flex items-center justify-center mb-8">
                             <i class="fas fa-fingerprint text-7xl text-cyan-500"></i>
                         </div>
                         <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Biometric Authentication</h3>
-                        <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto mb-10 leading-relaxed">
-                            Enable fingerprint or face recognition for faster and more secure login and transaction approval.
+                        <p class="text-gray-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+                            Enable fingerprint or face ID for faster and more secure login & transactions.
                         </p>
                         
-                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10">
                             <button onclick="registerBiometric()" 
-                                    class="bg-gradient-to-r from-cyan-400 to-blue-500 px-10 py-5 rounded-3xl text-lg font-semibold text-white hover:scale-105 transition-all">
-                                Register Biometric
+                                    class="bg-gradient-to-r from-cyan-500 to-indigo-600 px-10 py-5 rounded-3xl text-lg font-semibold text-white hover:scale-105 transition-all">
+                                Enable Biometric
                             </button>
                             <button onclick="testBiometric()" 
                                     class="border border-gray-300 dark:border-gray-600 px-10 py-5 rounded-3xl text-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -186,7 +190,7 @@
 
         const toast = document.createElement('div');
         toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
+        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4
                            ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
 
         toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
@@ -194,7 +198,7 @@
         setTimeout(() => toast.remove(), 5000);
     }
 
-    // Handle form submissions with better feedback
+    // Form submission logic (your original logic preserved)
     document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -222,21 +226,14 @@
                     }
                 });
 
-                let data = null;
-
-                // ✅ Safe JSON parsing (prevents "network error")
+                let data;
                 const contentType = response.headers.get("content-type");
 
                 if (contentType && contentType.includes("application/json")) {
                     data = await response.json();
                 } else {
                     const text = await response.text();
-                    console.error("Non-JSON response:", text);
-                    try {
-                        data = JSON.parse(text);
-                    } catch (e) {
-                        throw new Error(`Invalid server response: ${response.status}`);
-                    }
+                    data = JSON.parse(text);
                 }
 
                 if (data.status === 'success') {

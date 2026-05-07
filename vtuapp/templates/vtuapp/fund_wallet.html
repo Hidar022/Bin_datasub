@@ -2,21 +2,25 @@
 {% block title %}Fund Wallet - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto px-4 py-6">
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-cyan-500 hover:text-cyan-600 mb-8">
+<div class="max-w-lg mx-auto px-4 md:px-6 py-10">
+
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-cyan-400 rounded-3xl p-6 md:p-8 neon-cyan">
-        <div class="text-center mb-8">
-            <i class="fas fa-wallet text-6xl text-cyan-400 mb-4"></i>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Fund Your Wallet</h1>
-            <p class="text-gray-600 dark:text-cyan-300">Instant funding with Paystack • Full Credit</p>
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
+        
+        <div class="text-center mb-10">
+            <div class="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-3xl flex items-center justify-center mb-5">
+                <i class="fas fa-wallet text-5xl text-white"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">Fund Wallet</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">Instant funding via Paystack</p>
         </div>
 
-        <div class="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-500/50 rounded-2xl p-5 mb-8 text-center">
-            <p class="text-emerald-700 dark:text-emerald-400 text-sm font-medium">
-                ✅ You get <strong>Full Credit</strong>. We absorb the Paystack fee.
+        <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl p-5 mb-10 text-center">
+            <p class="text-emerald-700 dark:text-emerald-400 font-medium">
+                ✅ You get <strong>100% Credit</strong>. We cover the charges.
             </p>
         </div>
 
@@ -24,30 +28,30 @@
             {% csrf_token %}
 
             <!-- Quick Amounts -->
-            <div class="mb-8">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Quick Select Amount</p>
+            <div class="mb-10">
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Quick Select</p>
                 <div class="grid grid-cols-3 gap-3">
-                    <button type="button" onclick="selectAmount(1000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">1,000</button>
-                    <button type="button" onclick="selectAmount(2000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">2,000</button>
-                    <button type="button" onclick="selectAmount(5000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">5,000</button>
-                    <button type="button" onclick="selectAmount(10000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">10,000</button>
-                    <button type="button" onclick="selectAmount(20000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">20,000</button>
-                    <button type="button" onclick="selectAmount(50000)" class="amount-btn bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 py-4 rounded-2xl text-lg hover:border-cyan-400 transition-all">50,000</button>
+                    <button type="button" onclick="selectAmount(1000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">1,000</button>
+                    <button type="button" onclick="selectAmount(2000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">2,000</button>
+                    <button type="button" onclick="selectAmount(5000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">5,000</button>
+                    <button type="button" onclick="selectAmount(10000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">10k</button>
+                    <button type="button" onclick="selectAmount(20000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">20k</button>
+                    <button type="button" onclick="selectAmount(50000)" class="amount-btn py-4 bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-400 transition-all">50k</button>
                 </div>
             </div>
 
-            <div class="mb-8">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Or Enter Custom Amount</label>
+            <div class="mb-10">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Custom Amount</label>
                 <div class="relative">
-                    <span class="absolute left-6 top-1/2 -translate-y-1/2 text-3xl text-cyan-400">₦</span>
+                    <span class="absolute left-6 top-1/2 -translate-y-1/2 text-4xl text-gray-400">₦</span>
                     <input type="number" id="amount" name="amount" 
-                           class="w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-cyan-400 focus:border-cyan-400 rounded-3xl pl-14 pr-6 py-6 text-3xl font-bold outline-none text-gray-900 dark:text-white"
-                           placeholder="5000" min="100" step="50" required>
+                           class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl pl-14 pr-6 py-6 text-4xl font-bold outline-none text-gray-900 dark:text-white"
+                           placeholder="5000" min="100" required>
                 </div>
             </div>
 
             <button type="submit" id="fundBtn"
-                    class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 hover:from-emerald-600 hover:to-cyan-500 py-6 rounded-3xl text-xl font-bold flex items-center justify-center gap-3 transition-all text-white">
+                    class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 py-6 rounded-3xl text-xl font-bold text-white flex items-center justify-center gap-3 transition-all">
                 <span id="btnText">PROCEED TO PAYSTACK</span>
                 <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
             </button>
@@ -58,8 +62,10 @@
 <script>
     function selectAmount(val) {
         document.getElementById('amount').value = val;
-        document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('border-cyan-400', 'ring-2', 'ring-cyan-400'));
-        event.currentTarget.classList.add('border-cyan-400', 'ring-2', 'ring-cyan-400');
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            btn.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-400');
+        });
+        event.currentTarget.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-400');
     }
 
     document.getElementById('fundForm').addEventListener('submit', function() {
