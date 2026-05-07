@@ -78,14 +78,25 @@ def register(request):
                     # Send OTP again
                     subject = 'Your Bin Datasub Verification Code'
                     html_message = f"""
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0a0a2e; color: white; border-radius: 16px;">
-                        <h2 style="color: #a855f7;">Bin Datasub</h2>
-                        <p>Hi {existing_user.username},</p>
-                        <p>Your verification code is:</p>
-                        <div style="background:#1a1a4a; padding:25px; text-align:center; font-size:42px; letter-spacing:8px; border-radius:12px; margin:20px 0;">
-                            <strong>{otp}</strong>
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #0a0a2e 0%, #16213e 100%); color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #a855f7; margin: 0; font-size: 28px;">Bin Datasub</h1>
+                            <p style="color: #cbd5e0; margin: 5px 0;">Your Trusted VTU Service</p>
                         </div>
-                        <p>This code expires in 10 minutes.</p>
+                        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 12px; margin-bottom: 20px;">
+                            <h2 style="color: #a855f7; margin-top: 0;">Verify Your Account</h2>
+                            <p>Hi {existing_user.username},</p>
+                            <p>Thank you for registering with Bin Datasub! To complete your account setup, please verify your email address using the code below:</p>
+                            <div style="background: #1a1a4a; padding: 25px; text-align: center; font-size: 42px; letter-spacing: 8px; border-radius: 12px; margin: 20px 0; border: 2px solid #a855f7;">
+                                <strong>{otp}</strong>
+                            </div>
+                            <p style="font-size: 14px; color: #cbd5e0;">This code will expire in 10 minutes for security reasons.</p>
+                            <p>If you didn't request this verification, please ignore this email or contact our support team.</p>
+                        </div>
+                        <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                            <p style="font-size: 12px; color: #cbd5e0;">Need help? <a href="mailto:support@bindatasub.com" style="color: #a855f7;">Contact Support</a></p>
+                            <p style="font-size: 12px; color: #cbd5e0;">&copy; 2024 Bin Datasub. All rights reserved.</p>
+                        </div>
                     </div>
                     """
 
@@ -120,14 +131,25 @@ def register(request):
             # Send email (same as before)
             subject = 'Your Bin Datasub Verification Code'
             html_message = f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0a0a2e; color: white; border-radius: 16px;">
-                <h2 style="color: #a855f7;">Welcome to Bin Datasub</h2>
-                <p>Hi {user.username},</p>
-                <p>Your verification code is:</p>
-                <div style="background:#1a1a4a; padding:25px; text-align:center; font-size:42px; letter-spacing:8px; border-radius:12px; margin:20px 0;">
-                    <strong>{otp}</strong>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #0a0a2e 0%, #16213e 100%); color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #a855f7; margin: 0; font-size: 28px;">Bin Datasub</h1>
+                    <p style="color: #cbd5e0; margin: 5px 0;">Your Trusted VTU Service</p>
                 </div>
-                <p>This code expires in 10 minutes.</p>
+                <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 12px; margin-bottom: 20px;">
+                    <h2 style="color: #a855f7; margin-top: 0;">Welcome to Bin Datasub!</h2>
+                    <p>Hi {user.username},</p>
+                    <p>Thank you for registering with Bin Datasub! To complete your account setup, please verify your email address using the code below:</p>
+                    <div style="background: #1a1a4a; padding: 25px; text-align: center; font-size: 42px; letter-spacing: 8px; border-radius: 12px; margin: 20px 0; border: 2px solid #a855f7;">
+                        <strong>{otp}</strong>
+                    </div>
+                    <p style="font-size: 14px; color: #cbd5e0;">This code will expire in 10 minutes for security reasons.</p>
+                    <p>If you didn't request this verification, please ignore this email or contact our support team.</p>
+                </div>
+                <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <p style="font-size: 12px; color: #cbd5e0;">Need help? <a href="mailto:support@bindatasub.com" style="color: #a855f7;">Contact Support</a></p>
+                    <p style="font-size: 12px; color: #cbd5e0;">&copy; 2024 Bin Datasub. All rights reserved.</p>
+                </div>
             </div>
             """
 
