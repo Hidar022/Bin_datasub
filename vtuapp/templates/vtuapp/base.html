@@ -21,22 +21,26 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        
+        .mobile-sidebar {
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mobile-sidebar.open {
+            transform: translateX(0);
+        }
     </style>
 
     <script>
         tailwind.config = { darkMode: 'class' };
 
-        // Prevent Flash of Wrong Theme (Very Important)
         (function() {
             const savedTheme = localStorage.getItem('theme');
-            
             if (savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
-                document.documentElement.classList.remove('light');
             } else {
-                // Default to LIGHT for first time visitors
                 document.documentElement.classList.remove('dark');
-                document.documentElement.classList.add('light');
                 localStorage.setItem('theme', 'light');
             }
         })();
@@ -45,7 +49,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-white dark:bg-[#0A0A1F] text-gray-900 dark:text-white min-h-screen transition-colors duration-300">
+<body class="bg-white dark:bg-[#0A0A1F] text-gray-900 dark:text-white min-h-screen transition-colors">
 
     <!-- Navbar -->
     <nav class="bg-white/95 dark:bg-[#0A0A1F]/95 border-b border-gray-200 dark:border-white/10 backdrop-blur-xl sticky top-0 z-50">
@@ -75,7 +79,6 @@
                 </div>
 
                 <div class="flex items-center gap-3 md:gap-4">
-                    
                     <!-- Theme Toggle -->
                     <button id="theme-toggle" 
                             class="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 border border-gray-200 dark:border-white/10 transition-all">
@@ -89,42 +92,53 @@
                         </div>
                         <a href="{% url 'logout' %}" class="hidden md:inline text-red-500 hover:text-red-600 font-medium text-sm">Logout</a>
                     {% else %}
-                        <a href="{% url 'login' %}" 
-                           class="hidden sm:inline px-5 py-2.5 text-sm font-semibold rounded-3xl border border-gray-300 dark:border-white/30 hover:border-gray-400 transition-all">
+                        <a href="{% url 'login' %}" class="hidden sm:inline px-5 py-2.5 text-sm font-semibold rounded-3xl border border-gray-300 dark:border-white/30 hover:border-gray-400 transition-all">
                             Login
                         </a>
-                        <a href="{% url 'register' %}" 
-                           class="hidden sm:inline px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-3xl hover:scale-105 transition-all">
+                        <a href="{% url 'register' %}" class="hidden sm:inline px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-3xl hover:scale-105 transition-all">
                             Sign Up
                         </a>
                     {% endif %}
 
+                    <!-- Hamburger -->
                     <button id="hamburger" class="md:hidden w-10 h-10 flex items-center justify-center">
                         <i class="fas fa-bars text-2xl"></i>
                     </button>
                 </div>
             </div>
-
-            <!-- Mobile Menu -->
-            <div id="mobile-menu" class="hidden md:hidden mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
-                <div class="flex flex-col gap-5 text-base font-medium py-4">
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'dashboard' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Dashboard</a>
-                        <a href="{% url 'services' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Services</a>
-                        <a href="{% url 'transactions' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Transactions</a>
-                        <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Support</a>
-                        <a href="{% url 'logout' %}" class="text-red-500 pt-4">Logout</a>
-                    {% else %}
-                        <a href="{% url 'index' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Home</a>
-                        <a href="#services" class="hover:text-indigo-600 dark:hover:text-cyan-400">Services</a>
-                        <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Support</a>
-                        <a href="{% url 'login' %}" class="w-full text-center py-4 border border-gray-300 dark:border-white/30 rounded-3xl">Login</a>
-                        <a href="{% url 'register' %}" class="w-full text-center py-4 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-3xl">Sign Up</a>
-                    {% endif %}
-                </div>
-            </div>
         </div>
     </nav>
+
+    <!-- Right Side Mobile Sidebar -->
+    <div id="mobile-sidebar" class="mobile-sidebar fixed top-0 right-0 h-full w-72 bg-white dark:bg-[#0A0A1F] shadow-2xl z-[100] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <span class="text-2xl font-bold header-glow">Bin Datasub</span>
+                <button id="close-sidebar" class="text-3xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    ×
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-6 text-base font-medium">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Dashboard</a>
+                    <a href="{% url 'services' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Services</a>
+                    <a href="{% url 'transactions' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Transactions</a>
+                    <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Support</a>
+                    <a href="{% url 'logout' %}" class="text-red-500 py-3">Logout</a>
+                {% else %}
+                    <a href="{% url 'index' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Home</a>
+                    <a href="#services" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Services</a>
+                    <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Support</a>
+                    <a href="{% url 'login' %}" class="py-3">Login</a>
+                    <a href="{% url 'register' %}" class="py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-3xl text-center">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-[99]"></div>
 
     <!-- Django Messages -->
     {% if messages %}
@@ -143,10 +157,39 @@
     {% block content %}
     {% endblock %}
 
+    <!-- Mobile Bottom Navigation -->
+    {% if user.is_authenticated %}
+    <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0A0A1F] border-t border-gray-200 dark:border-white/10 md:hidden z-50">
+        <div class="max-w-screen-2xl mx-auto px-4">
+            <div class="flex items-center justify-around py-2">
+                <a href="{% url 'dashboard' %}" class="flex flex-col items-center py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-cyan-400">
+                    <i class="fas fa-home text-2xl"></i>
+                    <span class="text-xs mt-1">Home</span>
+                </a>
+                <a href="{% url 'services' %}" class="flex flex-col items-center py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-cyan-400">
+                    <i class="fas fa-th-large text-2xl"></i>
+                    <span class="text-xs mt-1">Services</span>
+                </a>
+                <a href="{% url 'transactions' %}" class="flex flex-col items-center py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-cyan-400">
+                    <i class="fas fa-receipt text-2xl"></i>
+                    <span class="text-xs mt-1">History</span>
+                </a>
+                <a href="{% url 'fund_wallet' %}" class="flex flex-col items-center py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-cyan-400">
+                    <i class="fas fa-wallet text-2xl"></i>
+                    <span class="text-xs mt-1">Wallet</span>
+                </a>
+                <a href="{% url 'support' %}" class="flex flex-col items-center py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-cyan-400">
+                    <i class="fas fa-headset text-2xl"></i>
+                    <span class="text-xs mt-1">Support</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
     <script>
         function toggleTheme() {
             const isDark = document.documentElement.classList.contains('dark');
-            
             if (isDark) {
                 document.documentElement.classList.remove('dark');
                 localStorage.setItem('theme', 'light');
@@ -161,16 +204,28 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Theme Toggle
             const toggleBtn = document.getElementById('theme-toggle');
             if (toggleBtn) toggleBtn.addEventListener('click', toggleTheme);
 
-            // Mobile Menu
             const hamburger = document.getElementById('hamburger');
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (hamburger && mobileMenu) {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const closeBtn = document.getElementById('close-sidebar');
+
+            if (hamburger && sidebar && overlay) {
                 hamburger.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
+                    sidebar.classList.add('open');
+                    overlay.classList.remove('hidden');
+                });
+
+                closeBtn.addEventListener('click', () => {
+                    sidebar.classList.remove('open');
+                    overlay.classList.add('hidden');
+                });
+
+                overlay.addEventListener('click', () => {
+                    sidebar.classList.remove('open');
+                    overlay.classList.add('hidden');
                 });
             }
         });
