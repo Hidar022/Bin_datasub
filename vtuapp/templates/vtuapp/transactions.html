@@ -26,7 +26,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     {% for tx in transactions %}
-                    <tr onclick="window.location.href='{% url 'transaction_receipt' tx.id %}'" 
+                          <tr onclick="window.location.href='{% url 'receipt_detail' tx.id %}'"
                         class="hover:bg-gray-50 dark:hover:bg-[#25253A] transition-all cursor-pointer">
                         <td class="p-6 text-gray-700 dark:text-gray-300">{{ tx.timestamp|date:"d M, Y" }}<br>
                             <span class="text-xs text-gray-500">{{ tx.timestamp|time:"H:i" }}</span>
