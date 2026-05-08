@@ -2,59 +2,77 @@
 {% block title %}Transactions - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 md:px-6 py-8">
+<div class="max-w-5xl mx-auto px-4 md:px-6 py-10">
 
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
+    <a href="{% url 'dashboard' %}"
+       class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:gap-3 transition-all mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">All Transactions</h1>
-    <p class="text-gray-600 dark:text-gray-400">Complete history of your activities</p>
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-white">All Transactions</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">Complete history of your activities</p>
 
-    <div class="mt-10 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden">
+    <div class="mt-10 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-lg">
+
         {% if transactions %}
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-[#25253A]">
                     <tr>
-                        <th class="text-left p-6 font-medium text-gray-600 dark:text-gray-400">Date</th>
-                        <th class="text-left p-6 font-medium text-gray-600 dark:text-gray-400">Type</th>
-                        <th class="text-left p-6 font-medium text-gray-600 dark:text-gray-400">Details</th>
-                        <th class="text-right p-6 font-medium text-gray-600 dark:text-gray-400">Amount</th>
-                        <th class="text-center p-6 font-medium text-gray-600 dark:text-gray-400">Status</th>
+                        <th class="text-left p-6">Date</th>
+                        <th class="text-left p-6">Type</th>
+                        <th class="text-left p-6">Details</th>
+                        <th class="text-right p-6">Amount</th>
+                        <th class="text-center p-6">Status</th>
                     </tr>
                 </thead>
+
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+
                     {% for tx in transactions %}
-                          <tr onclick="window.location.href='{% url 'receipt_detail' tx.id %}'"
-                        class="hover:bg-gray-50 dark:hover:bg-[#25253A] transition-all cursor-pointer">
-                        <td class="p-6 text-gray-700 dark:text-gray-300">{{ tx.timestamp|date:"d M, Y" }}<br>
+                    <tr onclick="window.location.href='{% url 'receipt_detail' tx.id %}'"
+                        class="cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2A2A40] transition-all duration-200">
+
+                        <td class="p-6 text-gray-700 dark:text-gray-300">
+                            {{ tx.timestamp|date:"d M, Y" }}<br>
                             <span class="text-xs text-gray-500">{{ tx.timestamp|time:"H:i" }}</span>
                         </td>
-                        <td class="p-6 font-medium text-gray-900 dark:text-white">{{ tx.transaction_type }}</td>
+
+                        <td class="p-6 font-semibold text-gray-900 dark:text-white">
+                            {{ tx.transaction_type }}
+                        </td>
+
                         <td class="p-6 text-gray-600 dark:text-gray-400">
                             {{ tx.provider }} {% if tx.phone_or_meter %}• {{ tx.phone_or_meter }}{% endif %}
                         </td>
-                        <td class="p-6 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+
+                        <td class="p-6 text-right font-bold text-emerald-600 dark:text-emerald-400">
                             ₦{{ tx.amount|floatformat:2 }}
                         </td>
+
                         <td class="p-6 text-center">
-                            <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-6 py-2 rounded-3xl text-xs font-medium">
+                            <span class="px-5 py-2 rounded-2xl text-xs font-medium
+                                bg-emerald-100 dark:bg-emerald-500/20
+                                text-emerald-700 dark:text-emerald-400">
                                 Successful
                             </span>
                         </td>
+
                     </tr>
                     {% endfor %}
+
                 </tbody>
             </table>
         </div>
+
         {% else %}
         <div class="p-20 text-center text-gray-500 dark:text-gray-400">
-            <i class="fas fa-receipt text-6xl mb-6 opacity-40"></i>
+            <i class="fas fa-receipt text-6xl mb-6 opacity-30"></i>
             <p class="text-xl">No transactions yet</p>
             <p class="mt-2">Your activity will appear here</p>
         </div>
         {% endif %}
+
     </div>
 </div>
 {% endblock %}

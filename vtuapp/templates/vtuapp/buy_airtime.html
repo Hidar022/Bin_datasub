@@ -4,145 +4,130 @@
 {% block title %}Buy Airtime - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 md:px-6 py-8">
+<div class="max-w-2xl mx-auto px-4 md:px-6 py-10">
 
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
+    <a href="{% url 'dashboard' %}"
+       class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:gap-3 transition-all mb-8 font-medium">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
     <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
-        <div id="messages-container" class="space-y-3 mb-8"></div>
 
-        <h1 class="text-4xl font-bold mb-2 text-gray-900 dark:text-white">Buy Airtime</h1>
-        <p class="text-gray-600 dark:text-gray-400 text-lg">Instant top-up for any network</p>
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white">Buy Airtime</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Instant top-up for any network</p>
 
         <form id="airtimeForm" class="mt-10 space-y-8">
             {% csrf_token %}
 
             {% for field in form %}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ field.label }}</label>
-                {{ field|add_class:"w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 text-base outline-none transition-all" }}
+                <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {{ field.label }}
+                </label>
+                {{ field|add_class:"w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 rounded-3xl px-6 py-5 text-gray-900 dark:text-white outline-none focus:border-cyan-400 transition-all" }}
             </div>
             {% endfor %}
 
             <button type="button" id="confirmBtn"
-                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-6 rounded-3xl text-lg font-semibold flex items-center justify-center gap-3 text-white transition-all">
+                class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 py-6 rounded-3xl text-white font-semibold flex items-center justify-center gap-3">
                 CONFIRM & BUY AIRTIME
             </button>
         </form>
     </div>
 </div>
 
-<!-- PIN Modal (Same as above) -->
-<div id="pinModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 w-full max-w-md mx-4">
-        <h3 class="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Enter 4-Digit PIN</h3>
-        <input type="password" id="pinInput" maxlength="4"
-               class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 text-center text-4xl tracking-[12px] font-mono rounded-3xl py-6 outline-none text-gray-900 dark:text-white"
-               placeholder="••••" autocomplete="off">
+<!-- PIN MODAL -->
+<div id="pinModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#1A1A2E] p-8 rounded-3xl w-full max-w-md">
 
-        <div class="mt-8 flex gap-4">
-            <button onclick="closePinModal()" class="flex-1 py-4 rounded-3xl border border-gray-300 dark:border-gray-600 font-medium text-gray-700 dark:text-gray-300">Cancel</button>
-            <button onclick="verifyPin()" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-3xl font-semibold text-white">Verify PIN</button>
+        <h2 class="text-xl font-bold text-center mb-6">Enter 4-digit PIN</h2>
+
+        <input id="pinInput" maxlength="4" type="password"
+            class="w-full text-center text-3xl tracking-[10px] py-5 rounded-3xl bg-gray-100 dark:bg-[#25253A] outline-none">
+
+        <div class="flex gap-4 mt-6">
+            <button onclick="closePinModal()"
+                class="flex-1 py-4 rounded-3xl border">Cancel</button>
+
+            <button onclick="verifyPin()"
+                class="flex-1 py-4 rounded-3xl bg-emerald-500 text-white">
+                Verify
+            </button>
         </div>
+
     </div>
 </div>
 
 <script>
-    // Your original script stays exactly the same
-    const confirmBtn = document.getElementById('confirmBtn');
+const btn = document.getElementById('confirmBtn');
+const form = document.getElementById('airtimeForm');
 
-    confirmBtn.addEventListener('click', function() {
-        document.getElementById('pinModal').classList.remove('hidden');
-        document.getElementById('pinInput').focus();
-    });
+function toast(type, msg) {
+    const old = document.getElementById('global-toast');
+    if (old) old.remove();
 
-    function closePinModal() {
-        document.getElementById('pinModal').classList.add('hidden');
-        document.getElementById('pinInput').value = '';
-    }
+    const el = document.createElement('div');
+    el.id = 'global-toast';
+    el.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl text-white shadow-xl ${
+        type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+    }`;
 
-    function showMessage(type, message) {
-        const oldToast = document.getElementById('global-toast');
-        if (oldToast) oldToast.remove();
+    el.innerHTML = msg;
+    document.body.appendChild(el);
 
-        const toast = document.createElement('div');
-        toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
-                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+    setTimeout(() => el.remove(), 4000);
+}
 
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i>
-                           <span class="font-medium">${message}</span>`;
+btn.onclick = () => {
+    document.getElementById('pinModal').classList.remove('hidden');
+    document.getElementById('pinInput').focus();
+};
 
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
-    }
+function closePinModal() {
+    document.getElementById('pinModal').classList.add('hidden');
+}
 
-    function verifyPin() {
-        const pin = document.getElementById('pinInput').value.trim();
-        if (pin.length !== 4) {
-            showMessage('error', "PIN must be exactly 4 digits");
-            return;
-        }
+async function verifyPin() {
+    const pin = document.getElementById('pinInput').value;
 
-        closePinModal();
+    if (pin.length !== 4) return toast('error', 'PIN must be 4 digits');
 
-        const originalText = confirmBtn.innerHTML;
-        confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-        confirmBtn.disabled = true;
+    closePinModal();
 
-        const formData = new FormData(document.getElementById('airtimeForm'));
-        formData.append('pin', pin);
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
 
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const data = new FormData(form);
+    data.append('pin', pin);
 
-        fetch("{% url 'buy_airtime' %}", {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    try {
+        const res = await fetch("{% url 'buy_airtime' %}", {
             method: "POST",
-            body: formData,
-            headers: { 
+            body: data,
+            headers: {
                 "X-Requested-With": "XMLHttpRequest",
-                "X-CSRFToken": csrfToken
+                "X-CSRFToken": csrf
             }
-        })
-        .then(async response => {
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                throw new Error('Server error: ' + text.substring(0, 50));
-            }
-        })
-        .then(data => {
-            if (data.status === 'no_pin') {
-                showMessage('error', data.message);
-                setTimeout(() => window.location.href = "{% url 'settings' %}?next=airtime#pin-section", 1600);
-            } else if (data.status === 'success') {
-                showMessage('success', data.message);
-                setTimeout(() => {
-                    window.location.href = data.redirect_url || "{% url 'dashboard' %}";
-                }, 2000);
-            } else {
-                showMessage('error', data.message || 'Purchase failed');
-            }
-        })
-        .catch(error => {
-            showMessage('error', "Connection error or Server 500");
-            console.error(error);
-        })
-        .finally(() => {
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
         });
+
+        const result = await res.json();
+
+        if (result.status === 'success') {
+            toast('success', result.message);
+            setTimeout(() => window.location.href = result.redirect_url || "/", 1500);
+        } else {
+            toast('error', result.message || "Failed");
+        }
+
+    } catch (e) {
+        toast('error', "Server error");
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const phoneInput = document.querySelector('input[name="phone"]');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
-        }
-    });
+    btn.disabled = false;
+    btn.innerHTML = "CONFIRM & BUY AIRTIME";
+}
 </script>
+
 {% endblock %}

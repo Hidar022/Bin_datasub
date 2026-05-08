@@ -4,190 +4,121 @@
 {% block title %}Login - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="min-h-[90vh] flex items-center justify-center py-12 px-4">
-    <div class="max-w-md w-full">
-        <!-- Logo -->
-        <div class="flex justify-center mb-10">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl">📡</div>
-                <span class="text-4xl font-bold tracking-tighter header-glow">Bin Datasub</span>
+
+<div class="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-50 dark:bg-[#070714] relative overflow-hidden">
+
+<div class="absolute top-0 left-0 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl"></div>
+<div class="absolute bottom-0 right-0 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl"></div>
+
+<div class="w-full max-w-lg relative z-10">
+
+    <!-- Logo -->
+    <div class="flex justify-center mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 bg-gradient-to-br from-indigo-600 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl">
+                📡
             </div>
+            <span class="text-3xl font-bold header-glow">Bin Datasub</span>
         </div>
+    </div>
 
-        <div class="bg-white dark:bg-[#12123a] border border-gray-200 dark:border-purple-500/50 rounded-3xl p-8 shadow-xl">
-            <h1 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">Welcome Back</h1>
-            <p class="text-gray-600 dark:text-cyan-300 text-center mb-8">Login to your VTU dashboard</p>
+    <!-- Card -->
+    <div class="bg-white/90 dark:bg-[#12122B]/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/20">
 
-            <form id="{% if 'login' in request.path %}loginForm{% else %}registerForm{% endif %}" method="POST" class="space-y-6">
-    {% csrf_token %}
+        <h1 class="text-3xl font-bold text-center text-gray-900 dark:text-white">Welcome Back</h1>
+        <p class="text-center text-gray-500 dark:text-gray-400 mt-2 mb-6">Login to your dashboard</p>
 
-    {% for field in form %}
-    <div class="relative">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ml-1">
-            {{ field.label }}
-        </label>
-        
-        <div class="relative group">
-            <!-- widget_tweaks handles the styling classes -->
-            {{ field|add_class:"w-full bg-white dark:bg-[#1a1a4a] border border-gray-300 dark:border-purple-500/50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 rounded-3xl px-6 py-5 text-gray-900 dark:text-white placeholder-gray-400 text-base outline-none transition-all" }}
-            
-            <!-- JavaScript Trigger for Password Fields -->
-            {% if 'password' in field.name or 'password' in field.label|lower %}
-            <button type="button" 
-                    onclick="togglePasswordVisibility('{{ field.id_for_label }}')"
-                    class="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors z-10">
-                <i class="fas fa-eye" id="eye-{{ field.id_for_label }}"></i>
+        <form id="loginForm" method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div>
+                <label class="text-sm text-gray-600 dark:text-gray-300 ml-1">{{ field.label }}</label>
+
+                <div class="relative mt-2">
+                    {{ field|add_class:"w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 dark:focus:border-cyan-400 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-cyan-400/10 rounded-2xl px-5 py-4 text-gray-900 dark:text-white outline-none transition-all" }}
+                </div>
+
+                {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" id="loginBtn"
+                class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-4 rounded-2xl font-semibold text-white flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] shadow-xl hover:shadow-cyan-500/20">
+
+                <span id="btnText">LOGIN</span>
+                <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
             </button>
-            {% endif %}
-        </div>
-        
-        {% if field.errors %}
-            <p class="text-red-500 text-[10px] mt-1 ml-4 italic">{{ field.errors.0 }}</p>
-        {% endif %}
-    </div>
-    {% endfor %}
+        </form>
 
-    {% if 'login' in request.path %}
-    <div class="text-right">
-        <a href="{% url 'password_reset' %}" class="text-sm text-cyan-500 hover:text-cyan-600 transition-all">
-            Forgot Password?
-        </a>
-    </div>
-    {% endif %}
+        <p class="text-center text-gray-500 dark:text-gray-400 mt-6">
+            New here?
+            <a href="{% url 'register' %}" class="text-cyan-500 hover:text-cyan-400">Create account</a>
+        </p>
 
-    <button type="submit" id="{% if 'login' in request.path %}loginBtn{% else %}registerBtn{% endif %}"
-            class="w-full bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 py-5 rounded-3xl font-semibold text-lg flex items-center justify-center gap-3 text-white transition-all shadow-lg shadow-cyan-500/10">
-        <span id="btnText">{% if 'login' in request.path %}LOGIN{% else %}CREATE ACCOUNT{% endif %}</span>
-        <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
-    </button>
-</form>
-
-            <div class="mt-8 text-center text-gray-600 dark:text-gray-400">
-                New here? 
-                <a href="{% url 'register' %}" class="text-cyan-500 hover:text-cyan-600 font-medium">Create free account →</a>
-            </div>
-        </div>
     </div>
 </div>
 
+</div>
+
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+
     const form = document.getElementById('loginForm');
+    if (!form) return;
+
     const btn = document.getElementById('loginBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
 
-    function showMessage(message, type = 'error') {
-        const oldToast = document.getElementById('global-toast');
-        if (oldToast) oldToast.remove();
-
-        const toast = document.createElement('div');
-        toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4 transition-all
-                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
-
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
+    function setLoading(state) {
+        btn.disabled = state;
+        btnText.classList.toggle('hidden', state);
+        btnSpinner.classList.toggle('hidden', !state);
     }
 
-    // 🔥 Split backend message into clean errors
-    function formatErrors(message) {
-        let errors = message.split('.');
-        return errors.map(e => e.trim()).filter(e => e.length > 0);
-    }
-
-    // 🔥 Highlight fields based on message
-    function smartHighlight(message) {
-        document.querySelectorAll('input').forEach(i => i.classList.remove('border-red-500'));
-
-        if (message.toLowerCase().includes('username')) {
-            document.querySelector('[name="username"]')?.classList.add('border-red-500');
-        }
-        if (message.toLowerCase().includes('password')) {
-            document.querySelectorAll('input[type="password"]').forEach(el => {
-                el.classList.add('border-red-500');
-            });
-        }
-    }
-
-    form.addEventListener('submit', async function(e) {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        btn.disabled = true;
-        btnText.classList.add('hidden');
-        btnSpinner.classList.remove('hidden');
+        setLoading(true);
 
         const formData = new FormData(form);
-
-        // 🔥 FIX: Use form.action or fallback to current pathname
-        const targetUrl = form.action || window.location.pathname;
-        
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (!csrfToken || !csrfToken.value) {
-            console.error('CSRF token not found!');
-            showMessage('Page error. Please refresh and try again.');
-            return;
-        }
 
         try {
-            const response = await fetch(targetUrl, {
+            const response = await fetch(window.location.pathname, {
                 method: 'POST',
                 credentials: 'same-origin',
                 body: formData,
-                headers: { 
+                headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken.value
                 }
             });
 
-            console.log('Response status:', response.status, 'Content-Type:', response.headers.get('content-type'));
-
-            // ✅ Safe JSON parsing (prevents "network error")
-            const contentType = response.headers.get("content-type");
-            console.log('Response content-type:', contentType);
-
-            if (contentType && contentType.includes("application/json")) {
-                data = await response.json();
-                console.log('Parsed JSON data:', data);
-            } else {
-                const text = await response.text();
-                console.log('Response text:', text);
-                try {
-                    data = JSON.parse(text);
-                    console.log('Parsed JSON from text:', data);
-                } catch (e) {
-                    console.error("Not JSON response:", text);
-                    const errorDetail = text.replace(/<[^>]*>/g, '').trim().slice(0, 200);
-                    throw new Error(`Server returned ${response.status}: ${errorDetail}`);
-                }
-            }
+            const data = await response.json();
 
             if (response.ok && data.success) {
                 showMessage(data.message || 'Login successful!', 'success');
-                setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1500);
+
+                setTimeout(() => {
+                    window.location.href = "{% url 'dashboard' %}";
+                }, 1200);
+
             } else {
-                // 🔥 CLEAN ERROR HANDLING
-                if (data.message) {
-                    const errors = formatErrors(data.message);
-
-                    // Show as ONE clean message
-                    showMessage(errors.join(', '), 'error');
-
-                    // Highlight fields
-                    smartHighlight(data.message);
-
-                } else {
-                    showMessage('Login failed. Please try again.', 'error');
-                }
+                showMessage(data.message || 'Login failed', 'error');
             }
+
         } catch (err) {
-            console.error('Login error:', err);
-            showMessage('Network error. Please check your connection and try again.');
+            console.error(err);
+            showMessage('Network error. Please try again.', 'error');
         } finally {
-            btn.disabled = false;
-            btnText.classList.remove('hidden');
-            btnSpinner.classList.add('hidden');
+            setLoading(false);
         }
     });
+
+});
 </script>
 {% endblock %}
