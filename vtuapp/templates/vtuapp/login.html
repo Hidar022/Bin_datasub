@@ -117,19 +117,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let data;
-
             try {
                 data = await response.json();
             } catch (err) {
                 throw new Error("Server did not return JSON");
             }
 
-            // IMPORTANT FIX HERE
+            // === THE IMPORTANT FIX IS HERE ===
             if (response.ok && data.success === true) {
                 showMessage(data.message || 'Login successful!', 'success');
 
                 setTimeout(() => {
-                    window.location.href = "{% url 'dashboard' %}";
+                    // Instead of hardcoding dashboard, we use the URL sent by Python
+                    // This ensures you go to /ceo-panel/ and users go to /dashboard/
+                    window.location.href = data.redirect_url; 
                 }, 1000);
 
             } else {

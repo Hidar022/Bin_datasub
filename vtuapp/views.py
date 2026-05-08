@@ -288,6 +288,7 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             
+            # 1. Check if user is verified/active
             if not user.is_active:
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
@@ -298,15 +299,26 @@ def login_view(request):
                     messages.error(request, 'Please verify your email before logging in.')
                     return redirect('login')
 
+            # 2. Log the user in
             login(request, user)
+
+            # 3. Determine Role-Based Redirect
+            # If you (aliyu) login, you go to CEO panel. Others go to dashboard.
+            if user.is_staff:
+                redirect_url = reverse('admin_dashboard')
+            else:
+                redirect_url = reverse('dashboard')
+
+            # 4. Handle Response based on request type
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'message': 'Login successful!'
+                    'message': 'Login successful! Redirecting...',
+                    'redirect_url': redirect_url  # Passing the role-based URL here
                 })
             else:
-                messages.success(request, 'Login successful!')
-                return redirect('dashboard')
+                messages.success(request, f'Welcome back, {user.username}!')
+                return redirect(redirect_url)
 
         else:
             # Invalid credentials
