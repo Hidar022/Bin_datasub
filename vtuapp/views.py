@@ -11,6 +11,8 @@ from django.http import HttpResponse
 from django.db.models import Sum
 from django.contrib.admin.views.decorators import staff_member_required
 
+from .models import DataPlan
+
 # 2. Django Core Imports
 from django.conf import settings
 from django.contrib import messages
@@ -45,6 +47,27 @@ def home_redirect(request):
 
 
 # ====================== AUTH ======================
+
+@staff_member_required
+def add_plan(request):
+    if request.method == 'POST':
+        # Get data from the Terminal Modal
+        network = request.POST.get('network')
+        name = request.POST.get('name')
+        price = request.POST.get('price')
+        sme_id = request.POST.get('smeplug_id')
+        net_id = request.POST.get('network_id')
+
+        # Save to Database
+        DataPlan.objects.create(
+            network=network,
+            name=name,
+            price=price,
+            smeplug_plan_id=sme_id,
+            network_id=net_id,
+            is_active=True
+        )
+        return redirect('admin_dashboard')
 
 @staff_member_required
 def admin_dashboard(request):
