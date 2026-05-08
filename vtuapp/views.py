@@ -48,24 +48,28 @@ def home_redirect(request):
 
 @staff_member_required
 def admin_dashboard(request):
-    # 1. Total Money In (Sales)
+    # Stats
     sales_data = Transaction.objects.filter(status='Successful').exclude(transaction_type='Wallet Funding')
     total_sales = sales_data.aggregate(Sum('amount'))['amount__sum'] or 0
-    
-    # 2. Total Cost (What you paid SMEPlug)
     total_cost = sales_data.aggregate(Sum('cost_price'))['cost_price__sum'] or 0
-    
-    # 3. Calculated Profit
     total_profit = total_sales - total_cost
     
-    # 4. Recent Transactions
-    recent_txs = Transaction.objects.all().order_by('-timestamp')[:10]
+    # User Stats
+    total_users = User.objects.count()
+    total_wallet_balances = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or 0
+    
+    # Data Lists
+    recent_txs = Transaction.objects.all().order_by('-timestamp')[:15]
+    all_users = User.objects.all().order_by('-date_joined')[:10] # Latest 10 users
 
     context = {
         'total_sales': total_sales,
         'total_cost': total_cost,
         'total_profit': total_profit,
+        'total_users': total_users,
+        'total_wallet_balances': total_wallet_balances,
         'recent_txs': recent_txs,
+        'all_users': all_users,
     }
     return render(request, 'vtuapp/admin_dashboard.html', context)
 
