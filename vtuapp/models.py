@@ -82,15 +82,19 @@ class BiometricCredential(models.Model):
     def __str__(self):
         return f"Biometric for {self.user.username}"
 
-# --- Signals ---
+# --- Signals
 
 @receiver(post_save, sender=User)
 def create_user_assets(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
-        Wallet.objects.create(user=instance)
+        Profile.objects.get_or_create(user=instance)
+        Wallet.objects.get_or_create(user=instance)
+
 
 @receiver(post_save, sender=User)
 def save_user_assets(sender, instance, **kwargs):
+    Profile.objects.get_or_create(user=instance)
+    Wallet.objects.get_or_create(user=instance)
+
     instance.profile.save()
     instance.wallet.save()

@@ -305,7 +305,7 @@ def logout_view(request):
 # ====================== DASHBOARD ======================
 @login_required
 def dashboard(request):
-    wallet = request.user.wallet
+    wallet, created = Wallet.objects.get_or_create(user=request.user)
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:4]
     return render(request, 'vtuapp/dashboard.html', {
         'wallet': wallet,
