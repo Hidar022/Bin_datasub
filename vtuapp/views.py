@@ -1,10 +1,13 @@
 # 1. Standard Library Imports
 import json
+import hmac
+import hashlib
 import random
 import traceback
 import requests
 from decimal import Decimal
 from datetime import timedelta
+from django.http import HttpResponse
 
 # 2. Django Core Imports
 from django.conf import settings
@@ -502,6 +505,63 @@ def fund_wallet_callback(request):
         messages.error(request, f'Verification error: {str(e)}')
 
     return redirect('dashboard')
+
+@csrf_exempt
+def paystack_webhook(request):
+    payload = request.body
+    sig_header = request.headers.get('x-paystack-signature')
+    
+    if not sig_header:
+        return HttpResponse(status=400)
+
+    # 1. Verify the signature to make sure it's actually from Paystack
+    hash = hmac.new(
+        settings.PAYSTACK_SECRET_KEY.encode('utf-8'),
+        payload,
+        hashlib.sha512
+    ).hexdigest()
+
+    if hash != sig_header:
+        # If signature doesn't match, someone is trying to hack your webhook
+        return HttpResponse(status=400)
+
+    # 2. Process the data
+    event_data = json.loads(payload)
+    
+    if event_data['event'] == 'charge.success':
+        data = event_data['data']
+        reference = data['reference']
+        amount = Decimal(data['amount']) / 100
+        email = data['customer']['email']
+
+        # 3. Prevent Double Credit 
+        # Check if this transaction reference already exists in your DB
+        if not Transaction.objects.filter(reference=reference).exists():
+            # Find the user by email
+            try:
+                from django.contrib.auth.models import User
+                user = User.objects.get(email=email)
+                
+                # Credit the wallet
+                wallet = user.wallet
+                wallet.balance += amount
+                wallet.save()
+
+                # Record the transaction
+                Transaction.objects.create(
+                    user=user,
+                    transaction_type='Wallet Funding',
+                    amount=amount,
+                    provider='Paystack',
+                    status='Successful',
+                    reference=reference # Ensure your model has a reference field!
+                )
+            except User.DoesNotExist:
+                # If user doesn't exist, you might want to log this error
+                pass
+
+    # 4. Always return 200 OK so Paystack knows you got the message
+    return HttpResponse(status=200)    
 
 
 # ====================== PURCHASE VIEWS ======================
