@@ -7,15 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --bg: #050505; --card: #0a0a0a; --text: #e0e0e0; --border: #1a1a1a; }
-        .light-mode { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --border: #e2e8f0; }
+        :root { --bg: #050505; --card: #0a0a0a; --text: #e0e0e0; --border: #1a1a1a; --neon: #ff6600; }
+        .light-mode { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --border: #e2e8f0; --neon: #ea580c; }
 
         body { background-color: var(--bg); color: var(--text); transition: all 0.3s ease; font-family: 'Courier New', monospace; }
         .terminal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
-        .neon-orange { color: #ff6600; }
-        .light-mode .neon-orange { color: #ea580c; }
-        
+        .neon-orange { color: var(--neon); }
         #mobile-sidebar { transition: transform 0.3s ease-in-out; }
+        input, select { background: #111 !important; border: 1px solid #222 !important; color: white !important; }
+        .light-mode input, .light-mode select { background: #fff !important; border: 1px solid #cbd5e1 !important; color: #1a1a1a !important; }
     </style>
 </head>
 <body class="flex min-h-screen overflow-x-hidden">
@@ -23,13 +23,13 @@
     <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#080808] border-r border-white/10 z-[100] transform -translate-x-full md:hidden p-6 flex flex-col">
         <div class="flex justify-between items-center mb-10">
             <h1 class="text-xl font-black neon-orange italic">BIN_MENU</h1>
-            <button onclick="toggleSidebar()"><i class="fas fa-times text-2xl"></i></button>
+            <button onclick="toggleSidebar()"><i class="fas fa-times text-2xl text-white"></i></button>
         </div>
         <nav class="space-y-6 flex-1">
             <a href="{% url 'admin_dashboard' %}" class="block font-bold text-orange-500 underline">OVERVIEW</a>
-            <a href="/admin/vtuapp/dataplan/" class="block opacity-70">MANAGE_PLANS</a>
-            <a href="/admin/auth/user/" class="block opacity-70">USER_DB</a>
-            <button onclick="toggleTheme()" class="text-left opacity-70 w-full font-bold uppercase text-xs">
+            <a href="/admin/vtuapp/dataplan/" class="block opacity-70 text-white">MANAGE_PLANS</a>
+            <a href="/admin/auth/user/" class="block opacity-70 text-white">USER_DB</a>
+            <button onclick="toggleTheme()" class="text-left text-white opacity-70 w-full font-bold uppercase text-xs">
                 <i class="fas fa-sun mr-2"></i> SWITCH_THEME
             </button>
             <a href="{% url 'dashboard' %}" class="block text-red-500 font-bold border-t border-white/5 pt-4">EXIT_APP</a>
@@ -74,7 +74,7 @@
             </div>
             <div class="terminal-card p-4 md:p-6">
                 <p class="opacity-50 text-[10px] font-bold uppercase">Total_Sales</p>
-                <h3 class="text-xl md:text-3xl font-bold text-white">₦{{ total_sales|floatformat:2 }}</h3>
+                <h3 class="text-xl md:text-3xl font-bold">₦{{ total_sales|floatformat:2 }}</h3>
             </div>
             <div class="terminal-card p-4 md:p-6">
                 <p class="opacity-50 text-[10px] font-bold uppercase">Liabilities</p>
@@ -102,8 +102,8 @@
                     <tbody class="text-xs">
                         {% for u in all_users %}
                         <tr class="border-b border-white/5 hover:bg-white/5">
-                            <td class="p-4"><span class="font-bold text-white">{{ u.username }}</span><br><span class="text-[9px] opacity-50">{{ u.email }}</span></td>
-                            <td class="p-4 font-mono text-emerald-500">₦{{ u.wallet.balance }}</td>
+                            <td class="p-4"><span class="font-bold">{{ u.username }}</span><br><span class="text-[9px] opacity-50">{{ u.email }}</span></td>
+                            <td class="p-4 font-mono text-emerald-500 font-bold">₦{{ u.wallet.balance }}</td>
                             <td class="p-4 opacity-70 hidden md:table-cell">{{ u.profile.phone }}</td>
                         </tr>
                         {% endfor %}
@@ -113,23 +113,62 @@
         </div>
     </main>
 
+    <div id="planModal" class="fixed inset-0 bg-black/95 hidden z-[999] flex items-center justify-center p-4">
+        <div class="terminal-card w-full max-w-lg p-8 border-orange-600/50 shadow-[0_0_50px_rgba(249,115,22,0.2)]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white underline decoration-orange-600">INIT_NEW_PLAN</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form action="{% url 'add_plan' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">Network</label>
+                        <select name="network" class="w-full p-3 rounded-lg mt-1 border border-white/10">
+                            <option value="MTN">MTN</option>
+                            <option value="GLO">GLO</option>
+                            <option value="AIRTEL">AIRTEL</option>
+                            <option value="9MOBILE">9MOBILE</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">Plan Name</label>
+                        <input type="text" name="name" placeholder="1GB SME" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">Price (User)</label>
+                        <input type="number" step="0.01" name="price" placeholder="250.00" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">SMEPlug ID</label>
+                        <input type="text" name="smeplug_id" placeholder="MTN1GB" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Network ID (1=MTN, etc)</label>
+                    <input type="number" name="network_id" placeholder="1" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="closeModal()" class="flex-1 p-3 text-gray-500 hover:text-white uppercase font-bold">Abort</button>
+                    <button type="submit" class="flex-1 bg-orange-600 p-3 text-white rounded-lg font-bold">EXECUTE_SAVE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function toggleSidebar() {
-            const side = document.getElementById('mobile-sidebar');
-            side.classList.toggle('-translate-x-full');
+            document.getElementById('mobile-sidebar').classList.toggle('-translate-x-full');
         }
-
         function toggleTheme() {
             const isLight = document.documentElement.classList.toggle('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
         }
-
         document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('theme') === 'light') {
-                document.documentElement.classList.add('light-mode');
-            }
+            if (localStorage.getItem('theme') === 'light') document.documentElement.classList.add('light-mode');
         });
-
         function openModal() { document.getElementById('planModal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('planModal').classList.add('hidden'); }
     </script>
