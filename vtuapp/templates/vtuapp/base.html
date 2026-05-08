@@ -69,6 +69,7 @@
                     {% if user.is_authenticated %}
                         <a href="{% url 'dashboard' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">Dashboard</a>
                         <a href="{% url 'services' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">Services</a>
+                        <a href="{% url 'settings' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Settings</a>
                         <a href="{% url 'transactions' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">Transactions</a>
                         <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">Support</a>
                     {% else %}
@@ -123,6 +124,7 @@
                 {% if user.is_authenticated %}
                     <a href="{% url 'dashboard' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Dashboard</a>
                     <a href="{% url 'services' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Services</a>
+                    <a href="{% url 'settings' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Settings</a>
                     <a href="{% url 'transactions' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Transactions</a>
                     <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400 py-3">Support</a>
                     <a href="{% url 'logout' %}" class="text-red-500 py-3">Logout</a>

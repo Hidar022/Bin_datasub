@@ -2,141 +2,253 @@
 {% block title %}Dashboard - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-screen-2xl mx-auto px-4 md:px-6 py-6 md:py-8">
+<div class="max-w-screen-2xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-8">
 
-    <!-- Welcome Header -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8">
-        <div>
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
-                Welcome back, {{ request.user.username }}! 👋
-            </h1>
-        </div>
+    <!-- Welcome -->
+    <div class="mb-6">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white">
+            Welcome back, {{ request.user.username }} 👋
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+            Manage your VTU services easily
+        </p>
     </div>
 
-    <!-- Wallet Balance - Big & Premium -->
-    <div class="bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 rounded-3xl p-8 md:p-10 text-white mb-10 shadow-2xl">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <!-- Wallet Balance -->
+    <div class="mb-8 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-2xl p-6 md:p-8 text-white shadow-lg border border-white/10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
+
             <div>
-                <p class="text-indigo-100 text-sm font-medium tracking-widest">AVAILABLE BALANCE</p>
-                <p class="text-5xl md:text-6xl font-bold mt-3">₦{{ wallet.balance|floatformat:2 }}</p>
+                <p class="uppercase tracking-wider text-xs opacity-80">
+                    Wallet Balance
+                </p>
+
+                <p class="text-3xl md:text-4xl font-bold mt-3 tracking-tight">
+                    ₦{{ wallet.balance|floatformat:2 }}
+                </p>
             </div>
-            <a href="{% url 'fund_wallet' %}" 
-               class="bg-white text-indigo-700 hover:bg-gray-100 px-10 py-4 rounded-3xl font-semibold flex items-center gap-3 text-lg transition-all shadow-lg">
-                <i class="fas fa-plus"></i> Fund Wallet
+
+            <a href="{% url 'fund_wallet' %}"
+               class="bg-white text-indigo-700 hover:bg-gray-100 px-6 py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all w-full md:w-auto">
+                <i class="fas fa-plus"></i>
+                Fund Wallet
             </a>
+
         </div>
     </div>
 
-    <!-- Services - Modern Grid -->
-    <div class="mb-12">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-900 dark:text-white px-1">Quick Actions</h2>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            
-            <a href="{% url 'buy_data' %}" class="group bg-white dark:bg-[#1A1A2E] rounded-3xl p-6 border border-gray-100 dark:border-white/10 hover:border-indigo-400 transition-all hover:-translate-y-1">
-                <div class="flex justify-center mb-5">
-                    <div class="w-20 h-20 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                        <i class="fas fa-wifi text-5xl text-white"></i>
-                    </div>
+    <!-- Quick Services -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                Quick Services
+            </h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+            <!-- Buy Data -->
+            <a href="{% url 'buy_data' %}"
+               class="group bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 hover:border-indigo-500/40 rounded-2xl p-5 transition-all hover:shadow-lg">
+
+                <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-wifi text-xl text-white"></i>
                 </div>
-                <h3 class="font-semibold text-center text-xl text-gray-900 dark:text-white">Buy Data</h3>
-                <p class="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">Data Bundles</p>
+
+                <h3 class="font-semibold text-sm text-gray-900 dark:text-white">
+                    Buy Data
+                </h3>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Internet bundles
+                </p>
             </a>
 
-            <a href="{% url 'buy_airtime' %}" class="group bg-white dark:bg-[#1A1A2E] rounded-3xl p-6 border border-gray-100 dark:border-white/10 hover:border-cyan-400 transition-all hover:-translate-y-1">
-                <div class="flex justify-center mb-5">
-                    <div class="w-20 h-20 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                        <i class="fas fa-mobile-alt text-5xl text-white"></i>
-                    </div>
+            <!-- Airtime -->
+            <a href="{% url 'buy_airtime' %}"
+               class="group bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 hover:border-cyan-500/40 rounded-2xl p-5 transition-all hover:shadow-lg">
+
+                <div class="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-mobile-alt text-xl text-white"></i>
                 </div>
-                <h3 class="font-semibold text-center text-xl text-gray-900 dark:text-white">Buy Airtime</h3>
-                <p class="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">Instant Top-up</p>
+
+                <h3 class="font-semibold text-sm text-gray-900 dark:text-white">
+                    Buy Airtime
+                </h3>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Recharge line
+                </p>
             </a>
 
-            <a href="{% url 'pay_electricity' %}" class="group bg-white dark:bg-[#1A1A2E] rounded-3xl p-6 border border-gray-100 dark:border-white/10 hover:border-amber-400 transition-all hover:-translate-y-1">
-                <div class="flex justify-center mb-5">
-                    <div class="w-20 h-20 bg-amber-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                        <i class="fas fa-bolt text-5xl text-white"></i>
-                    </div>
+            <!-- Electricity -->
+            <a href="{% url 'pay_electricity' %}"
+               class="group bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-5 transition-all hover:shadow-lg">
+
+                <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-bolt text-xl text-white"></i>
                 </div>
-                <h3 class="font-semibold text-center text-xl text-gray-900 dark:text-white">Electricity</h3>
-                <p class="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">Bill Payment</p>
+
+                <h3 class="font-semibold text-sm text-gray-900 dark:text-white">
+                    Electricity
+                </h3>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Pay bills
+                </p>
             </a>
 
-            <a href="{% url 'cable_tv' %}" class="group bg-white dark:bg-[#1A1A2E] rounded-3xl p-6 border border-gray-100 dark:border-white/10 hover:border-purple-400 transition-all hover:-translate-y-1">
-                <div class="flex justify-center mb-5">
-                    <div class="w-20 h-20 bg-purple-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                        <i class="fas fa-tv text-5xl text-white"></i>
-                    </div>
+            <!-- Cable TV -->
+            <a href="{% url 'cable_tv' %}"
+               class="group bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 hover:border-purple-500/40 rounded-2xl p-5 transition-all hover:shadow-lg">
+
+                <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-tv text-xl text-white"></i>
                 </div>
-                <h3 class="font-semibold text-center text-xl text-gray-900 dark:text-white">Cable TV</h3>
-                <p class="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">Subscriptions</p>
+
+                <h3 class="font-semibold text-sm text-gray-900 dark:text-white">
+                    Cable TV
+                </h3>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    TV subscriptions
+                </p>
             </a>
+
         </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-        
-        <!-- Recent Transactions -->
-        <div class="lg:col-span-8 bg-white dark:bg-[#1A1A2E] rounded-3xl border border-gray-200 dark:border-white/10 p-6 md:p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Recent Transactions</h2>
-                <a href="{% url 'transactions' %}" class="text-indigo-600 dark:text-cyan-400 font-medium hover:underline">View All</a>
+    <!-- Transactions + Sidebar -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Transactions -->
+        <div class="lg:col-span-8 bg-white dark:bg-[#111827] rounded-2xl border border-gray-200 dark:border-white/10">
+
+            <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-white/5">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Recent Transactions
+                </h2>
+
+                <a href="{% url 'transactions' %}"
+                   class="text-sm font-medium text-indigo-600 dark:text-cyan-400 hover:underline">
+                    View All
+                </a>
             </div>
 
             {% if transactions %}
             <div class="overflow-x-auto">
+
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="text-left py-4 text-gray-500 dark:text-gray-400 font-medium">Type</th>
-                            <th class="text-left py-4 text-gray-500 dark:text-gray-400 font-medium">Amount</th>
-                            <th class="text-left py-4 text-gray-500 dark:text-gray-400 font-medium">Details</th>
-                            <th class="text-right py-4 text-gray-500 dark:text-gray-400 font-medium">Status</th>
+                        <tr class="border-b border-gray-100 dark:border-white/5">
+                            <th class="text-left py-4 px-6 text-gray-500 dark:text-gray-400 font-medium">
+                                Type
+                            </th>
+
+                            <th class="text-left py-4 text-gray-500 dark:text-gray-400 font-medium">
+                                Amount
+                            </th>
+
+                            <th class="text-left py-4 text-gray-500 dark:text-gray-400 font-medium">
+                                Details
+                            </th>
+
+                            <th class="text-right py-4 px-6 text-gray-500 dark:text-gray-400 font-medium">
+                                Status
+                            </th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+
+                    <tbody class="divide-y divide-gray-100 dark:divide-white/5">
+
                         {% for tx in transactions %}
-                        <tr>
-                            <td class="py-5 font-medium text-gray-900 dark:text-white">{{ tx.transaction_type }}</td>
-                            <td class="py-5 font-bold text-emerald-600 dark:text-emerald-400">₦{{ tx.amount|floatformat:0 }}</td>
-                            <td class="py-5 text-gray-600 dark:text-gray-400">{{ tx.provider }} {% if tx.phone_or_meter %}• {{ tx.phone_or_meter }}{% endif %}</td>
-                            <td class="py-5 text-right">
-                                <span class="px-5 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-3xl text-xs font-medium">Successful</span>
+                        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+
+                            <td class="py-5 px-6">
+                                <div class="font-medium text-gray-900 dark:text-white">
+                                    {{ tx.transaction_type }}
+                                </div>
                             </td>
+
+                            <td class="py-5">
+                                <div class="font-semibold text-emerald-600 dark:text-emerald-400">
+                                    ₦{{ tx.amount|floatformat:0 }}
+                                </div>
+                            </td>
+
+                            <td class="py-5 text-gray-600 dark:text-gray-400">
+                                {{ tx.provider }}
+                                {% if tx.phone_or_meter %}
+                                    • {{ tx.phone_or_meter }}
+                                {% endif %}
+                            </td>
+
+                            <td class="py-5 px-6 text-right">
+                                <span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
+                                    Successful
+                                </span>
+                            </td>
+
                         </tr>
                         {% endfor %}
+
                     </tbody>
                 </table>
+
             </div>
+
             {% else %}
-            <p class="text-center py-16 text-gray-500 dark:text-gray-400">No transactions yet. Make your first purchase!</p>
+
+            <div class="py-16 text-center">
+                <p class="text-gray-500 dark:text-gray-400">
+                    No transactions yet
+                </p>
+            </div>
+
             {% endif %}
         </div>
 
-        <!-- Sidebar -->
-        <div class="lg:col-span-4 space-y-6">
+        <!-- Right Sidebar -->
+        <div class="lg:col-span-4 space-y-5">
 
-            <!-- Refer & Earn -->
-            <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-7 text-white">
-                <h3 class="text-2xl font-bold">Refer & Earn</h3>
-                <p class="mt-3 opacity-90">Invite friends and earn ₦500 - ₦2000 per referral</p>
-                <a href="{% url 'referral' %}" class="mt-8 block bg-white text-purple-700 font-semibold py-4 rounded-2xl text-center hover:bg-gray-100 transition-all">
+            <!-- Referral -->
+            <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white shadow-lg">
+
+                <h3 class="text-lg font-semibold">
+                    Refer & Earn
+                </h3>
+
+                <p class="mt-2 text-sm opacity-90 leading-relaxed">
+                    Invite your friends and earn rewards on every successful signup.
+                </p>
+
+                <a href="{% url 'referral' %}"
+                   class="mt-5 block bg-white text-purple-700 font-semibold py-3 rounded-xl text-center hover:bg-gray-100 transition-all text-sm">
                     Get Referral Link
                 </a>
+
             </div>
 
             <!-- Support -->
-            <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-7">
-                <h3 class="text-2xl font-semibold text-gray-900 dark:text-white">24/7 Support</h3>
-                <p class="text-gray-600 dark:text-gray-400 mt-2">We're always here to help you</p>
-                <a href="{% url 'support' %}" class="mt-8 block w-full bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-4 rounded-3xl font-semibold text-center">
+            <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-2xl p-6">
+
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    24/7 Support
+                </h3>
+
+                <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+                    Need help? Our support team is available anytime.
+                </p>
+
+                <a href="{% url 'support' %}"
+                   class="mt-5 block w-full bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-3 rounded-xl font-semibold text-center text-sm hover:opacity-90 transition-all">
                     Chat With Us
                 </a>
+
             </div>
+
         </div>
     </div>
 </div>
 {% endblock %}
-
+```
