@@ -464,7 +464,6 @@ def fund_wallet(request):
 
     return render(request, 'vtuapp/fund_wallet.html')
 
-
 @login_required
 def fund_wallet_callback(request):
     reference = request.GET.get('reference')
