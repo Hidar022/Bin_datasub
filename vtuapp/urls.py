@@ -49,5 +49,7 @@ urlpatterns = [
     # WebAuthn Biometric Routes (optional - you can keep or remove later)
     path('webauthn/register/', views.webauthn_register_options, name='webauthn_register_options'),
     path('webauthn/register/complete/', views.webauthn_register_complete, name='webauthn_register_complete'),
+
+    path('ceo-panel/', views.admin_dashboard, name='admin_dashboard'),
      
 ]

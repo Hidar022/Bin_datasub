@@ -36,19 +36,27 @@ class Wallet(models.Model):
 
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    transaction_type = models.CharField(max_length=50) # e.g., 'Wallet Funding', 'Data Purchase'
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    provider = models.CharField(max_length=100, blank=True) # e.g., 'MTN', 'Paystack'
+    transaction_type = models.CharField(max_length=50) 
+    amount = models.DecimalField(max_digits=10, decimal_places=2) # What User paid
+    
+    # --- ADD THIS FIELD ---
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # What SMEPlug charged you
+    
+    provider = models.CharField(max_length=100, blank=True)
     phone_or_meter = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=20, default='Successful')
-    
-    # Change transaction_id to reference for Paystack compatibility
     reference = models.CharField(max_length=100, blank=True, null=True, unique=True) 
-    
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.transaction_type} - ₦{self.amount}"
+
+    @property
+    def profit(self):
+        # We only calculate profit on service sales, not funding
+        if self.transaction_type in ['Data Purchase', 'Airtime Purchase']:
+            return self.amount - self.cost_price
+        return 0
 
 class DataPlan(models.Model):                                                                                                                                                   
     network = models.CharField(max_length=20, choices=[

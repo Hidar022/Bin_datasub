@@ -8,6 +8,8 @@ import requests
 from decimal import Decimal
 from datetime import timedelta
 from django.http import HttpResponse
+from django.db.models import Sum
+from django.contrib.admin.views.decorators import staff_member_required
 
 # 2. Django Core Imports
 from django.conf import settings
@@ -43,6 +45,29 @@ def home_redirect(request):
 
 
 # ====================== AUTH ======================
+
+@staff_member_required
+def admin_dashboard(request):
+    # 1. Total Money In (Sales)
+    sales_data = Transaction.objects.filter(status='Successful').exclude(transaction_type='Wallet Funding')
+    total_sales = sales_data.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # 2. Total Cost (What you paid SMEPlug)
+    total_cost = sales_data.aggregate(Sum('cost_price'))['cost_price__sum'] or 0
+    
+    # 3. Calculated Profit
+    total_profit = total_sales - total_cost
+    
+    # 4. Recent Transactions
+    recent_txs = Transaction.objects.all().order_by('-timestamp')[:10]
+
+    context = {
+        'total_sales': total_sales,
+        'total_cost': total_cost,
+        'total_profit': total_profit,
+        'recent_txs': recent_txs,
+    }
+    return render(request, 'vtuapp/admin_dashboard.html', context)
 
 def home(request):
     if request.user.is_authenticated:

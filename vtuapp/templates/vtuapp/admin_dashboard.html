@@ -1,0 +1,51 @@
+{% extends 'vtuapp/base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-10">
+    <h1 class="text-3xl font-bold text-white mb-8">Executive Dashboard 💼</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="bg-[#1A1A2E] border border-white/10 p-8 rounded-3xl shadow-xl">
+            <p class="text-gray-400 text-sm">Total Revenue</p>
+            <h2 class="text-3xl font-bold text-white">₦{{ total_sales|floatformat:2 }}</h2>
+        </div>
+        
+        <div class="bg-[#1A1A2E] border border-white/10 p-8 rounded-3xl shadow-xl">
+            <p class="text-gray-400 text-sm">Wholesale Cost (SMEPlug)</p>
+            <h2 class="text-3xl font-bold text-red-400">₦{{ total_cost|floatformat:2 }}</h2>
+        </div>
+
+        <div class="bg-[#1A1A2E] border border-orange-500/30 p-8 rounded-3xl shadow-xl shadow-orange-500/5">
+            <p class="text-orange-400 text-sm font-bold">Net Profit 🚀</p>
+            <h2 class="text-4xl font-bold text-orange-500">₦{{ total_profit|floatformat:2 }}</h2>
+        </div>
+    </div>
+
+    <div class="bg-[#1A1A2E] border border-white/10 rounded-3xl overflow-hidden">
+        <div class="p-6 border-b border-white/5">
+            <h3 class="text-white font-bold">Recent Network Activity</h3>
+        </div>
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-gray-400 uppercase text-[10px] tracking-widest">
+                <tr>
+                    <th class="p-6">User</th>
+                    <th class="p-6">Type</th>
+                    <th class="p-6">Sale Price</th>
+                    <th class="p-6">Cost</th>
+                    <th class="p-6">Profit</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-gray-300">
+                {% for tx in recent_txs %}
+                <tr>
+                    <td class="p-6 font-medium text-white">{{ tx.user.username }}</td>
+                    <td class="p-6">{{ tx.transaction_type }}</td>
+                    <td class="p-6">₦{{ tx.amount }}</td>
+                    <td class="p-6 text-gray-500">₦{{ tx.cost_price }}</td>
+                    <td class="p-6 font-bold text-orange-400">₦{{ tx.profit }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
