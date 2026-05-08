@@ -79,13 +79,31 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSpinner.classList.toggle('hidden', !state);
     }
 
+    function showMessage(message, type = 'error') {
+        const old = document.getElementById('global-toast');
+        if (old) old.remove();
+
+        const div = document.createElement('div');
+        div.id = 'global-toast';
+
+        div.className = `
+            fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-xl text-white
+            ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}
+        `;
+
+        div.innerHTML = message;
+        document.body.appendChild(div);
+
+        setTimeout(() => div.remove(), 4000);
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         setLoading(true);
 
         const formData = new FormData(form);
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
         try {
             const response = await fetch(window.location.pathname, {
@@ -94,26 +112,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken.value
+                    'X-CSRFToken': csrfToken
                 }
             });
 
-            const data = await response.json();
+            let data;
 
-            if (response.ok && data.success) {
+            try {
+                data = await response.json();
+            } catch (err) {
+                throw new Error("Server did not return JSON");
+            }
+
+            // IMPORTANT FIX HERE
+            if (response.ok && data.success === true) {
                 showMessage(data.message || 'Login successful!', 'success');
 
                 setTimeout(() => {
                     window.location.href = "{% url 'dashboard' %}";
-                }, 1200);
+                }, 1000);
 
             } else {
-                showMessage(data.message || 'Login failed', 'error');
+                showMessage(data.message || 'Invalid login credentials', 'error');
             }
 
         } catch (err) {
             console.error(err);
-            showMessage('Network error. Please try again.', 'error');
+            showMessage('Server error or invalid response', 'error');
         } finally {
             setLoading(false);
         }
