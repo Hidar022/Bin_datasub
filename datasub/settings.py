@@ -51,6 +51,9 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # Use them for Paystack too
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY') 
+# Gafiapay Settings
+GAFIAPAY_PUBLIC_KEY = os.getenv('GAFIAPAY_PUBLIC_KEY')
+GAFIAPAY_SECRET_KEY = os.getenv('GAFIAPAY_SECRET_KEY')
 
 
 # This will now look at your .env (locally) or your Vercel variables (live)

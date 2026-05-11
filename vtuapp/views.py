@@ -10,6 +10,7 @@ from datetime import timedelta
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.contrib.admin.views.decorators import staff_member_required
+import time
 
 from .models import DataPlan
 
@@ -493,40 +494,61 @@ def settings_page(request):
 
 
 # ====================== FUND WALLET (Paystack) ======================
+def get_gafia_headers(payload_body):
+    timestamp = str(int(time.time()))
+    # Gafiapay signature logic: SecretKey + Timestamp
+    # Note: Check Gafiapay docs if they want the payload in the hash too
+    message = f"{settings.GAFIAPAY_PUBLIC_KEY}{timestamp}"
+    signature = hmac.new(
+        settings.GAFIAPAY_SECRET_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return {
+        "X-Gafiapay-Key": settings.GAFIAPAY_PUBLIC_KEY,
+        "X-Gafiapay-Signature": signature,
+        "X-Gafiapay-Timestamp": timestamp,
+        "Content-Type": "application/json"
+    }
+
 @login_required
 def fund_wallet(request):
-    if request.method == 'POST':
+    # Check if the user already has a saved account in their profile
+    user_profile = request.user.profile
+    
+    if not user_profile.gafia_account_number:
+        # ONLY if they don't have one, we call the API to create it
+        url = "https://api.gafiapay.com/api/v1/external/account/generate"
+        payload = {
+            "email": request.user.email,
+            "name": f"BIN-{request.user.username}".upper(),
+        }
+        
         try:
-            amount = int(request.POST.get('amount'))
-            if amount < 100:
-                messages.error(request, 'Minimum funding amount is ₦100')
-                return redirect('fund_wallet')
-
-            url = "https://api.paystack.co/transaction/initialize"
-            headers = {
-                "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
-                "Content-Type": "application/json",
-            }
-            data = {
-                "amount": amount * 100,
-                "email": request.user.email or f"{request.user.username}@bindatasub.com",
-                "callback_url": request.build_absolute_uri('/fund-wallet/callback/')
-            }
-
-            response = requests.post(url, headers=headers, json=data)
+            headers = get_gafia_headers(json.dumps(payload))
+            response = requests.post(url, json=payload, headers=headers)
             res_data = response.json()
-
-            if res_data.get('status'):
-                return redirect(res_data['data']['authorization_url'])
+            
+            if res_data.get('status') == 'success':
+                acc_data = res_data['data']
+                # SAVE IT FOREVER
+                user_profile.gafia_account_number = acc_data['account_number']
+                user_profile.gafia_bank_name = acc_data['bank_name']
+                user_profile.gafia_account_name = acc_data['account_name']
+                user_profile.save()
             else:
-                messages.error(request, "Paystack error: " + res_data.get('message', 'Unknown error'))
-                return redirect('fund_wallet')
-
+                messages.error(request, "System busy. Please try again in 2 minutes.")
         except Exception as e:
-            messages.error(request, f'Error: {str(e)}')
-            return redirect('fund_wallet')
+            messages.error(request, "Connection failed. Check your internet.")
 
-    return render(request, 'vtuapp/fund_wallet.html')
+    # Show the existing (or newly created) account details
+    context = {
+        'acc_no': user_profile.gafia_account_number,
+        'bank': user_profile.gafia_bank_name,
+        'name': user_profile.gafia_account_name,
+    }
+    return render(request, 'vtuapp/fund_wallet.html', context)
 
 @login_required
 def fund_wallet_callback(request):
@@ -570,62 +592,45 @@ def fund_wallet_callback(request):
     return redirect('dashboard')
 
 @csrf_exempt
-def paystack_webhook(request):
+def gafiapay_webhook(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+        
     payload = request.body
-    sig_header = request.headers.get('x-paystack-signature')
+    signature = request.headers.get('X-Gafiapay-Signature')
     
-    if not sig_header:
-        return HttpResponse(status=400)
-
-    # 1. Verify the signature to make sure it's actually from Paystack
-    hash = hmac.new(
-        settings.PAYSTACK_SECRET_KEY.encode('utf-8'),
-        payload,
-        hashlib.sha512
-    ).hexdigest()
-
-    if hash != sig_header:
-        # If signature doesn't match, someone is trying to hack your webhook
-        return HttpResponse(status=400)
-
-    # 2. Process the data
-    event_data = json.loads(payload)
+    # Verify the signature from Gafiapay
+    # (Check Gafiapay docs for their exact webhook hashing method)
     
-    if event_data['event'] == 'charge.success':
-        data = event_data['data']
-        reference = data['reference']
-        amount = Decimal(data['amount']) / 100
-        email = data['customer']['email']
+    data = json.loads(payload)
+    
+    # Check if transaction is successful
+    if data.get('event') == 'payment.success':
+        txn_details = data['data']
+        amount = Decimal(txn_details['amount'])
+        email = txn_details['customer']['email']
+        reference = txn_details['reference']
 
-        # 3. Prevent Double Credit 
-        # Check if this transaction reference already exists in your DB
         if not Transaction.objects.filter(reference=reference).exists():
-            # Find the user by email
             try:
-                from django.contrib.auth.models import User
                 user = User.objects.get(email=email)
-                
-                # Credit the wallet
                 wallet = user.wallet
                 wallet.balance += amount
                 wallet.save()
 
-                # Record the transaction
                 Transaction.objects.create(
                     user=user,
-                    transaction_type='Wallet Funding',
+                    transaction_type='Wallet Funding (Bank Transfer)',
                     amount=amount,
-                    provider='Paystack',
+                    provider='Gafiapay',
                     status='Successful',
-                    reference=reference # Ensure your model has a reference field!
+                    reference=reference
                 )
+                return HttpResponse(status=200)
             except User.DoesNotExist:
-                # If user doesn't exist, you might want to log this error
-                pass
-
-    # 4. Always return 200 OK so Paystack knows you got the message
-    return HttpResponse(status=200)    
-
+                return HttpResponse(status=404)
+                
+    return HttpResponse(status=200)
 
 # ====================== PURCHASE VIEWS ======================
 @login_required

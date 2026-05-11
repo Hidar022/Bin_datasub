@@ -11,6 +11,9 @@ class Profile(models.Model):
     dob = models.DateField(blank=True, null=True)
     email_otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
+    gafia_account_number = models.CharField(max_length=15, null=True, blank=True)
+    gafia_bank_name = models.CharField(max_length=50, null=True, blank=True)
+    gafia_account_name = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
