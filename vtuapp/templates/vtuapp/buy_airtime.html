@@ -37,97 +37,121 @@
 </div>
 
 <!-- PIN MODAL -->
-<div id="pinModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#1A1A2E] p-8 rounded-3xl w-full max-w-md">
+<div id="pinModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
+        <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">Transaction PIN</h2>
+        <p class="text-center text-gray-500 dark:text-gray-400 text-sm mb-6">Enter your 4-digit security code</p>
 
-        <h2 class="text-xl font-bold text-center mb-6">Enter 4-digit PIN</h2>
-
-        <input id="pinInput" maxlength="4" type="password"
-            class="w-full text-center text-3xl tracking-[10px] py-5 rounded-3xl bg-gray-100 dark:bg-[#25253A] outline-none">
-
-        <div class="flex gap-4 mt-6">
-            <button onclick="closePinModal()"
-                class="flex-1 py-4 rounded-3xl border">Cancel</button>
-
-            <button onclick="verifyPin()"
-                class="flex-1 py-4 rounded-3xl bg-emerald-500 text-white">
-                Verify
-            </button>
+        <div class="flex justify-center gap-4 mb-8">
+            <div id="dot-0" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-1" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-2" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-3" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
         </div>
 
+        <div class="grid grid-cols-3 gap-3">
+            {% for i in "123456789"|make_list %}
+                <button type="button" onclick="pressKey('{{ i }}')" class="h-16 rounded-2xl bg-gray-50 dark:bg-[#25253A] text-xl font-bold hover:bg-indigo-500 hover:text-white transition-all active:scale-95 text-gray-800 dark:text-white">{{ i }}</button>
+            {% endfor %}
+            <button type="button" onclick="clearPin()" class="h-16 rounded-2xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">C</button>
+            <button type="button" onclick="pressKey('0')" class="h-16 rounded-2xl bg-gray-50 dark:bg-[#25253A] text-xl font-bold hover:bg-indigo-500 hover:text-white transition-all active:scale-95 text-gray-800 dark:text-white">0</button>
+            <button type="button" onclick="backspace()" class="h-16 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"><i class="fas fa-backspace"></i></button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mt-8">
+            <button type="button" onclick="closePinModal()" class="py-4 rounded-2xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold">Cancel</button>
+            <button type="button" id="verifyBtn" onclick="verifyPin()" class="py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold opacity-50 cursor-not-allowed" disabled>Verify</button>
+        </div>
     </div>
 </div>
 
 <script>
 const btn = document.getElementById('confirmBtn');
 const form = document.getElementById('airtimeForm');
+const phoneInput = document.querySelector('[name="phone"]');
+let currentPin = "";
 
+// STRENGTHENED TOAST SYSTEM
 function toast(type, msg) {
     const old = document.getElementById('global-toast');
     if (old) old.remove();
-
     const el = document.createElement('div');
     el.id = 'global-toast';
-    el.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl text-white shadow-xl ${
-        type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
-    }`;
-
-    el.innerHTML = msg;
+    el.className = `fixed top-10 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[9999] px-8 py-5 rounded-3xl text-white shadow-2xl border-2 flex items-center gap-3 transition-all duration-500 ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    el.innerHTML = `<i class="fas ${icon} text-xl"></i> <span>${msg}</span>`;
     document.body.appendChild(el);
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-20px)';
+        setTimeout(() => el.remove(), 500);
+    }, 5000);
+}
 
-    setTimeout(() => el.remove(), 4000);
+// NUMERIC ONLY PHONE
+phoneInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, ''); };
+
+// KEYPAD LOGIC
+function pressKey(num) { if (currentPin.length < 4) { currentPin += num; updateDots(); } }
+function backspace() { currentPin = currentPin.slice(0, -1); updateDots(); }
+function clearPin() { currentPin = ""; updateDots(); }
+function updateDots() {
+    for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentPin.length) {
+            dot.classList.add('bg-indigo-500', 'border-indigo-500');
+            dot.classList.remove('border-gray-300', 'dark:border-gray-600');
+        } else {
+            dot.classList.remove('bg-indigo-500', 'border-indigo-500');
+            dot.classList.add('border-gray-300', 'dark:border-gray-600');
+        }
+    }
+    const vBtn = document.getElementById('verifyBtn');
+    vBtn.disabled = currentPin.length !== 4;
+    vBtn.classList.toggle('opacity-50', currentPin.length !== 4);
+    vBtn.classList.toggle('cursor-not-allowed', currentPin.length !== 4);
 }
 
 btn.onclick = () => {
+    if (!phoneInput.value) return toast('error', 'Please enter phone number');
     document.getElementById('pinModal').classList.remove('hidden');
-    document.getElementById('pinInput').focus();
 };
 
-function closePinModal() {
-    document.getElementById('pinModal').classList.add('hidden');
-}
+function closePinModal() { document.getElementById('pinModal').classList.add('hidden'); clearPin(); }
 
 async function verifyPin() {
-    const pin = document.getElementById('pinInput').value;
-
-    if (pin.length !== 4) return toast('error', 'PIN must be 4 digits');
-
+    if (currentPin.length !== 4) return toast('error', 'PIN must be 4 digits');
+    const pinToSubmit = currentPin;
     closePinModal();
 
     btn.disabled = true;
+    const originalContent = btn.innerHTML;
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
 
     const data = new FormData(form);
-    data.append('pin', pin);
-
+    data.append('pin', pinToSubmit);
     const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     try {
         const res = await fetch("{% url 'buy_airtime' %}", {
             method: "POST",
             body: data,
-            headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRFToken": csrf
-            }
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf }
         });
-
         const result = await res.json();
-
         if (result.status === 'success') {
-            toast('success', result.message);
-            setTimeout(() => window.location.href = result.redirect_url || "/", 1500);
+            toast('success', `<b>Success:</b> ${result.message}`);
+            setTimeout(() => window.location.href = result.redirect_url || "{% url 'dashboard' %}", 2000);
         } else {
-            toast('error', result.message || "Failed");
+            toast('error', `<b>Failed:</b> ${result.message || "Transaction Error"}`);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
         }
-
     } catch (e) {
-        toast('error', "Server error");
+        toast('error', "<b>Server Error:</b> Connection lost.");
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     }
-
-    btn.disabled = false;
-    btn.innerHTML = "CONFIRM & BUY AIRTIME";
 }
 </script>
-
 {% endblock %}

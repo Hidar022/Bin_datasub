@@ -45,9 +45,13 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'placeholder': 'aliyu@example.com'})
     )
     phone_number = forms.CharField(
-        max_length=15,
+        max_length=11,
         required=True,
-        widget=forms.TextInput(attrs={'placeholder': '08012345678'})
+        widget=forms.TextInput(attrs={
+            'placeholder': '08012345678',
+            'class': 'phone-field', # <--- THIS MUST MATCH YOUR JS
+            'inputmode': 'numeric'
+        })
     )
 
     class Meta:

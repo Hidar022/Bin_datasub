@@ -251,73 +251,152 @@
 <div id="security-overlay" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-gray-900/80 backdrop-blur-lg"></div>
     
-    <div class="relative bg-white dark:bg-[#111827] w-full max-w-md rounded-[2.5rem] p-10 text-center shadow-2xl border border-white/10">
-        <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-key text-3xl"></i>
+    <div class="relative bg-white dark:bg-[#111827] w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl border border-white/10">
+        <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-shield-alt text-2xl"></i>
         </div>
         
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Set Your PIN</h2>
-        <p class="text-gray-500 dark:text-gray-400 text-sm mb-8">Create a 4-digit PIN to authorize transactions.</p>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Create Transaction PIN</h2>
+        <p class="text-gray-500 dark:text-gray-400 text-xs mb-8">Set a 4-digit PIN to secure your wallet transactions.</p>
 
-        <form id="pin-setup-form" method="POST" class="space-y-6">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="set_initial_pin">
-            
-            <div class="flex justify-center">
-                <input type="password" 
-                       name="new_pin" 
-                       id="digit-input"
-                       maxlength="4" 
-                       placeholder="••••" 
-                       required 
-                       pattern="\d{4}"
-                       inputmode="numeric"
-                       class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl p-5 text-center text-4xl tracking-[0.8em] font-mono focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white">
-            </div>
+        <!-- PIN Dots Display -->
+        <div class="flex justify-center gap-4 mb-10">
+            <div id="dot-0" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 transition-all duration-200"></div>
+            <div id="dot-1" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 transition-all duration-200"></div>
+            <div id="dot-2" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 transition-all duration-200"></div>
+            <div id="dot-3" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 transition-all duration-200"></div>
+        </div>
 
-            <button type="submit" 
-                    id="submit-btn"
-                    class="relative w-full bg-emerald-600 text-white py-5 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center overflow-hidden">
-                <span id="btn-text">ACTIVATE PIN</span>
-                
-                <!-- Hidden Spinner -->
-                <div id="btn-spinner" class="hidden absolute inset-0 flex items-center justify-center bg-emerald-600">
-                    <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="ml-3">PROCESSING...</span>
-                </div>
+        <!-- Numeric Keypad -->
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            {% for i in "123456789"|make_list %}
+            <button type="button" onclick="pressKey('{{ i }}')" 
+                    class="h-14 rounded-2xl bg-gray-50 dark:bg-white/5 text-lg font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-90 text-gray-800 dark:text-white">
+                {{ i }}
             </button>
+            {% endfor %}
+            <button type="button" onclick="clearPin()" class="h-14 rounded-2xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">C</button>
+            <button type="button" onclick="pressKey('0')" class="h-14 rounded-2xl bg-gray-50 dark:bg-white/5 text-lg font-bold hover:bg-emerald-500 hover:text-white transition-all active:scale-90 text-gray-800 dark:text-white">0</button>
+            <button type="button" onclick="backspace()" class="h-14 rounded-2xl text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all">
+                <i class="fas fa-backspace"></i>
+            </button>
+        </div>
+
+        <form id="pin-setup-form" method="POST" class="hidden">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="pin"> <!-- To match your settings_page logic -->
+            <input type="hidden" name="new_pin" id="hidden-pin-input">
         </form>
+
+        <button type="button" 
+                id="submit-btn"
+                onclick="submitPin()"
+                disabled
+                class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold opacity-50 cursor-not-allowed transition-all flex items-center justify-center">
+            <span id="btn-text">ACTIVATE PIN</span>
+            <i id="btn-spinner" class="fas fa-circle-notch fa-spin hidden ml-3"></i>
+        </button>
     </div>
 </div>
 
 <script>
-    // Handle the button loading state
-    const pinForm = document.getElementById('pin-setup-form');
+    let currentPin = "";
+    const hiddenInput = document.getElementById('hidden-pin-input');
     const submitBtn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
 
-    pinForm.addEventListener('submit', function() {
-        // Disable button to prevent double-click
-        submitBtn.classList.add('pointer-events-none');
-        btnText.classList.add('opacity-0');
-        btnSpinner.classList.remove('hidden');
-    });
+    function pressKey(num) {
+        if (currentPin.length < 4) {
+            currentPin += num;
+            updateUI();
+        }
+    }
 
-    // Auto-focus input
-    document.addEventListener('DOMContentLoaded', () => {
-        const pinInput = document.getElementById('digit-input');
-        if(pinInput) pinInput.focus();
-    });
+    function backspace() {
+        currentPin = currentPin.slice(0, -1);
+        updateUI();
+    }
+
+    function clearPin() {
+        currentPin = "";
+        updateUI();
+    }
+
+    function updateUI() {
+        // Update dots
+        for (let i = 0; i < 4; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if (i < currentPin.length) {
+                dot.classList.add('bg-emerald-500', 'border-emerald-500', 'scale-110');
+            } else {
+                dot.classList.remove('bg-emerald-500', 'border-emerald-500', 'scale-110');
+            }
+        }
+
+        // Enable/Disable button
+        if (currentPin.length === 4) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitBtn.classList.add('hover:scale-[1.02]', 'active:scale-95');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    async function submitPin() {
+        if (currentPin.length !== 4) return;
+
+        // Visual feedback
+        submitBtn.disabled = true;
+        btnText.innerText = "PROCESSING...";
+        btnSpinner.classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('section', 'pin');
+        formData.append('new_pin', currentPin);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        try {
+            // We hit the settings_page because that is where our PIN logic lives
+            const response = await fetch("{% url 'settings' %}", {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                // Success! Briefly show the success before reloading
+                submitBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
+                btnText.innerText = "PIN ACTIVATED!";
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                alert("Error: " + result.message);
+                clearPin();
+                btnText.innerText = "ACTIVATE PIN";
+                btnSpinner.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error("Error setting PIN:", error);
+            btnText.innerText = "ACTIVATE PIN";
+            btnSpinner.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    }
 </script>
 
 <style>
     body { overflow: hidden !important; }
+    #security-overlay { backdrop-filter: blur(12px); }
 </style>
 {% endif %}
+
+<style>
+    body { overflow: hidden !important; }
+</style>
 
         </div>
     </div>

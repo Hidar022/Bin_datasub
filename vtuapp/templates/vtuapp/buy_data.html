@@ -6,378 +6,229 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 md:px-6 py-8">
 
-    <!-- Back -->
-    <a href="{% url 'dashboard' %}"
-       class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:gap-3 transition-all mb-8 font-medium">
-        <i class="fas fa-arrow-left"></i>
-        Back to Dashboard
+    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:gap-3 transition-all mb-8 font-medium">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 
-    <!-- Main Card -->
     <div class="bg-white dark:bg-[#12122B] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 md:p-10 shadow-xl">
-
-        <!-- Header -->
         <div class="mb-10">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-                Buy Data Bundle
-            </h1>
-
-            <p class="text-gray-500 dark:text-gray-400 mt-2">
-                Choose network and bundle plan
-            </p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Buy Data Bundle</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Choose network and bundle plan</p>
         </div>
 
         <form id="dataForm" class="space-y-8">
             {% csrf_token %}
-
-            <!-- NETWORK -->
             <div>
-                <label class="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Select Network
-                </label>
-
+                <label class="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">Select Network</label>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
                     {% for value, text in form.network.field.choices %}
                     {% if value %}
-                    <button type="button"
-                            class="network-btn h-20 rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] hover:border-indigo-500 transition-all text-lg font-bold text-gray-800 dark:text-white"
-                            data-network="{{ value }}">
-
-                        {{ text }}
-
-                    </button>
+                    <button type="button" class="network-btn h-20 rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] hover:border-indigo-500 transition-all text-lg font-bold text-gray-800 dark:text-white" data-network="{{ value }}">{{ text }}</button>
                     {% endif %}
                     {% endfor %}
-
                 </div>
-
                 {{ form.network|add_class:"hidden" }}
             </div>
 
-            <!-- PLANS -->
             <div>
-
                 <div class="flex items-center justify-between mb-4">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Select Data Plan
-                    </label>
-
-                    <span id="planCount"
-                          class="text-xs bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-cyan-400 px-3 py-1 rounded-full hidden">
-                    </span>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Data Plan</label>
+                    <span id="planCount" class="text-xs bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-cyan-400 px-3 py-1 rounded-full hidden"></span>
                 </div>
-
-                <div id="plansContainer"
-                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
+                <div id="plansContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% for plan in plans %}
-                    <div class="plan-card hidden bg-gray-50 dark:bg-[#1A1A2E]
-                                border border-gray-200 dark:border-white/10
-                                rounded-3xl p-5 cursor-pointer transition-all duration-300
-                                hover:border-indigo-500 hover:scale-[1.02]"
-
-                         data-id="{{ plan.id }}"
-                         data-network="{{ plan.network|lower }}">
-
+                    <div class="plan-card hidden bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:border-indigo-500 hover:scale-[1.02]" data-id="{{ plan.id }}" data-network="{{ plan.network|lower }}">
                         <div class="flex justify-between items-start">
-
                             <div>
-                                <h3 class="font-bold text-lg text-gray-900 dark:text-white">
-                                    {{ plan.name }}
-                                </h3>
-
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    {{ plan.data_amount }}
-                                </p>
-
-                                <p class="text-xs text-gray-400 mt-2">
-                                    {{ plan.validity }}
-                                </p>
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white">{{ plan.name }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ plan.data_amount }}</p>
+                                <p class="text-xs text-gray-400 mt-2">{{ plan.validity }}</p>
                             </div>
-
-                            <div class="text-right">
-                                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                                    ₦{{ plan.price }}
-                                </p>
-                            </div>
-
+                            <div class="text-right"><p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">₦{{ plan.price }}</p></div>
                         </div>
-
                     </div>
                     {% endfor %}
-
                 </div>
-
-                <!-- Empty -->
-                <div id="emptyPlans"
-                     class="hidden text-center py-16 text-gray-500 dark:text-gray-400">
-
+                <div id="emptyPlans" class="hidden text-center py-16 text-gray-500 dark:text-gray-400">
                     <i class="fas fa-signal text-5xl mb-4 opacity-30"></i>
-
                     <p>Select a network to view plans</p>
-
                 </div>
-
             </div>
 
-            <!-- Hidden plan input -->
             {{ form.plan|add_class:"hidden" }}
 
-            <!-- Phone -->
             <div>
-                <label class="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Phone Number
-                </label>
-
+                <label class="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
                 {{ form.phone|add_class:"w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-3xl px-6 py-5 outline-none text-gray-900 dark:text-white" }}
             </div>
 
-            <!-- Button -->
-            <button type="button"
-                    id="confirmBtn"
-                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-5 rounded-3xl text-white font-bold text-lg transition-all hover:scale-[1.01]">
-
-                CONFIRM PURCHASE
-
-            </button>
-
+            <button type="button" id="confirmBtn" class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-5 rounded-3xl text-white font-bold text-lg transition-all hover:scale-[1.01]">CONFIRM PURCHASE</button>
         </form>
     </div>
 </div>
 
 <!-- PIN MODAL -->
-<div id="pinModal"
-     class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-
-    <div class="bg-white dark:bg-[#12122B]
-                border border-gray-200 dark:border-white/10
-                rounded-[2rem] p-8 w-full max-w-md">
-
-        <h2 class="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
-            Enter Transaction PIN
-        </h2>
-
-        <p class="text-center text-gray-500 dark:text-gray-400 mb-8">
-            Confirm this transaction securely
-        </p>
-
-        <input id="pinInput"
-               type="password"
-               maxlength="4"
-               placeholder="••••"
-               class="w-full bg-gray-50 dark:bg-[#1A1A2E]
-                      border border-gray-200 dark:border-white/10
-                      rounded-3xl py-5 text-center text-4xl tracking-[12px]
-                      outline-none text-gray-900 dark:text-white">
-
-        <div class="grid grid-cols-2 gap-4 mt-8">
-
-            <button onclick="closePinModal()"
-                    class="py-4 rounded-3xl border border-gray-200 dark:border-white/10">
-                Cancel
-            </button>
-
-            <button onclick="verifyPin()"
-                    class="py-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold">
-                Verify
-            </button>
-
+<div id="pinModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
+        <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">Transaction PIN</h2>
+        <div class="flex justify-center gap-4 mb-8">
+            <div id="dot-0" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-1" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-2" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div id="dot-3" class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
         </div>
-
+        <div class="grid grid-cols-3 gap-3">
+            {% for i in "123456789"|make_list %}<button type="button" onclick="pressKey('{{ i }}')" class="h-16 rounded-2xl bg-gray-50 dark:bg-[#25253A] text-xl font-bold hover:bg-indigo-500 hover:text-white transition-all active:scale-95 text-gray-800 dark:text-white">{{ i }}</button>{% endfor %}
+            <button type="button" onclick="clearPin()" class="h-16 rounded-2xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">C</button>
+            <button type="button" onclick="pressKey('0')" class="h-16 rounded-2xl bg-gray-50 dark:bg-[#25253A] text-xl font-bold hover:bg-indigo-500 hover:text-white transition-all active:scale-95 text-gray-800 dark:text-white">0</button>
+            <button type="button" onclick="backspace()" class="h-16 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"><i class="fas fa-backspace"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-8">
+            <button type="button" onclick="closePinModal()" class="py-4 rounded-2xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold">Cancel</button>
+            <button type="button" id="verifyBtn" onclick="verifyPin()" class="py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold opacity-50" disabled>Verify</button>
+        </div>
     </div>
 </div>
 
 <script>
-
 let selectedPlan = null;
-
+let currentPin = "";
 const networkBtns = document.querySelectorAll('.network-btn');
 const planCards = document.querySelectorAll('.plan-card');
-
 const networkInput = document.querySelector('[name="network"]');
 const planInput = document.querySelector('[name="plan"]');
-
+const phoneInput = document.querySelector('[name="phone"]');
 const emptyPlans = document.getElementById('emptyPlans');
 const planCount = document.getElementById('planCount');
 
+// Helper to show/hide plans based on selected network
+function filterPlans(networkValue) {
+    let visibleCount = 0;
+    const targetNetwork = networkValue.toLowerCase().trim();
+    
+    planCards.forEach(card => {
+        const cardNetwork = card.dataset.network.toLowerCase().trim();
+        if (cardNetwork === targetNetwork) {
+            card.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            card.classList.add('hidden');
+        }
+        // Deselect plan if network changes
+        card.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500');
+    });
 
-// TOAST
-function toast(type, msg) {
-
-    const old = document.getElementById('global-toast');
-    if (old) old.remove();
-
-    const el = document.createElement('div');
-
-    el.id = 'global-toast';
-
-    el.className = `
-        fixed top-6 right-6 z-[9999]
-        px-6 py-4 rounded-2xl text-white shadow-xl
-        ${type === 'success'
-            ? 'bg-emerald-600'
-            : 'bg-red-600'}
-    `;
-
-    el.innerText = msg;
-
-    document.body.appendChild(el);
-
-    setTimeout(() => el.remove(), 4000);
+    // Handle UI feedback
+    emptyPlans.classList.toggle('hidden', visibleCount > 0);
+    if (visibleCount > 0) {
+        planCount.classList.remove('hidden');
+        planCount.innerText = `${visibleCount} Plans`;
+    } else {
+        planCount.classList.add('hidden');
+    }
 }
 
-
-// NETWORK FILTER
 networkBtns.forEach(btn => {
-
     btn.onclick = () => {
-
-        networkBtns.forEach(x => {
-            x.classList.remove('border-indigo-500', 'bg-indigo-500/10');
-        });
-
+        // UI: Set active button state
+        networkBtns.forEach(x => x.classList.remove('border-indigo-500', 'bg-indigo-500/10'));
         btn.classList.add('border-indigo-500', 'bg-indigo-500/10');
-
-        const network = btn.dataset.network.toLowerCase();
-
-        networkInput.value = network;
-
-        let visibleCount = 0;
-
+        
+        // Update the actual form input with the value expected by the backend
+        const networkValue = btn.dataset.network; 
+        networkInput.value = networkValue;
+        
+        // Reset selected plan state
         selectedPlan = null;
         planInput.value = '';
-
-        planCards.forEach(card => {
-
-            if (card.dataset.network.toLowerCase() === network) {
-
-                card.classList.remove('hidden');
-                visibleCount++;
-
-            } else {
-
-                card.classList.add('hidden');
-
-            }
-
-            card.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500');
-
-        });
-
-        emptyPlans.classList.toggle('hidden', visibleCount > 0);
-
-        if (visibleCount > 0) {
-            planCount.classList.remove('hidden');
-            planCount.innerText = `${visibleCount} Plans`;
-        }
+        
+        // Filter the visual cards
+        filterPlans(networkValue);
     };
-
 });
 
+// The rest of your functions (toast, PIN logic, verifyPin) are solid
+function toast(type, msg) {
+    const old = document.getElementById('global-toast');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.id = 'global-toast';
+    el.className = `fixed top-10 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[9999] px-8 py-5 rounded-3xl text-white shadow-2xl border-2 flex items-center gap-3 transition-all duration-500 ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    el.innerHTML = `<i class="fas ${icon} text-xl"></i> <span>${msg}</span>`;
+    document.body.appendChild(el);
+    setTimeout(() => {
+        el.style.opacity = '0'; el.style.transform = 'translateY(-20px)';
+        setTimeout(() => el.remove(), 500);
+    }, 5000);
+}
 
-// PLAN SELECT
+phoneInput.oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, ''); };
+
+function pressKey(num) { if (currentPin.length < 4) { currentPin += num; updateDots(); } }
+function backspace() { currentPin = currentPin.slice(0, -1); updateDots(); }
+function clearPin() { currentPin = ""; updateDots(); }
+function updateDots() {
+    for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentPin.length) { dot.classList.add('bg-indigo-500', 'border-indigo-500'); } 
+        else { dot.classList.remove('bg-indigo-500', 'border-indigo-500'); }
+    }
+    const vBtn = document.getElementById('verifyBtn');
+    vBtn.disabled = currentPin.length !== 4;
+    vBtn.classList.toggle('opacity-50', currentPin.length !== 4);
+}
+
 planCards.forEach(card => {
-
     card.onclick = () => {
-
-        planCards.forEach(c => {
-            c.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500');
-        });
-
+        planCards.forEach(c => c.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500'));
         card.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500');
-
         selectedPlan = card.dataset.id;
-
         planInput.value = selectedPlan;
     };
-
 });
 
-
-// OPEN PIN
 document.getElementById('confirmBtn').onclick = () => {
-
-    if (!networkInput.value) {
-        return toast('error', 'Select network first');
-    }
-
-    if (!selectedPlan) {
-        return toast('error', 'Select data plan');
-    }
-
+    // This check now uses the corrected networkInput value
+    if (!networkInput.value) return toast('error', 'Select network first');
+    if (!selectedPlan) return toast('error', 'Select data plan');
+    if (!phoneInput.value || phoneInput.value.length < 10) return toast('error', 'Enter a valid phone number');
     document.getElementById('pinModal').classList.remove('hidden');
 };
 
+function closePinModal() { document.getElementById('pinModal').classList.add('hidden'); clearPin(); }
 
-// CLOSE PIN
-function closePinModal() {
-
-    document.getElementById('pinModal').classList.add('hidden');
-
-}
-
-
-// VERIFY PIN
 async function verifyPin() {
-
-    const pin = document.getElementById('pinInput').value;
-
-    if (pin.length !== 4) {
-        return toast('error', 'PIN must be 4 digits');
-    }
-
+    if (currentPin.length !== 4) return toast('error', 'PIN must be 4 digits');
+    const pinToSubmit = currentPin;
     closePinModal();
+    const mainBtn = document.getElementById('confirmBtn');
+    const originalText = mainBtn.innerHTML;
+    mainBtn.disabled = true;
+    mainBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
 
-    const form = document.getElementById('dataForm');
-
-    const data = new FormData(form);
-
-    data.append('pin', pin);
-
+    const data = new FormData(document.getElementById('dataForm'));
+    data.append('pin', pinToSubmit);
     const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     try {
-
         const res = await fetch("{% url 'buy_data' %}", {
-
             method: "POST",
-
             body: data,
-
-            headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRFToken": csrf
-            }
-
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf }
         });
-
         const result = await res.json();
-
         if (result.status === 'success') {
-
             toast('success', result.message);
-
-            setTimeout(() => {
-
-                location.href = result.redirect_url || "{% url 'dashboard' %}";
-
-            }, 1500);
-
+            setTimeout(() => { location.href = result.redirect_url || "{% url 'dashboard' %}"; }, 2000);
         } else {
-
-            toast('error', result.message || 'Transaction failed');
-
+            toast('error', result.message);
+            mainBtn.disabled = false; mainBtn.innerHTML = originalText;
         }
-
     } catch (err) {
-
-        toast('error', 'Server error');
-
+        toast('error', 'Server unreachable. Check your connection.');
+        mainBtn.disabled = false; mainBtn.innerHTML = originalText;
     }
-
 }
-
 </script>
-
 {% endblock %}

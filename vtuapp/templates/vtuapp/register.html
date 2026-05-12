@@ -81,6 +81,17 @@
 </div>
 
 <script>
+    // Targeted selector for the phone field
+    const registerPhone = document.querySelector('.phone-field');
+
+    if (registerPhone) {
+        registerPhone.oninput = (e) => {
+            // Instantly removes any non-digit character typed or pasted
+            e.target.value = e.target.value.replace(/\D/g, '');
+        };
+    }
+</script>
+<script>
 // Toggle Password helper
 function togglePasswordVisibility(id, btn) {
     const input = document.getElementById(id);

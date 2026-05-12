@@ -374,34 +374,29 @@ def logout_view(request):
 # ====================== DASHBOARD ======================
 @login_required
 def dashboard(request):
-    wallet, _ = Wallet.objects.get_or_create(user=request.user)
-    transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:4]
-    
-    # 1. Get the profile clearly
-    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile = request.user.profile
+    wallet = request.user.wallet
+    # CORRECT
+    transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:5]
 
-    # 2. Handle the POST
+    # Handle the PIN Setup AJAX from the dashboard overlay
     if request.method == "POST" and request.POST.get('action') == 'set_initial_pin':
         new_pin = request.POST.get('new_pin')
-        if new_pin and len(new_pin) == 4 and new_pin.isdigit():
-            profile.transaction_pin = new_pin
+        if len(new_pin) == 4 and new_pin.isdigit():
+            profile.transaction_pin = new_pin # Saving to Profile as per your models.py
             profile.save()
-            # Redirect to the dashboard to refresh the 'has_pin' check
-            return redirect('dashboard')
+            return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'error'}, status=400)
 
-    # 3. THE CRITICAL CHECK
-    # This is what controls if the modal shows or hides
-    # We check the database directly here
-    has_pin = False
-    if profile.transaction_pin and str(profile.transaction_pin).strip() != "":
-        has_pin = True
+    # Use your Profile field: transaction_pin
+    has_pin = True if profile.transaction_pin else False
 
     context = {
         'wallet': wallet,
         'transactions': transactions,
-        'has_pin': has_pin
+        'has_pin': has_pin,
     }
-    return render(request, 'vtuapp/dashboard.html', context)           
+    return render(request, 'vtuapp/dashboard.html', context)        
 # ====================== SETTINGS ======================
 @login_required
 def settings_page(request):
@@ -462,55 +457,29 @@ def settings_page(request):
         elif section == 'pin':
             old_pin = request.POST.get('old_pin')
             new_pin = request.POST.get('new_pin')
-            wallet = request.user.wallet
-
+            # Use profile.transaction_pin to match your dashboard check
+            
             # --- Logic for First Time PIN Creation ---
-            if not wallet.pin:
+            if not profile.transaction_pin:
                 if len(new_pin) == 4 and new_pin.isdigit():
-                    wallet.set_pin(new_pin)
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return JsonResponse({
-                            'status': 'success', 
-                            'message': '✅ Transaction PIN created successfully!'
-                        })
-                    else:
-                        messages.success(request, 'Transaction PIN created successfully!')
-                        return redirect('settings')
-                else:
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return JsonResponse({
-                            'status': 'error', 
-                            'message': '❌ PIN must be exactly 4 digits'
-                        }, status=400)
-                    else:
-                        messages.error(request, 'PIN must be exactly 4 digits')
-                        return redirect('settings')
+                    profile.transaction_pin = new_pin
+                    profile.save()
+                    return JsonResponse({'status': 'success', 'message': '✅ Transaction PIN created!'})
+                return JsonResponse({'status': 'error', 'message': '❌ PIN must be 4 digits'}, status=400)
 
             # --- Logic for Normal PIN Change ---
-            if not wallet.check_pin(old_pin): 
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
-                else:
-                    messages.error(request, 'Current PIN is incorrect')
-                    return redirect('settings')
-            elif len(new_pin) != 4 or not new_pin.isdigit():
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'error', 'message': '❌ New PIN must be exactly 4 digits'}, status=400)
-                else:
-                    messages.error(request, 'New PIN must be exactly 4 digits')
-                    return redirect('settings')
+            if profile.transaction_pin != old_pin: 
+                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
+            
+            if len(new_pin) == 4 and new_pin.isdigit():
+                profile.transaction_pin = new_pin
+                profile.save()
+                return JsonResponse({'status': 'success', 'message': '✅ PIN updated successfully!'})
             else:
-                wallet.set_pin(new_pin)
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'status': 'success', 
-                        'message': '✅ Transaction PIN updated successfully!'
-                    })
-                else:
-                    messages.success(request, 'Transaction PIN updated successfully!')
-                    return redirect('settings')
+                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be 4 digits'}, status=400)
 
-    has_pin = bool(request.user.wallet.pin)
+    # Dashboard logic uses profile.transaction_pin
+    has_pin = bool(profile.transaction_pin)
     return render(request, 'vtuapp/settings.html', {'has_pin': has_pin})
 
 
@@ -761,76 +730,65 @@ def buy_airtime(request):
     form = AirtimeForm()
     return render(request, 'vtuapp/buy_airtime.html', {'form': form})
 
-
 @login_required
 @csrf_exempt
 def buy_data(request):
     if request.method == 'POST':
         try:
-
             form = DataPurchaseForm(request.POST)
             if not form.is_valid():
-                return JsonResponse({'status': 'error', 'message': 'Please fill all fields correctly'}, status=400)
+                # This helps debug the "Select Network" error
+                return JsonResponse({'status': 'error', 'message': f'Invalid Form: {form.errors.as_text()}'}, status=400)
 
-            pin = form.cleaned_data.get('pin') or request.POST.get('pin')
+            pin = request.POST.get('pin')
+            profile = request.user.profile
             wallet = request.user.wallet
             plan = form.cleaned_data['plan']
             phone = form.cleaned_data['phone']
 
-            print("=== BUY DATA DEBUG ===")
-            print(f"Plan: {plan.name} | Price: {plan.price}")
-            print(f"network_id: {plan.network_id} | smeplug_plan_id: {plan.smeplug_plan_id}")
-            print(f"Phone: {phone}")
+            # PIN Check (Updated to use Profile field)
+            if not profile.transaction_pin:
+                return JsonResponse({'status': 'no_pin', 'message': "Please set a PIN in Settings first"}, status=400)
 
-            # PIN Check
-            if not wallet.pin:
-                return JsonResponse({'status': 'no_pin', 'message': "Create Transaction PIN first"}, status=400)
-
-            if not wallet.check_pin(pin):
+            if profile.transaction_pin != pin:
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             # Balance Check
             if wallet.balance < plan.price:
-                return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ Insufficient balance!'}, status=400)
 
-            # === API CALL ===
+            # API Call
             service = VTUApiService()
             result = service.buy_data(
-                network_id=plan.network_id,      # Correct parameter name
+                network_id=plan.network_id,
                 plan_id=plan.smeplug_plan_id,
                 phone=phone,
                 amount=plan.price
             )
 
-            print(f"API Result: {result}")
-
-            if result['success']:
+            if result.get('success'):
                 wallet.balance -= plan.price
                 wallet.save()
                 
-                # 🔥 CHANGE: Capture transaction object
                 new_tx = Transaction.objects.create(
                     user=request.user,
-                    transaction_type='Data',
+                    transaction_type='Data Purchase', # Consistent with your @property profit logic
                     amount=plan.price,
-                    provider=plan.network.name if hasattr(plan, 'network') else 'smeplug',
+                    provider=plan.network, # Plan.network is a CharField in your models.py
                     phone_or_meter=phone,
                     status='Successful',
-                    transaction_id=result.get('transaction_id')
+                    reference=result.get('reference') # Using reference field from your Transaction model
                 )
 
-                # 🔥 CHANGE: Return redirect_url
                 return JsonResponse({
                     'status': 'success',
-                    'message': f'✅ {plan.name} purchased!',
+                    'message': f'✅ {plan.name} sent to {phone}',
                     'redirect_url': reverse('receipt_detail', kwargs={'pk': new_tx.pk})
                 })
             else:
-                # ... (error handling) ...
-                return JsonResponse({'status': 'error', 'message': result.get('message')}, status=400)
+                return JsonResponse({'status': 'error', 'message': result.get('message', 'API Error')}, status=400)
 
         except Exception as e:
-            # ... (exception handling) ...
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     form = DataPurchaseForm()
