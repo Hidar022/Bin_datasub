@@ -21,8 +21,9 @@ urlpatterns = [
     # Wallet & Transactions
     path('fund-wallet/', views.fund_wallet, name='fund_wallet'),
     path('fund-wallet/callback/', views.fund_wallet_callback, name='fund_wallet_callback'),
-    # Add this for the background payment notification
+    # GAFIA Webhook (both variations)
     path('gafia-webhook/', views.gafiapay_webhook, name='gafia_webhook'),
+    path('gafiapay-webhook/', views.gafiapay_webhook, name='gafia_webhook_alt'),
     path('transactions/', views.transactions_history, name='transactions'),
     path('receipt/<int:pk>/', views.transaction_receipt, name='receipt_detail'),
     

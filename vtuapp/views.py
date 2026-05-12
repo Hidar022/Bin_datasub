@@ -632,6 +632,14 @@ def gafiapay_webhook(request):
 
     payload = request.body
     signature = request.headers.get('X-Gafiapay-Signature')
+    
+    # Log webhook receipt for debugging
+    with open('/tmp/gafia_webhook.log', 'a') as f:
+        f.write(f"[{timezone.now()}] Webhook received\n")
+        f.write(f"Signature: {signature}\n")
+        f.write(f"Payload: {payload.decode('utf-8', errors='replace')}\n")
+        f.write("="*80 + "\n")
+    
     print("GAFIA WEBHOOK SIGNATURE:", signature)
     print("GAFIA WEBHOOK PAYLOAD:", payload.decode('utf-8', errors='replace'))
 
@@ -676,8 +684,14 @@ def gafiapay_webhook(request):
                     status='Successful',
                     reference=reference
                 )
+                
+                with open('/tmp/gafia_webhook.log', 'a') as f:
+                    f.write(f"✅ CREDITED: {user.email} - ₦{amount}\n\n")
+                
                 return HttpResponse(status=200)
             else:
+                with open('/tmp/gafia_webhook.log', 'a') as f:
+                    f.write(f"❌ NO USER: email={email}, account={account_number}\n\n")
                 print("GAFIA WEBHOOK: no user found for email/account_number", email, account_number)
                 return HttpResponse(status=404)
 
