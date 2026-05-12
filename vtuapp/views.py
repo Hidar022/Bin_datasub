@@ -581,6 +581,7 @@ def fund_wallet(request):
         'acc_no': user_profile.gafia_account_number,
         'bank': user_profile.gafia_bank_name,
         'name': user_profile.gafia_account_name,
+        'paystack_public_key': settings.PAYSTACK_PUBLIC_KEY,
     }
     return render(request, 'vtuapp/fund_wallet.html', context)
 
@@ -630,82 +631,51 @@ def gafiapay_webhook(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
-    payload = request.body
-    signature = request.headers.get('X-Gafiapay-Signature')
-    
-    # Log webhook receipt for debugging
-    with open('/tmp/gafia_webhook.log', 'a') as f:
-        f.write(f"[{timezone.now()}] Webhook received\n")
-        f.write(f"Signature: {signature}\n")
-        f.write(f"Payload: {payload.decode('utf-8', errors='replace')}\n")
-        f.write("="*80 + "\n")
-    
-    print("GAFIA WEBHOOK SIGNATURE:", signature)
-    print("GAFIA WEBHOOK PAYLOAD:", payload.decode('utf-8', errors='replace'))
-
     try:
-        data = json.loads(payload)
-    except json.JSONDecodeError:
-        return HttpResponse(status=400)
+        payload = json.loads(request.body)
+        event = payload.get('event')
+        data = payload.get('data', {})
+        transaction = data.get('transaction', {}) # This is the missing link!
 
-    event = data.get('event')
-    txn_details = data.get('data', {})
-    webhook_status = txn_details.get('status') or data.get('status')
+        print(f"GAFIA WEBHOOK RECEIVED: {event}")
 
-    with open('/tmp/gafia_webhook.log', 'a') as f:
-        f.write(f"EVENT: {event}\n")
-        f.write(f"STATUS: {webhook_status}\n")
-        f.write(f"DETAILS: {json.dumps(txn_details, default=str)}\n")
-        f.write("-"*80 + "\n")
+        # Check for the correct event from your screenshot
+        if event == 'payment.received':
+            # Extracting from the nested 'transaction' object seen in your image
+            amount = Decimal(str(transaction.get('amount', 0)))
+            email = transaction.get('email')
+            reference = transaction.get('orderNo') or transaction.get('id')
 
-    print("GAFIA WEBHOOK EVENT:", event)
-    print("GAFIA WEBHOOK STATUS:", webhook_status)
-
-    if event in ['payment.success', 'payment.notification'] or str(webhook_status).lower() in ['success', 'successful']:
-        amount = Decimal(str(txn_details.get('amount', '0')))
-        email = txn_details.get('customer', {}).get('email') if isinstance(txn_details.get('customer'), dict) else None
-        reference = txn_details.get('reference') or txn_details.get('transactionReference') or txn_details.get('paymentReference')
-
-        account_number = None
-        if isinstance(txn_details.get('customer'), dict):
-            account_number = txn_details['customer'].get('accountNumber') or txn_details['customer'].get('account_number')
-        if not account_number and isinstance(txn_details.get('virtual_account'), dict):
-            account_number = txn_details['virtual_account'].get('accountNumber') or txn_details['virtual_account'].get('account_number')
-        if not account_number and isinstance(txn_details.get('beneficiary'), dict):
-            account_number = txn_details['beneficiary'].get('account_number')
-        if not account_number and isinstance(txn_details.get('recipient'), dict):
-            account_number = txn_details['recipient'].get('account_number')
-
-        if not Transaction.objects.filter(reference=reference).exists():
-            user = None
-            if email:
-                user = User.objects.filter(email=email).first()
-            if not user and account_number:
-                user = User.objects.filter(profile__gafia_account_number=account_number).first()
-
-            if user:
-                wallet = user.wallet
-                wallet.balance += amount
-                wallet.save()
-
-                Transaction.objects.create(
-                    user=user,
-                    transaction_type='Wallet Funding (Bank Transfer)',
-                    amount=amount,
-                    provider='Gafiapay',
-                    status='Successful',
-                    reference=reference
-                )
-                
-                with open('/tmp/gafia_webhook.log', 'a') as f:
-                    f.write(f"✅ CREDITED: {user.email} - ₦{amount} - reference={reference}\n\n")
-                print("GAFIA WEBHOOK CREDITED:", user.email, amount, reference)
+            if not reference:
                 return HttpResponse(status=200)
-            else:
-                with open('/tmp/gafia_webhook.log', 'a') as f:
-                    f.write(f"❌ NO USER: email={email}, account={account_number}, reference={reference}\n\n")
-                print("GAFIA WEBHOOK: no user found for email/account_number", email, account_number, reference)
-                return HttpResponse(status=404)
+
+            # Prevent double funding
+            if not Transaction.objects.filter(reference=reference).exists():
+                # Find user by the email shown in your screenshot
+                user = User.objects.filter(email=email).first()
+
+                if user:
+                    wallet = user.wallet
+                    wallet.balance += amount
+                    wallet.save()
+
+                    Transaction.objects.create(
+                        user=user,
+                        transaction_type='Wallet Funding (Bank Transfer)',
+                        amount=amount,
+                        provider='Gafiapay',
+                        status='Successful',
+                        reference=reference
+                    )
+                    print(f"✅ SUCCESS: Credited {amount} to {user.username}")
+                    return HttpResponse(status=200)
+                else:
+                    print(f"❌ USER NOT FOUND: {email}")
+                    return HttpResponse(status=404)
+
+    except Exception as e:
+        print(f"⚠️ WEBHOOK ERROR: {str(e)}")
+        return HttpResponse(status=500)
 
     return HttpResponse(status=200)
 

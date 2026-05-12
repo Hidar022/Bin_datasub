@@ -67,28 +67,32 @@
     </div>
 
     <div class="mt-8 text-center">
-        <p class="text-gray-500 text-xs mb-4 uppercase tracking-widest font-bold">Or use other methods</p>
-        <button class="text-indigo-600 dark:text-cyan-400 font-bold text-sm hover:underline">
-            Pay with Card (Paystack)
-        </button>
-    </div>
+    <p class="text-gray-500 text-xs mb-4 uppercase tracking-widest font-bold">Or use other methods</p>
+    <script src="https://js.paystack.co/v1/inline.js"></script> 
+    <button onclick="payWithPaystack()" class="text-indigo-600 dark:text-cyan-400 font-bold text-sm hover:underline">
+        Pay with Card (Paystack)
+    </button>
 </div>
 
 <script>
-function copyAcc() {
-    const num = document.getElementById('acc_num').innerText;
-    navigator.clipboard.writeText(num);
-    
-    // Simple toast notification
-    const btn = event.currentTarget;
-    const icon = btn.querySelector('i');
-    icon.classList.replace('far', 'fas');
-    icon.classList.replace('fa-copy', 'fa-check');
-    
-    setTimeout(() => {
-        icon.classList.replace('fas', 'far');
-        icon.classList.replace('fa-check', 'fa-copy');
-    }, 2000);
+function payWithPaystack() {
+    let amount = prompt("Enter amount to fund:");
+    if (amount === null || amount === "" || isNaN(amount)) return;
+
+    let handler = PaystackPop.setup({
+        key: '{{ paystack_public_key }}', // Pass this from your view
+        email: '{{ request.user.email }}',
+        amount: amount * 100, // Paystack uses Kobo
+        currency: 'NGN',
+        callback: function(response) {
+            // Redirect to your callback URL with the reference
+            window.location.href = "{% url 'fund_wallet_callback' %}?reference=" + response.reference;
+        },
+        onClose: function() {
+            alert('Window closed.');
+        }
+    });
+    handler.openIframe();
 }
 </script>
 {% endblock %}
