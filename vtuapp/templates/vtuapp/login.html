@@ -37,6 +37,14 @@
 
                 <div class="relative mt-2">
                     {{ field|add_class:"w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 dark:focus:border-cyan-400 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-cyan-400/10 rounded-2xl px-5 py-4 text-gray-900 dark:text-white outline-none transition-all" }}
+
+                    {% if 'password' in field.name %}
+                    <button type="button"
+                            onclick="togglePasswordVisibility('{{ field.id_for_label }}', this)"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    {% endif %}
                 </div>
 
                 {% if field.errors %}

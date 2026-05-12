@@ -41,7 +41,7 @@
 
                     {% if 'password' in field.name %}
                     <button type="button"
-                            onclick="togglePasswordVisibility('{{ field.id_for_label }}')"
+                            onclick="togglePasswordVisibility('{{ field.id_for_label }}', this)"
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400">
                         <i class="fas fa-eye"></i>
                     </button>
