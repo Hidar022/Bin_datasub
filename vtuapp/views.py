@@ -629,25 +629,41 @@ def fund_wallet_callback(request):
 def gafiapay_webhook(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-        
+
     payload = request.body
     signature = request.headers.get('X-Gafiapay-Signature')
-    
-    # Verify the signature from Gafiapay
-    # (Check Gafiapay docs for their exact webhook hashing method)
-    
-    data = json.loads(payload)
-    
-    # Check if transaction is successful
+    print("GAFIA WEBHOOK SIGNATURE:", signature)
+    print("GAFIA WEBHOOK PAYLOAD:", payload.decode('utf-8', errors='replace'))
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
     if data.get('event') == 'payment.success':
-        txn_details = data['data']
-        amount = Decimal(txn_details['amount'])
-        email = txn_details['customer']['email']
-        reference = txn_details['reference']
+        txn_details = data.get('data', {})
+        amount = Decimal(str(txn_details.get('amount', '0')))
+        email = txn_details.get('customer', {}).get('email') if isinstance(txn_details.get('customer'), dict) else None
+        reference = txn_details.get('reference')
+
+        account_number = None
+        if isinstance(txn_details.get('customer'), dict):
+            account_number = txn_details['customer'].get('accountNumber') or txn_details['customer'].get('account_number')
+        if not account_number and isinstance(txn_details.get('virtual_account'), dict):
+            account_number = txn_details['virtual_account'].get('accountNumber') or txn_details['virtual_account'].get('account_number')
+        if not account_number and isinstance(txn_details.get('beneficiary'), dict):
+            account_number = txn_details['beneficiary'].get('account_number')
+        if not account_number and isinstance(txn_details.get('recipient'), dict):
+            account_number = txn_details['recipient'].get('account_number')
 
         if not Transaction.objects.filter(reference=reference).exists():
-            try:
-                user = User.objects.get(email=email)
+            user = None
+            if email:
+                user = User.objects.filter(email=email).first()
+            if not user and account_number:
+                user = User.objects.filter(profile__gafia_account_number=account_number).first()
+
+            if user:
                 wallet = user.wallet
                 wallet.balance += amount
                 wallet.save()
@@ -661,9 +677,10 @@ def gafiapay_webhook(request):
                     reference=reference
                 )
                 return HttpResponse(status=200)
-            except User.DoesNotExist:
+            else:
+                print("GAFIA WEBHOOK: no user found for email/account_number", email, account_number)
                 return HttpResponse(status=404)
-                
+
     return HttpResponse(status=200)
 
 # ====================== PURCHASE VIEWS ======================
