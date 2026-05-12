@@ -495,19 +495,32 @@ def settings_page(request):
 
 
 # ====================== FUND WALLET (Paystack) ======================
-def get_gafia_headers(payload_json):
-    # Gafiapay requires x-api-key, x-signature, and x-timestamp headers
-    timestamp = str(int(time.time()))
+def get_gafia_headers(payload=None):
+    public_key = settings.GAFIAPAY_PUBLIC_KEY
+    secret_key = settings.GAFIAPAY_SECRET_KEY
     
-    # x-signature is SHA256 HMAC of the JSON payload using the secret key
+    # Use milliseconds to match Gafiapay's timestamp requirement
+    timestamp = str(int(time.time() * 1000))
+    
+    # Gafiapay signature is generated from request body + timestamp
+    message = ""
+    if payload is not None:
+        serialized_payload = json.dumps(payload, separators=(",", ":"))
+        message = f"{serialized_payload}{timestamp}"
+    else:
+        message = timestamp
+    
     signature = hmac.new(
-        settings.GAFIAPAY_SECRET_KEY.encode('utf-8'),
-        payload_json.encode('utf-8'),
+        secret_key.encode('utf-8'),
+        message.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
     
+    print("GAFIA SIGNATURE MESSAGE:", message)
+    print("GAFIA SIGNATURE:", signature)
+    
     return {
-        "x-api-key": settings.GAFIAPAY_PUBLIC_KEY,
+        "x-api-key": public_key,
         "x-signature": signature,
         "x-timestamp": timestamp,
         "Content-Type": "application/json",
@@ -516,39 +529,53 @@ def get_gafia_headers(payload_json):
 
 @login_required
 def fund_wallet(request):
-    # Ensure the user has a profile before trying to read Gafiapay account details
-    user_profile, _ = Profile.objects.get_or_create(user=request.user)
-
+    user_profile = request.user.profile
+    
+    # 1. Check if user already has an account saved
     if not user_profile.gafia_account_number:
-        # ONLY if they don't have one, we call the API to create it
         url = "https://api.gafiapay.com/api/v1/external/account/generate"
+        
+        # Ensure name has at least two parts (First Last)
+        full_name = f"{request.user.first_name} {request.user.last_name}".strip()
+        if not full_name or len(full_name.split()) < 2:
+            full_name = f"{request.user.username} CUSTOMER"
+
+        # Add website name for bank statement clarity
+        full_name = f"{full_name}(bindatasub)"
+
         payload = {
-            "email": request.user.email,
-            "name": f"{request.user.username} BIN".upper(),
+            "email": request.user.email or f"{request.user.username}@bindatasub.com",
+            "name": full_name.upper(),
         }
-
+        
         try:
-            payload_json = json.dumps(payload)
-            headers = get_gafia_headers(payload_json)
-            response = requests.post(url, data=payload_json, headers=headers, timeout=15)
-            response.raise_for_status()
+            # Generate headers right before the request to minimize timestamp issues
+            headers = get_gafia_headers(payload)
+            response = requests.post(url, json=payload, headers=headers, timeout=20)
+            
+            # Debugging: Print this to your console/terminal
+            print(f"GAFIA REQUEST PAYLOAD: {json.dumps(payload, separators=(',', ':'), sort_keys=True)}")
+            print(f"GAFIA RESPONSE STATUS: {response.status_code}")
+            print(f"GAFIA RESPONSE BODY: {response.text}")
+            
             res_data = response.json()
-
-            if res_data.get('status') == 'success':
+            
+            if response.status_code == 200 and res_data.get('status') == 'success':
                 acc_data = res_data['data']
-                user_profile.gafia_account_number = acc_data['account_number']
-                user_profile.gafia_bank_name = acc_data['bank_name']
-                user_profile.gafia_account_name = acc_data['account_name']
+                user_profile.gafia_account_number = acc_data['accountNumber']
+                user_profile.gafia_bank_name = acc_data['bankName']
+                user_profile.gafia_account_name = acc_data['accountName']
                 user_profile.save()
             else:
-                logging.error('Gafiapay account creation failed: %s', res_data)
-                messages.error(request, 'System busy. Please try again in 2 minutes.')
+                messages.error(request, f"Gateway Error: {res_data.get('message', 'Validation failed')}")
+        
         except requests.exceptions.RequestException as e:
-            logging.exception('Gafiapay connection error while generating account')
-            messages.error(request, 'Connection failed. Check your internet and try again.')
+            # This catches DNS, Connection, and Timeout errors
+            print(f"CONNECTION ERROR: {e}")
+            messages.error(request, "Unable to reach payment provider. Please check your network.")
         except Exception as e:
-            logging.exception('Unexpected error during fund wallet account creation')
-            messages.error(request, 'Unable to create funding account. Please contact support.')
+            print(f"GENERAL ERROR: {e}")
+            messages.error(request, "An unexpected error occurred. Please try again.")
 
     context = {
         'acc_no': user_profile.gafia_account_number,
