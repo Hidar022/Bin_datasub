@@ -648,11 +648,23 @@ def gafiapay_webhook(request):
     except json.JSONDecodeError:
         return HttpResponse(status=400)
 
-    if data.get('event') == 'payment.success':
-        txn_details = data.get('data', {})
+    event = data.get('event')
+    txn_details = data.get('data', {})
+    webhook_status = txn_details.get('status') or data.get('status')
+
+    with open('/tmp/gafia_webhook.log', 'a') as f:
+        f.write(f"EVENT: {event}\n")
+        f.write(f"STATUS: {webhook_status}\n")
+        f.write(f"DETAILS: {json.dumps(txn_details, default=str)}\n")
+        f.write("-"*80 + "\n")
+
+    print("GAFIA WEBHOOK EVENT:", event)
+    print("GAFIA WEBHOOK STATUS:", webhook_status)
+
+    if event in ['payment.success', 'payment.notification'] or str(webhook_status).lower() in ['success', 'successful']:
         amount = Decimal(str(txn_details.get('amount', '0')))
         email = txn_details.get('customer', {}).get('email') if isinstance(txn_details.get('customer'), dict) else None
-        reference = txn_details.get('reference')
+        reference = txn_details.get('reference') or txn_details.get('transactionReference') or txn_details.get('paymentReference')
 
         account_number = None
         if isinstance(txn_details.get('customer'), dict):
@@ -686,13 +698,13 @@ def gafiapay_webhook(request):
                 )
                 
                 with open('/tmp/gafia_webhook.log', 'a') as f:
-                    f.write(f"✅ CREDITED: {user.email} - ₦{amount}\n\n")
-                
+                    f.write(f"✅ CREDITED: {user.email} - ₦{amount} - reference={reference}\n\n")
+                print("GAFIA WEBHOOK CREDITED:", user.email, amount, reference)
                 return HttpResponse(status=200)
             else:
                 with open('/tmp/gafia_webhook.log', 'a') as f:
-                    f.write(f"❌ NO USER: email={email}, account={account_number}\n\n")
-                print("GAFIA WEBHOOK: no user found for email/account_number", email, account_number)
+                    f.write(f"❌ NO USER: email={email}, account={account_number}, reference={reference}\n\n")
+                print("GAFIA WEBHOOK: no user found for email/account_number", email, account_number, reference)
                 return HttpResponse(status=404)
 
     return HttpResponse(status=200)
