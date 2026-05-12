@@ -247,6 +247,78 @@
 
             </div>
 
+{% if not has_pin %}
+<div id="security-overlay" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-gray-900/80 backdrop-blur-lg"></div>
+    
+    <div class="relative bg-white dark:bg-[#111827] w-full max-w-md rounded-[2.5rem] p-10 text-center shadow-2xl border border-white/10">
+        <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-key text-3xl"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Set Your PIN</h2>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-8">Create a 4-digit PIN to authorize transactions.</p>
+
+        <form id="pin-setup-form" method="POST" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="set_initial_pin">
+            
+            <div class="flex justify-center">
+                <input type="password" 
+                       name="new_pin" 
+                       id="digit-input"
+                       maxlength="4" 
+                       placeholder="••••" 
+                       required 
+                       pattern="\d{4}"
+                       inputmode="numeric"
+                       class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl p-5 text-center text-4xl tracking-[0.8em] font-mono focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white">
+            </div>
+
+            <button type="submit" 
+                    id="submit-btn"
+                    class="relative w-full bg-emerald-600 text-white py-5 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center overflow-hidden">
+                <span id="btn-text">ACTIVATE PIN</span>
+                
+                <!-- Hidden Spinner -->
+                <div id="btn-spinner" class="hidden absolute inset-0 flex items-center justify-center bg-emerald-600">
+                    <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="ml-3">PROCESSING...</span>
+                </div>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Handle the button loading state
+    const pinForm = document.getElementById('pin-setup-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+
+    pinForm.addEventListener('submit', function() {
+        // Disable button to prevent double-click
+        submitBtn.classList.add('pointer-events-none');
+        btnText.classList.add('opacity-0');
+        btnSpinner.classList.remove('hidden');
+    });
+
+    // Auto-focus input
+    document.addEventListener('DOMContentLoaded', () => {
+        const pinInput = document.getElementById('digit-input');
+        if(pinInput) pinInput.focus();
+    });
+</script>
+
+<style>
+    body { overflow: hidden !important; }
+</style>
+{% endif %}
+
         </div>
     </div>
 </div>

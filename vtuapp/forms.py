@@ -34,23 +34,48 @@ class DataPurchaseForm(forms.Form):
     pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
 # --- AUTH FORMS ---
-
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
+    full_name = forms.CharField(
+        max_length=150, 
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': 'Enter your full name'})
+    )
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'placeholder': 'aliyu@example.com'})
+    )
+    phone_number = forms.CharField(
+        max_length=15,
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': '08012345678'})
+    )
 
     class Meta:
         model = User
-        fields = ['username', 'email']
+        # Include fields used by the default User model
+        fields = ['full_name', 'username', 'email', 'phone_number']
+    
+    # This ensures the {% for field in form %} loop follows this exact order
+    field_order = ['full_name', 'username', 'email', 'phone_number', 'password1', 'password2']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Placeholders for the Register Page
         self.fields['username'].widget.attrs.update({'placeholder': 'Choose a username'})
-        self.fields['email'].widget.attrs.update({'placeholder': 'aliyu@example.com'})
+        
         if 'password1' in self.fields:
             self.fields['password1'].widget.attrs.update({'placeholder': 'Create password'})
         if 'password2' in self.fields:
             self.fields['password2'].widget.attrs.update({'placeholder': 'Confirm password'})
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Storing full_name in first_name for compatibility
+        user.first_name = self.cleaned_data["full_name"]
+        # Note: If your User model doesn't have a 'phone_number' field, 
+        # you'll need a Profile model or a Custom User Model to save this.
+        if commit:
+            user.save()
+        return user
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={

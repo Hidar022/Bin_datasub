@@ -374,14 +374,34 @@ def logout_view(request):
 # ====================== DASHBOARD ======================
 @login_required
 def dashboard(request):
-    wallet, created = Wallet.objects.get_or_create(user=request.user)
+    wallet, _ = Wallet.objects.get_or_create(user=request.user)
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:4]
-    return render(request, 'vtuapp/dashboard.html', {
+    
+    # 1. Get the profile clearly
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    # 2. Handle the POST
+    if request.method == "POST" and request.POST.get('action') == 'set_initial_pin':
+        new_pin = request.POST.get('new_pin')
+        if new_pin and len(new_pin) == 4 and new_pin.isdigit():
+            profile.transaction_pin = new_pin
+            profile.save()
+            # Redirect to the dashboard to refresh the 'has_pin' check
+            return redirect('dashboard')
+
+    # 3. THE CRITICAL CHECK
+    # This is what controls if the modal shows or hides
+    # We check the database directly here
+    has_pin = False
+    if profile.transaction_pin and str(profile.transaction_pin).strip() != "":
+        has_pin = True
+
+    context = {
         'wallet': wallet,
-        'transactions': transactions
-    })
-
-
+        'transactions': transactions,
+        'has_pin': has_pin
+    }
+    return render(request, 'vtuapp/dashboard.html', context)           
 # ====================== SETTINGS ======================
 @login_required
 def settings_page(request):

@@ -14,6 +14,7 @@ class Profile(models.Model):
     gafia_account_number = models.CharField(max_length=15, null=True, blank=True)
     gafia_bank_name = models.CharField(max_length=50, null=True, blank=True)
     gafia_account_name = models.CharField(max_length=100, null=True, blank=True)
+    transaction_pin = models.CharField(max_length=4, null=True, blank=True)
 
     def __str__(self):
         return self.user.username

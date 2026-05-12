@@ -1,240 +1,482 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
     <title>{% block title %}Bin Datasub{% endblock %}</title>
 
     {% load static %}
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        body {
-            font-family: 'Inter', sans-serif;
+        *{
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .header-glow {
-            background: linear-gradient(90deg, #6366f1, #22d3ee);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        body{
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        .mobile-sidebar {
+        .mobile-sidebar{
             transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all .35s ease;
         }
 
-        .mobile-sidebar.open {
+        .mobile-sidebar.open{
             transform: translateX(0);
         }
 
-        #sidebar-overlay {
-            transition: opacity 0.3s ease;
+        .nav-active{
+            color:#4f46e5 !important;
         }
+
+        .dark .nav-active{
+            color:#22d3ee !important;
+        }
+
+        .glass{
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .logo-gradient{
+            background: linear-gradient(135deg,#4f46e5,#06b6d4);
+        }
+
+        .animate-scale{
+            transition: .2s ease;
+        }
+
+        .animate-scale:active{
+            transform: scale(.96);
+        }
+
+        .bottom-nav-shadow{
+            box-shadow: 0 -10px 30px rgba(0,0,0,.04);
+        }
+
+        .dark .bottom-nav-shadow{
+            box-shadow: 0 -10px 30px rgba(0,0,0,.4);
+        }
+
     </style>
 
     <script>
-        tailwind.config = { darkMode: 'class' };
+        tailwind.config = {
+            darkMode: 'class'
+        };
 
-        (function () {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
+        (() => {
+            const theme = localStorage.getItem('theme');
+
+            if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
             }
         })();
     </script>
 
-    {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-white dark:bg-[#0A0A1F] text-gray-900 dark:text-white min-h-screen transition-colors">
+<body class="bg-[#F8FAFC] dark:bg-[#070B14] text-gray-900 dark:text-white min-h-screen pb-24 md:pb-0">
 
-<!-- ================= NAVBAR ================= -->
-<nav class="bg-white/95 dark:bg-[#0A0A1F]/95 border-b border-gray-200 dark:border-white/10 backdrop-blur-xl sticky top-0 z-50">
-    <div class="max-w-screen-2xl mx-auto px-5 py-4">
-        <div class="flex items-center justify-between">
+<!-- ======================= NAVBAR ======================= -->
 
-            <!-- Logo -->
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-400 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
-                    📡
-                </div>
-                <span class="text-2xl md:text-3xl font-bold header-glow">Bin Datasub</span>
-            </div>
+<nav class="sticky top-0 z-[90] bg-white/80 dark:bg-[#070B14]/80 border-b border-gray-200 dark:border-white/5 glass">
 
-            <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+    <div class="max-w-7xl mx-auto px-4 md:px-6">
+
+        <div class="h-[74px] flex items-center justify-between">
+
+<!-- Logo -->
+<a href="/" class="flex items-center gap-3 animate-scale group">
+    
+    <!-- Circular Logo Container (Solid Black for Maximum Contrast) -->
+    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#000000] border border-gray-800 shadow-lg shadow-indigo-500/10 transition-all duration-300 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/20">
+        
+        <!-- Logo Image: ChatGPT Image May 12, 2026, 04_27_58 PM.png -->
+        <img src="{% static 'images/logo.png' %}" 
+             alt="Bin Datasub" 
+             class="w-8 h-8 object-contain">
+             
+    </div>
+
+    <!-- Text Block -->
+    <div class="leading-tight">
+        <h1 class="font-black text-[19px] tracking-wider text-[#4f46e5] dark:text-[#22d3ee]" 
+            style="font-family: 'Orbitron', sans-serif;">
+            Bin Datasub
+        </h1>
+        <p class="text-[10px] font-bold uppercase tracking-[2px] text-gray-500 dark:text-gray-400">
+            Fast VTU Services
+        </p>
+    </div>
+
+</a>
+         <!-- Desktop Nav -->
+            <div class="hidden md:flex items-center gap-8">
+
                 {% if user.is_authenticated %}
-                    <a href="{% url 'dashboard' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Dashboard</a>
-                    <a href="{% url 'services' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Services</a>
-                    <a href="{% url 'settings' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Settings</a>
-                    <a href="{% url 'transactions' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Transactions</a>
-                    <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Support</a>
+
+                <a href="{% url 'dashboard' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Dashboard
+                </a>
+
+                <a href="{% url 'transactions' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Transactions
+                </a>
+
+                <a href="{% url 'fund_wallet' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Wallet
+                </a>
+
+                <a href="{% url 'services' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Services
+                </a>
+
+                <a href="{% url 'settings' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Settings
+                </a>
+
                 {% else %}
-                    <a href="{% url 'index' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Home</a>
-                    <a href="#services" class="hover:text-indigo-600 dark:hover:text-cyan-400">Services</a>
-                    <a href="{% url 'support' %}" class="hover:text-indigo-600 dark:hover:text-cyan-400">Support</a>
+
+                <a href="/"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Home
+                </a>
+
+                <a href="{% url 'services' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Services
+                </a>
+
+                <a href="{% url 'support' %}"
+                   class="nav-item text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-400 transition">
+                    Support
+                </a>
+
                 {% endif %}
+
             </div>
 
-            <!-- Right Actions -->
+            <!-- Actions -->
             <div class="flex items-center gap-3">
 
                 <!-- Theme -->
                 <button id="theme-toggle"
-                    class="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10">
-                    <i id="theme-icon" class="fas fa-sun text-xl text-amber-500 dark:text-cyan-400"></i>
+                        class="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center animate-scale">
+
+                    <i id="theme-icon"
+                       class="fas fa-moon text-gray-700 dark:text-cyan-400"></i>
+
                 </button>
 
-                {% if user.is_authenticated %}
-                    <span class="hidden lg:inline text-sm">Hi, {{ request.user.username }}</span>
-                {% else %}
-                    <a href="{% url 'login' %}" class="hidden sm:inline px-5 py-2.5 border rounded-3xl">Login</a>
-                    <a href="{% url 'register' %}" class="hidden sm:inline px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-3xl">Sign Up</a>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}"
+                   class="hidden md:flex h-11 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold items-center justify-center shadow-lg shadow-indigo-500/20 hover:scale-[1.02] transition">
+                    Login
+                </a>
                 {% endif %}
 
-                <!-- Mobile menu -->
-                <button id="hamburger" class="md:hidden text-2xl">
-                    <i class="fas fa-bars"></i>
+                <!-- Mobile Menu -->
+                <button id="hamburger"
+                        class="md:hidden w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center animate-scale">
+
+                    <i class="fas fa-bars text-lg"></i>
+
                 </button>
+
             </div>
 
         </div>
+
     </div>
+
 </nav>
 
-<!-- ================= SIDEBAR ================= -->
-<div id="mobile-sidebar"
-     class="mobile-sidebar fixed top-0 right-0 h-full w-72 bg-white dark:bg-[#0A0A1F] shadow-2xl z-[100]">
+<!-- ======================= MOBILE SIDEBAR ======================= -->
 
-    <div class="p-6">
+{% if user.is_authenticated %}
+<!-- The Overlay is needed to dim the background when sidebar is open -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[95] hidden"></div>
 
-        <div class="flex justify-between mb-8">
-            <span class="text-xl font-bold header-glow">Menu</span>
-            <button id="close-sidebar" class="text-3xl">×</button>
+<div id="mobile-sidebar" class="mobile-sidebar fixed top-0 right-0 h-full w-[300px] bg-white dark:bg-[#0B1224] z-[100] border-l border-gray-100 dark:border-white/5 flex flex-col shadow-2xl">
+
+    <!-- Header -->
+    <div class="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <!-- Circular Black Logo Container -->
+            <div class="w-11 h-11 rounded-full flex items-center justify-center bg-[#000000] border border-gray-800 shadow-lg shadow-indigo-500/10">
+                <img src="{% static 'images/logo.png' %}" 
+                     alt="Bin Datasub" 
+                     class="w-7 h-7 object-contain">
+            </div>
+
+            <div class="leading-tight">
+                <h2 class="font-black text-[17px] tracking-wider text-[#4f46e5] dark:text-[#22d3ee]"
+                    style="font-family: 'Orbitron', sans-serif;">
+                    Bin Datasub
+                </h2>
+                <p class="text-[10px] font-bold uppercase tracking-[1px] text-gray-500 dark:text-gray-400">
+                    Fast VTU Services
+                </p>
+            </div>
         </div>
 
-        <div class="flex flex-col gap-6">
-            {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <a href="{% url 'services' %}">Services</a>
-                <a href="{% url 'settings' %}">Settings</a>
-                <a href="{% url 'transactions' %}">Transactions</a>
-                <a href="{% url 'support' %}">Support</a>
-                <a href="{% url 'logout' %}" class="text-red-500">Logout</a>
-            {% else %}
-                <a href="{% url 'index' %}">Home</a>
-                <a href="#services">Services</a>
-                <a href="{% url 'support' %}">Support</a>
-                <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'register' %}" class="bg-indigo-500 text-white p-2 rounded-xl text-center">Sign Up</a>
-            {% endif %}
-        </div>
-
+        <button id="close-sidebar"
+                class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
-</div>
 
-<!-- OVERLAY -->
-<div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-[99]"></div>
+    <!-- Menu Section -->
+    <div class="flex-1 overflow-y-auto p-6">
+        <div class="space-y-2">
+            
+            <a href="{% url 'dashboard' %}"
+               class="nav-item flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
+                <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-cyan-400 flex items-center justify-center">
+                    <i class="fas fa-grid-2"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">Dashboard</p>
+                    <p class="text-xs text-gray-500">Overview & wallet</p>
+                </div>
+            </a>
 
-<!-- ================= MESSAGES ================= -->
-{% if messages %}
-<div class="max-w-4xl mx-auto px-6 mt-6">
-    {% for message in messages %}
-        <div class="mb-3 px-4 py-3 rounded-xl border-l-4
-            {% if message.tags == 'error' %}
-                bg-red-100 border-red-500 text-red-700
-            {% elif message.tags == 'success' %}
-                bg-green-100 border-green-500 text-green-700
-            {% else %}
-                bg-blue-100 border-blue-500 text-blue-700
-            {% endif %}">
-            {{ message }}
+            <a href="{% url 'transactions' %}"
+               class="nav-item flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
+                <div class="w-11 h-11 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                    <i class="fas fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">Transactions</p>
+                    <p class="text-xs text-gray-500">History & receipts</p>
+                </div>
+            </a>
+
+            <a href="{% url 'services' %}"
+               class="nav-item flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
+                <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">Services</p>
+                    <p class="text-xs text-gray-500">Buy airtime & data</p>
+                </div>
+            </a>
+
+            <a href="{% url 'settings' %}"
+               class="nav-item flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
+                <div class="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">Account</p>
+                    <p class="text-xs text-gray-500">Profile & security</p>
+                </div>
+            </a>
+
         </div>
-    {% endfor %}
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-6 border-t border-gray-100 dark:border-white/5">
+        <a href="{% url 'logout' %}"
+           class="flex items-center justify-center gap-3 h-14 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-semibold">
+            <i class="fas fa-power-off"></i>
+            Logout
+        </a>
+    </div>
+
 </div>
 {% endif %}
 
-{% block content %}{% endblock %}
+    <!-- Footer -->
+    {% if user.is_authenticated %}
+    <div class="p-6 border-t border-gray-100 dark:border-white/5">
 
-<!-- ================= SCRIPTS ================= -->
+        <a href="{% url 'logout' %}"
+           class="flex items-center justify-center gap-3 h-14 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-semibold">
+
+            <i class="fas fa-power-off"></i>
+            Logout
+
+        </a>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ======================= PAGE CONTENT ======================= -->
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<!-- ======================= MOBILE BOTTOM NAV ======================= -->
+
+{% if user.is_authenticated %}
+<div class="md:hidden fixed bottom-0 left-0 w-full z-[80] px-4 pb-4">
+
+    <div class="bg-white/90 dark:bg-[#0F172A]/90 border border-gray-200 dark:border-white/10 rounded-[2rem] px-6 py-4 glass bottom-nav-shadow">
+
+        <div class="flex items-center justify-between">
+
+            <a href="{% url 'dashboard' %}"
+               class="nav-item flex flex-col items-center gap-1 text-gray-400"
+               id="nav-dashboard">
+
+                <i class="fas fa-house text-lg"></i>
+
+                <span class="text-[10px] font-semibold">
+                    Home
+                </span>
+
+            </a>
+
+            <a href="{% url 'transactions' %}"
+               class="nav-item flex flex-col items-center gap-1 text-gray-400"
+               id="nav-transactions">
+
+                <i class="fas fa-receipt text-lg"></i>
+
+                <span class="text-[10px] font-semibold">
+                    History
+                </span>
+
+            </a>
+
+            <a href="{% url 'services' %}"
+               class="nav-item -mt-10">
+
+                <div class="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-2xl shadow-indigo-500/30 border-4 border-white dark:border-[#070B14]">
+
+                    <i class="fas fa-bolt text-xl"></i>
+
+                </div>
+
+            </a>
+
+            <a href="{% url 'fund_wallet' %}"
+               class="nav-item flex flex-col items-center gap-1 text-gray-400"
+               id="nav-fund_wallet">
+
+                <i class="fas fa-wallet text-lg"></i>
+
+                <span class="text-[10px] font-semibold">
+                    Wallet
+                </span>
+
+            </a>
+
+            <a href="{% url 'settings' %}"
+               class="nav-item flex flex-col items-center gap-1 text-gray-400"
+               id="nav-settings">
+
+                <i class="fas fa-user text-lg"></i>
+
+                <span class="text-[10px] font-semibold">
+                    Account
+                </span>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+{% endif %}
+
 <script>
-    // Theme toggle
-    function toggleTheme() {
-        const isDark = document.documentElement.classList.contains('dark');
 
-        document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    // ================= THEME =================
 
-        const icon = document.getElementById('theme-icon');
-        if (icon) {
-            icon.classList.toggle('fa-sun', isDark);
-            icon.classList.toggle('fa-moon', !isDark);
-        }
-    }
+    const themeBtn = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
 
-    function togglePasswordVisibility(inputId, button) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
+    function setTheme(darkMode) {
 
-        const icon = button?.querySelector('i');
+        if (darkMode) {
 
-        if (input.type === 'password') {
-            input.type = 'text';
-            if (icon) {
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+
+            themeIcon.className = 'fas fa-sun text-cyan-400';
+
         } else {
-            input.type = 'password';
-            if (icon) {
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+
+            themeIcon.className = 'fas fa-moon text-gray-700';
+
         }
+
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    themeBtn?.addEventListener('click', () => {
+        setTheme(!document.documentElement.classList.contains('dark'));
+    });
 
-        // Sync icon on load
-        const icon = document.getElementById('theme-icon');
-        const isDark = document.documentElement.classList.contains('dark');
-        if (icon) {
-            icon.classList.toggle('fa-moon', isDark);
-            icon.classList.toggle('fa-sun', !isDark);
+    setTheme(document.documentElement.classList.contains('dark'));
+
+    // ================= ACTIVE NAV =================
+
+    const currentPath = window.location.pathname;
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+
+        const href = item.getAttribute('href');
+
+        if (href && href !== '/' && currentPath.includes(href)) {
+            item.classList.add('nav-active');
         }
 
-        // Theme button
-        document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
-
-        // Sidebar
-        const sidebar = document.getElementById('mobile-sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-
-        document.getElementById('hamburger')?.addEventListener('click', () => {
-            sidebar.classList.add('open');
-            overlay.style.display = 'block';
-        });
-
-        document.getElementById('close-sidebar')?.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.style.display = 'none';
-        });
-
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.style.display = 'none';
-        });
+        if (href === '/' && currentPath === '/') {
+            item.classList.add('nav-active');
+        }
 
     });
+
+    // ================= MOBILE SIDEBAR =================
+
+    const sidebar = document.getElementById('mobile-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    document.getElementById('hamburger')?.addEventListener('click', () => {
+
+        sidebar.classList.add('open');
+        overlay.classList.remove('hidden');
+
+    });
+
+    function closeSidebar(){
+
+        sidebar.classList.remove('open');
+        overlay.classList.add('hidden');
+
+    }
+
+    document.getElementById('close-sidebar')?.addEventListener('click', closeSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+
 </script>
 
 {% block extra_scripts %}{% endblock %}
+
 </body>
 </html>

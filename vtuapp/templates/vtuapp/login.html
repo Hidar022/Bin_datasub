@@ -1,113 +1,169 @@
 {% extends 'vtuapp/base.html' %}
+{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}Login - Bin Datasub{% endblock %}
 
 {% block content %}
+<!-- Added overflow-hidden to prevent horizontal "wiggle" on mobile -->
+<div class="min-h-screen flex items-center justify-center px-4 py-8 bg-gray-50 dark:bg-[#070714] relative overflow-hidden">
 
-<div class="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-50 dark:bg-[#070714] relative overflow-hidden">
+    <!-- Blurred Background Decorative Elements (Hidden on small screens to save performance/overflow) -->
+    <div class="absolute top-0 left-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-<div class="absolute top-0 left-0 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl"></div>
-<div class="absolute bottom-0 right-0 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl"></div>
+    <div class="w-full max-w-[440px] relative z-10">
 
-<div class="w-full max-w-lg relative z-10">
-
-    <!-- Logo -->
-    <div class="flex justify-center mb-8">
-        <div class="flex items-center gap-3">
-            <div class="w-11 h-11 bg-gradient-to-br from-indigo-600 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl">
-                📡
-            </div>
-            <span class="text-3xl font-bold header-glow">Bin Datasub</span>
+        <!-- Auth Page Logo Header -->
+<div class="flex flex-col items-center justify-center mb-8">
+    <a href="/" class="flex flex-col items-center gap-4 animate-scale group">
+        
+        <!-- Circular Logo Container (Solid Black) -->
+        <div class="w-20 h-20 rounded-full flex items-center justify-center bg-[#000000] border border-gray-800 shadow-xl shadow-indigo-500/10 transition-all duration-300 group-hover:border-cyan-500/50 group-hover:shadow-cyan-500/30">
+            
+            <!-- Larger Logo for Auth Pages (ChatGPT Image May 12, 2026, 04_27_58 PM.png) -->
+            <img src="{% static 'images/logo.png' %}" 
+                 alt="Bin Datasub" 
+                 class="w-12 h-12 object-contain">
+                 
         </div>
-    </div>
 
-    <!-- Card -->
-    <div class="bg-white/90 dark:bg-[#12122B]/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/20">
-
-        <h1 class="text-3xl font-bold text-center text-gray-900 dark:text-white">Welcome Back</h1>
-        <p class="text-center text-gray-500 dark:text-gray-400 mt-2 mb-6">Login to your dashboard</p>
-
-        <form id="loginForm" method="POST" class="space-y-5">
-            {% csrf_token %}
-
-            {% for field in form %}
-            <div>
-                <label class="text-sm text-gray-600 dark:text-gray-300 ml-1">{{ field.label }}</label>
-
-                <div class="relative mt-2">
-                    {{ field|add_class:"w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 dark:focus:border-cyan-400 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-cyan-400/10 rounded-2xl px-5 py-4 text-gray-900 dark:text-white outline-none transition-all" }}
-
-                    {% if 'password' in field.name %}
-                    <button type="button"
-                            onclick="togglePasswordVisibility('{{ field.id_for_label }}', this)"
-                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    {% endif %}
-                </div>
-
-                {% if field.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-
-            <button type="submit" id="loginBtn"
-                class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-4 rounded-2xl font-semibold text-white flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] shadow-xl hover:shadow-cyan-500/20">
-
-                <span id="btnText">LOGIN</span>
-                <i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i>
-            </button>
-        </form>
-
-        <p class="text-center text-gray-500 dark:text-gray-400 mt-6">
-            New here?
-            <a href="{% url 'register' %}" class="text-cyan-500 hover:text-cyan-400">Create account</a>
-        </p>
-
-    </div>
+        <!-- Text Block (Centered) -->
+        <div class="text-center">
+            <h1 class="font-black text-[24px] tracking-wider text-[#4f46e5] dark:text-[#22d3ee]" 
+                style="font-family: 'Orbitron', sans-serif;">
+                Bin Datasub
+            </h1>
+            <p class="text-[12px] font-bold uppercase tracking-[3px] text-gray-500 dark:text-gray-400">
+                Fast VTU Services
+            </p>
+        </div>
+    </a>
 </div>
 
+        <!-- Login Card -->
+        <div class="bg-white dark:bg-[#12122B] border border-gray-200 dark:border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-black/10">
+
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Welcome Back</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">Access your secure dashboard</p>
+            </div>
+
+            <!-- Django Messages Section (Logout alerts etc) -->
+            <div id="django-messages" class="space-y-3 mb-6">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="msg-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold animate-pulse-once {% if message.tags == 'success' %}bg-emerald-500/10 text-emerald-500 border border-emerald-500/20{% else %}bg-red-500/10 text-red-500 border border-red-500/20{% endif %}">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <form id="loginForm" method="POST" class="space-y-5">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="space-y-1.5">
+                    <label class="text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 font-black ml-1">{{ field.label }}</label>
+
+                    <div class="relative">
+                        {{ field|add_class:"w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/5 focus:border-indigo-500 dark:focus:border-cyan-400 focus:ring-0 rounded-2xl px-5 py-4 text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400" }}
+
+                        {% if 'password' in field.name %}
+                        <button type="button"
+                                onclick="togglePasswordVisibility('{{ field.id_for_label }}', this)"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {% if field.errors %}
+                        <p class="text-red-500 text-[10px] font-bold mt-1 ml-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" id="loginBtn"
+                    class="w-full bg-indigo-600 dark:bg-cyan-500 hover:opacity-90 py-4 rounded-2xl font-black text-white dark:text-black flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-indigo-500/10 mt-2">
+                    <span id="btnText">LOGIN TO SYSTEM</span>
+                    <i id="btnSpinner" class="fas fa-circle-notch fa-spin hidden"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-gray-100 dark:border-white/5 text-center">
+                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                    New to the platform?
+                    <a href="{% url 'register' %}" class="text-indigo-600 dark:text-cyan-400 font-bold hover:underline">Create account</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-
-    const form = document.getElementById('loginForm');
-    if (!form) return;
-
-    const btn = document.getElementById('loginBtn');
-    const btnText = document.getElementById('btnText');
-    const btnSpinner = document.getElementById('btnSpinner');
-
-    function setLoading(state) {
-        btn.disabled = state;
-        btnText.classList.toggle('hidden', state);
-        btnSpinner.classList.toggle('hidden', !state);
+// Toggle Password
+function togglePasswordVisibility(id, btn) {
+    const input = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
+}
 
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. AUTO-HIDE LOGOUT MESSAGES
+    const messages = document.querySelectorAll('.msg-item');
+    messages.forEach(msg => {
+        setTimeout(() => {
+            msg.style.opacity = '0';
+            msg.style.transform = 'translateY(-10px)';
+            msg.style.transition = 'all 0.5s ease';
+            setTimeout(() => msg.remove(), 500);
+        }, 4000);
+    });
+
+    // 2. THE UI MESSAGE FUNCTION (The Fix)
     function showMessage(message, type = 'error') {
         const old = document.getElementById('global-toast');
         if (old) old.remove();
 
         const div = document.createElement('div');
         div.id = 'global-toast';
-
-        div.className = `
-            fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-xl text-white
-            ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}
-        `;
-
-        div.innerHTML = message;
+        // Styled to match your "Technical" vibe
+        div.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-l-4 animate-bounce-once ${
+            type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'
+        }`;
+        div.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i> ${message}`;
         document.body.appendChild(div);
 
-        setTimeout(() => div.remove(), 4000);
+        setTimeout(() => {
+            div.style.opacity = '0';
+            setTimeout(() => div.remove(), 500);
+        }, 3500);
+    }
+
+    // 3. LOGIN FORM LOGIC
+    const form = document.getElementById('loginForm');
+    const btn = document.getElementById('loginBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+
+    function setLoading(state) {
+        btn.disabled = state;
+        btnText.innerText = state ? "AUTHENTICATING..." : "LOGIN TO SYSTEM";
+        btnSpinner.classList.toggle('hidden', !state);
     }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         setLoading(true);
 
         const formData = new FormData(form);
@@ -116,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(window.location.pathname, {
                 method: 'POST',
-                credentials: 'same-origin',
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -124,35 +179,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            let data;
-            try {
-                data = await response.json();
-            } catch (err) {
-                throw new Error("Server did not return JSON");
-            }
+            const data = await response.json();
 
-            // === THE IMPORTANT FIX IS HERE ===
-            if (response.ok && data.success === true) {
-                showMessage(data.message || 'Login successful!', 'success');
-
+            if (response.ok && data.success) {
+                // THE SUCCESS MESSAGE YOU WANTED
+                showMessage('Login Successful! Redirecting...', 'success');
+                
+                // Wait 1.5 seconds so they can see the message before leaving
                 setTimeout(() => {
-                    // Instead of hardcoding dashboard, we use the URL sent by Python
-                    // This ensures you go to /ceo-panel/ and users go to /dashboard/
-                    window.location.href = data.redirect_url; 
-                }, 1000);
-
+                    window.location.href = data.redirect_url;
+                }, 1500);
             } else {
-                showMessage(data.message || 'Invalid login credentials', 'error');
+                showMessage(data.message || 'Invalid Credentials', 'error');
+                setLoading(false);
             }
-
         } catch (err) {
             console.error(err);
-            showMessage('Server error or invalid response', 'error');
-        } finally {
+            showMessage('Connection error. Check your network.', 'error');
             setLoading(false);
         }
     });
-
 });
 </script>
+
+<style>
+@keyframes pulse-once {
+    0% { transform: scale(0.98); }
+    50% { transform: scale(1); }
+    100% { transform: scale(1); }
+}
+.animate-pulse-once {
+    animation: pulse-once 0.5s ease-out;
+}
+</style>
 {% endblock %}

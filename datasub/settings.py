@@ -46,7 +46,8 @@ CSRF_TRUSTED_ORIGINS = [
 # Paystack Settings
 # Force a key to see if the site opens
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+# DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = True
 
 # Use them for Paystack too
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')

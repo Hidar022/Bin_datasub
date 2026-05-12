@@ -2,278 +2,489 @@
 {% block title %}Settings - Bin Datasub{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 md:px-6 py-8">
 
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
+<div class="max-w-2xl mx-auto px-4 md:px-6 py-6 overflow-hidden">
 
-    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Account Settings</h1>
-        <p class="text-gray-600 dark:text-gray-400 text-lg">Manage your profile and security preferences</p>
+    <!-- ================= MAIN SETTINGS ================= -->
+    <div id="mainSettings"
+         class="transition-all duration-300">
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
-            
-            <!-- Sidebar Navigation -->
-            <div class="lg:col-span-3">
-                <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-3 sticky top-24">
-                    <div class="flex flex-col gap-2">
-                        <button onclick="switchTab(0)" class="sidebar-tab active flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-0">
-                            <i class="fas fa-user"></i> 
-                            <span>Profile</span>
-                        </button>
-                        <button onclick="switchTab(1)" class="sidebar-tab flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-1">
-                            <i class="fas fa-shield-alt"></i> 
-                            <span>Security</span>
-                        </button>
-                        <button onclick="switchTab(2)" class="sidebar-tab flex items-center gap-3 px-6 py-4 rounded-2xl text-left transition-all" id="tab-2">
-                            <i class="fas fa-fingerprint"></i> 
-                            <span>Biometric</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <!-- Header -->
+        <div class="mb-8">
 
-            <!-- Main Content -->
-            <div class="lg:col-span-9">
-                
-                <!-- Profile Tab -->
-                <div id="tab-content-0" class="tab-content">
-                    <form id="profileForm" method="POST" class="space-y-8">
-                        {% csrf_token %}
-                        <input type="hidden" name="section" value="profile">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Account Settings
+            </h1>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-                                <input type="text" name="full_name" value="{{ request.user.profile.full_name|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
-                                <input type="text" value="{{ request.user.username }}" disabled
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
-                                <input type="email" name="email" value="{{ request.user.email|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
-                                <input type="tel" name="phone" value="{{ request.user.profile.phone|default:'' }}" 
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
-                                <input type="date" name="dob" value="{{ request.user.profile.dob|date:'Y-m-d' }}" 
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
-                            </div>
-                        </div>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">
+                Manage your profile, security and preferences
+            </p>
 
-                        <button type="submit" id="profileBtn" 
-                                class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-cyan-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3 hover:brightness-110 transition-all">
-                            <span id="profileBtnText">SAVE CHANGES</span>
-                            <i id="profileSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Security Tab -->
-                <div id="tab-content-1" class="tab-content hidden space-y-10">
-                    
-                    <!-- Change Password -->
-                    <div class="bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-8">
-                        <h3 class="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Change Account Password</h3>
-                        <form id="passwordForm" class="space-y-6">
-                            {% csrf_token %}
-                            <input type="hidden" name="section" value="password">
-                            <input type="password" name="old_password" placeholder="Current Password" 
-                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
-                            <input type="password" name="new_password" placeholder="New Password" 
-                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
-                            <input type="password" name="confirm_password" placeholder="Confirm New Password" 
-                                   class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5">
-                            
-                            <button type="submit" id="passwordBtn" 
-                                    class="mt-8 w-full bg-gradient-to-r from-purple-600 to-pink-600 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
-                                <span id="passwordBtnText">UPDATE PASSWORD</span>
-                                <i id="passwordSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Transaction PIN -->
-                    <div id="pin-section" class="bg-white dark:bg-[#25253A] border border-gray-200 dark:border-white/10 rounded-3xl p-8">
-                        <h3 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">
-                            {% if has_pin %}Change Transaction PIN{% else %}Create Transaction PIN{% endif %}
-                        </h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-8">
-                            {% if has_pin %}
-                                Update your PIN regularly to keep your account secure.
-                            {% else %}
-                                Create a secure 4-digit PIN for authorizing transactions.
-                            {% endif %}
-                        </p>
-
-                        <form id="pinForm" class="space-y-6">
-                            {% csrf_token %}
-                            <input type="hidden" name="section" value="pin">
-
-                            {% if has_pin %}
-                            <div>
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current PIN</label>
-                                <input type="password" name="old_pin" maxlength="4" placeholder="••••" required
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
-                            </div>
-                            {% endif %}
-
-                            <div>
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    {% if has_pin %}New PIN{% else %}Set New PIN{% endif %}
-                                </label>
-                                <input type="password" name="new_pin" maxlength="4" placeholder="••••" required
-                                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-center text-3xl tracking-widest font-mono">
-                            </div>
-
-                            <button type="submit" id="pinBtn" 
-                                    class="mt-8 w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-5 rounded-3xl font-semibold text-white flex items-center justify-center gap-3">
-                                <span id="pinBtnText">
-                                    {% if has_pin %}UPDATE PIN{% else %}CREATE PIN{% endif %}
-                                </span>
-                                <i id="pinSpinner" class="fas fa-spinner fa-spin hidden"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Biometric Tab -->
-                <div id="tab-content-2" class="tab-content hidden">
-                    <div class="bg-gradient-to-br from-gray-50 to-white dark:from-[#25253A] dark:to-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-12 text-center">
-                        <div class="mx-auto w-28 h-28 bg-cyan-100 dark:bg-cyan-900/30 rounded-3xl flex items-center justify-center mb-8">
-                            <i class="fas fa-fingerprint text-7xl text-cyan-500"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Biometric Authentication</h3>
-                        <p class="text-gray-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
-                            Enable fingerprint or face ID for faster and more secure login & transactions.
-                        </p>
-                        
-                        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-                            <button onclick="registerBiometric()" 
-                                    class="bg-gradient-to-r from-cyan-500 to-indigo-600 px-10 py-5 rounded-3xl text-lg font-semibold text-white hover:scale-105 transition-all">
-                                Enable Biometric
-                            </button>
-                            <button onclick="testBiometric()" 
-                                    class="border border-gray-300 dark:border-gray-600 px-10 py-5 rounded-3xl text-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                                Test Biometric
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
+
+        <!-- Profile Card -->
+        <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 shadow-sm">
+
+            <div class="flex items-center gap-4">
+
+                <!-- Profile Image -->
+                <div class="relative">
+
+                    {% if request.user.profile.profile_picture %}
+                    <img src="{{ request.user.profile.profile_picture.url }}"
+                         class="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-[#1A1A2E] shadow-md">
+                    {% else %}
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <div class="flex-1">
+
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                        {{ request.user.profile.full_name|default:request.user.username }}
+                    </h2>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        @{{ request.user.username }}
+                    </p>
+
+                    <p class="text-sm text-gray-500">
+                        {{ request.user.email }}
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Menu -->
+        <div class="mt-6 space-y-4">
+
+            <!-- Profile -->
+            <button onclick="openSection('profile')"
+                    class="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[1.7rem] p-5 flex items-center justify-between hover:border-indigo-200 dark:hover:border-cyan-400/20 transition-all">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-cyan-400 text-xl">
+                        <i class="fas fa-user"></i>
+                    </div>
+
+                    <div class="text-left">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Personal Information
+                        </h3>
+
+                        <p class="text-sm text-gray-500">
+                            Manage your profile details
+                        </p>
+                    </div>
+
+                </div>
+
+                <i class="fas fa-chevron-right text-gray-400"></i>
+
+            </button>
+
+            <!-- Password -->
+            <button onclick="openSection('security')"
+                    class="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[1.7rem] p-5 flex items-center justify-between hover:border-indigo-200 dark:hover:border-cyan-400/20 transition-all">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center text-cyan-600 dark:text-cyan-400 text-xl">
+                        <i class="fas fa-lock"></i>
+                    </div>
+
+                    <div class="text-left">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Password & Security
+                        </h3>
+
+                        <p class="text-sm text-gray-500">
+                            Change your password
+                        </p>
+                    </div>
+
+                </div>
+
+                <i class="fas fa-chevron-right text-gray-400"></i>
+
+            </button>
+
+            <!-- PIN -->
+            <button onclick="openSection('pin')"
+                    class="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[1.7rem] p-5 flex items-center justify-between hover:border-indigo-200 dark:hover:border-cyan-400/20 transition-all">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xl">
+                        <i class="fas fa-key"></i>
+                    </div>
+
+                    <div class="text-left">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Transaction PIN
+                        </h3>
+
+                        <p class="text-sm text-gray-500">
+                            Secure your wallet & transactions
+                        </p>
+                    </div>
+
+                </div>
+
+                <i class="fas fa-chevron-right text-gray-400"></i>
+
+            </button>
+
+            <!-- Danger -->
+            <button onclick="openSection('danger')"
+                    class="w-full bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10 rounded-[1.7rem] p-5 flex items-center justify-between transition-all">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-600 text-xl">
+                        <i class="fas fa-trash"></i>
+                    </div>
+
+                    <div class="text-left">
+                        <h3 class="font-semibold text-red-600">
+                            Delete Account
+                        </h3>
+
+                        <p class="text-sm text-red-400">
+                            Permanently remove your account
+                        </p>
+                    </div>
+
+                </div>
+
+                <i class="fas fa-chevron-right text-red-400"></i>
+
+            </button>
+
+            <!-- Logout -->
+            <a href="{% url 'logout' %}"
+               class="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[1.7rem] p-5 flex items-center justify-between">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xl">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+
+                    <div class="text-left">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Logout
+                        </h3>
+
+                        <p class="text-sm text-gray-500">
+                            Sign out from your account
+                        </p>
+                    </div>
+
+                </div>
+
+            </a>
+
+        </div>
+
     </div>
+
+    <!-- ================= PROFILE ================= -->
+    <div id="profile"
+         class="hidden opacity-0 translate-x-full transition-all duration-300">
+
+        <button onclick="goBack('profile')"
+                class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Personal Information
+            </h2>
+
+            <p class="text-gray-500 mt-2">
+                Update your account details
+            </p>
+        </div>
+
+        <form method="POST"
+              enctype="multipart/form-data"
+              class="space-y-5">
+
+            {% csrf_token %}
+            <input type="hidden" name="section" value="profile">
+
+            <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 space-y-5">
+
+                <div class="flex justify-center">
+
+                    <div class="relative">
+
+                        {% if request.user.profile.profile_picture %}
+                        <img src="{{ request.user.profile.profile_picture.url }}"
+                             class="w-28 h-28 rounded-full object-cover">
+                        {% else %}
+                        <div class="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-4xl font-bold">
+                            {{ request.user.username|slice:":1"|upper }}
+                        </div>
+                        {% endif %}
+
+                        <label class="absolute bottom-0 right-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white cursor-pointer">
+                            <i class="fas fa-camera"></i>
+                            <input type="file" name="profile_picture" hidden>
+                        </label>
+
+                    </div>
+
+                </div>
+
+                <div>
+                    <label class="text-sm text-gray-500 block mb-2">
+                        Full Name
+                    </label>
+
+                    <input type="text"
+                           name="full_name"
+                           value="{{ request.user.profile.full_name|default:'' }}"
+                           class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-4 outline-none">
+                </div>
+
+                <div>
+                    <label class="text-sm text-gray-500 block mb-2">
+                        Username
+                    </label>
+
+                    <input type="text"
+                           value="{{ request.user.username }}"
+                           disabled
+                           class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-[#1A1A2E] px-5 py-4">
+                </div>
+
+                <div>
+                    <label class="text-sm text-gray-500 block mb-2">
+                        Email Address
+                    </label>
+
+                    <input type="email"
+                           name="email"
+                           value="{{ request.user.email }}"
+                           class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-4 outline-none">
+                </div>
+
+                <div>
+                    <label class="text-sm text-gray-500 block mb-2">
+                        Phone Number
+                    </label>
+
+                    <input type="text"
+                           name="phone"
+                           value="{{ request.user.profile.phone|default:'' }}"
+                           class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-4 outline-none">
+                </div>
+
+            </div>
+
+            <button type="submit"
+                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold">
+                Save Changes
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- ================= SECURITY ================= -->
+    <div id="security"
+         class="hidden opacity-0 translate-x-full transition-all duration-300">
+
+        <button onclick="goBack('security')"
+                class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Password & Security
+            </h2>
+        </div>
+
+        <form class="space-y-5">
+
+            {% csrf_token %}
+            <input type="hidden" name="section" value="password">
+
+            <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 space-y-5">
+
+                <input type="password"
+                       name="old_password"
+                       placeholder="Current Password"
+                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-4">
+
+                <input type="password"
+                       name="new_password"
+                       placeholder="New Password"
+                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-4">
+
+            </div>
+
+            <button type="submit"
+                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-semibold">
+                Update Password
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- ================= PIN ================= -->
+    <div id="pin"
+         class="hidden opacity-0 translate-x-full transition-all duration-300">
+
+        <button onclick="goBack('pin')"
+                class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Transaction PIN
+            </h2>
+        </div>
+
+        <form class="space-y-5">
+
+            {% csrf_token %}
+            <input type="hidden" name="section" value="pin">
+
+            <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 space-y-5">
+
+                {% if has_pin %}
+                <input type="password"
+                       name="old_pin"
+                       maxlength="4"
+                       placeholder="Old PIN"
+                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[10px]">
+                {% endif %}
+
+                <input type="password"
+                       name="new_pin"
+                       maxlength="4"
+                       placeholder="New PIN"
+                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[10px]">
+
+            </div>
+
+            <button type="submit"
+                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-semibold">
+                Save PIN
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- ================= DANGER ================= -->
+    <div id="danger"
+         class="hidden opacity-0 translate-x-full transition-all duration-300">
+
+        <button onclick="goBack('danger')"
+                class="mb-8 flex items-center gap-2 text-red-600 font-medium">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <div class="bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10 rounded-[2rem] p-6">
+
+            <div class="w-20 h-20 mx-auto rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-600 text-3xl mb-6">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold text-center text-red-600">
+                Delete Account
+            </h2>
+
+            <p class="text-center text-red-400 mt-3 leading-relaxed">
+                This action is permanent. Your wallet balance,
+                transactions, account access and personal data
+                will be permanently deleted and cannot be recovered.
+            </p>
+
+            <form class="mt-8 space-y-5">
+
+                {% csrf_token %}
+                <input type="hidden" name="section" value="delete_account">
+
+                <input type="password"
+                       name="password"
+                       placeholder="Enter your password"
+                       class="w-full rounded-2xl border border-red-200 dark:border-red-500/10 bg-white dark:bg-[#1A1A2E] px-5 py-4">
+
+                <button type="submit"
+                        class="w-full py-5 rounded-2xl bg-red-600 text-white font-semibold">
+                    Permanently Delete Account
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
 </div>
 
 <script>
-    function switchTab(tab) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        document.getElementById('tab-content-' + tab).classList.remove('hidden');
 
-        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-    }
+function openSection(sectionId) {
 
-    function showMessage(message, type = 'error') {
-        const oldToast = document.getElementById('global-toast');
-        if (oldToast) oldToast.remove();
+    document.getElementById('mainSettings').classList.add('translate-x-[-100%]');
+    document.getElementById('mainSettings').classList.add('opacity-0');
 
-        const toast = document.createElement('div');
-        toast.id = 'global-toast';
-        toast.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white max-w-xs border-l-4
-                           ${type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'}`;
+    setTimeout(() => {
 
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-xmark-circle'} text-xl"></i><span class="font-medium">${message}</span>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
-    }
+        document.getElementById('mainSettings').classList.add('hidden');
 
-    // Form submission logic (your original logic preserved)
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
+        const target = document.getElementById(sectionId);
 
-            const btn = this.querySelector('button[type="submit"]');
-            const text = btn ? btn.querySelector('span') : null;
-            const spinner = btn ? btn.querySelector('i') : null;
+        target.classList.remove('hidden');
+        target.classList.remove('translate-x-full');
 
-            if (text && spinner) {
-                text.classList.add('hidden');
-                spinner.classList.remove('hidden');
-                btn.disabled = true;
-            }
+        setTimeout(() => {
+            target.classList.remove('opacity-0');
+        }, 50);
 
-            const formData = new FormData(this);
+    }, 250);
+}
 
-            try {
-                const response = await fetch("{% url 'settings' %}", {
-                    method: "POST",
-                    credentials: 'same-origin',
-                    body: formData,
-                    headers: { 
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                });
+function goBack(sectionId) {
 
-                let data;
-                const contentType = response.headers.get("content-type");
+    const target = document.getElementById(sectionId);
 
-                if (contentType && contentType.includes("application/json")) {
-                    data = await response.json();
-                } else {
-                    const text = await response.text();
-                    data = JSON.parse(text);
-                }
+    target.classList.add('translate-x-full');
+    target.classList.add('opacity-0');
 
-                if (data.status === 'success') {
-                    showMessage(data.message || 'Changes saved successfully!', 'success');
-                    
-                    const nextPage = new URLSearchParams(window.location.search).get('next');
-                    if (nextPage === 'airtime') {
-                        setTimeout(() => window.location.href = "{% url 'buy_airtime' %}", 1200);
-                    } else if (nextPage === 'data') {
-                        setTimeout(() => window.location.href = "{% url 'buy_data' %}", 1200);
-                    } else {
-                        setTimeout(() => location.reload(), 1500);
-                    }
-                } else {
-                    showMessage(data.message || 'Something went wrong', 'error');
-                }
-            } catch (err) {
-                console.error('Settings error:', err);
-                showMessage('Connection error. Please try again.', 'error');
-            } finally {
-                if (text && spinner) {
-                    text.classList.remove('hidden');
-                    spinner.classList.add('hidden');
-                    btn.disabled = false;
-                }
-            }
-        });
-    });
+    setTimeout(() => {
 
-    document.addEventListener('DOMContentLoaded', () => {
-        switchTab(0);
-        
-        const hash = window.location.hash;
-        if (hash === '#pin-section') {
-            switchTab(1);
-            setTimeout(() => {
-                const pinSection = document.getElementById('pin-section');
-                if (pinSection) pinSection.scrollIntoView({ behavior: 'smooth' });
-            }, 300);
-        }
-    });
+        target.classList.add('hidden');
+
+        const main = document.getElementById('mainSettings');
+
+        main.classList.remove('hidden');
+
+        setTimeout(() => {
+            main.classList.remove('translate-x-[-100%]');
+            main.classList.remove('opacity-0');
+        }, 50);
+
+    }, 250);
+}
+
 </script>
+
 {% endblock %}
