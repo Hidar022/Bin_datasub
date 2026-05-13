@@ -174,10 +174,19 @@ def register(request):
                         messages.success(request, 'We found your unverified account. A new verification code has been sent to your email.')
                         return redirect('verify_otp')
 
-            # === Normal Registration (email doesn't exist) ===
+           # === Normal Registration (email doesn't exist) ===
             user = form.save(commit=False)
             user.is_active = False
             user.save()
+
+            profile = user.profile
+            profile.full_name = form.cleaned_data.get('full_name', '')
+            profile.phone = form.cleaned_data.get('phone', '')
+
+                    # If 'dob' isn't in your form, this safely returns None without an error
+            profile.dob = form.cleaned_data.get('dob', None) 
+
+            profile.save()
 
             otp = str(random.randint(100000, 999999))
             profile, _ = Profile.objects.get_or_create(user=user)
@@ -524,26 +533,21 @@ def fund_wallet(request):
     if not user_profile.gafia_account_number:
         url = "https://api.gafiapay.com/api/v1/external/account/generate"
         
-        # Ensure name has at least two parts (First Last)
-        full_name = f"{request.user.first_name} {request.user.last_name}".strip()
-        if not full_name or len(full_name.split()) < 2:
-            full_name = f"{request.user.username} CUSTOMER"
-
-        # Add website name for bank statement clarity
-        full_name = f"{full_name}(bindatasub)"
+        # We use the username + (Bin Datasub) to ensure it's always valid and unique
+        username = request.user.username
+        full_name = f"{username} (Bin Datasub)"
 
         payload = {
-            "email": request.user.email or f"{request.user.username}@bindatasub.com",
-            "name": full_name.upper(),
+            "email": request.user.email or f"{username}@bindatasub.com",
+            "name": full_name.upper(), # API usually needs uppercase
         }
         
         try:
-            # Generate headers right before the request to minimize timestamp issues
             headers = get_gafia_headers(payload)
             response = requests.post(url, json=payload, headers=headers, timeout=20)
             
-            # Debugging: Print this to your console/terminal
-            print(f"GAFIA REQUEST PAYLOAD: {json.dumps(payload, separators=(',', ':'), sort_keys=True)}")
+            # Debugging logs stay exactly as you had them
+            print(f"GAFIA REQUEST PAYLOAD: {json.dumps(payload)}")
             print(f"GAFIA RESPONSE STATUS: {response.status_code}")
             print(f"GAFIA RESPONSE BODY: {response.text}")
             
@@ -553,13 +557,13 @@ def fund_wallet(request):
                 acc_data = res_data['data']
                 user_profile.gafia_account_number = acc_data['accountNumber']
                 user_profile.gafia_bank_name = acc_data['bankName']
-                user_profile.gafia_account_name = acc_data['accountName']
+                # Store our formatted name so it displays exactly as we want
+                user_profile.gafia_account_name = full_name 
                 user_profile.save()
             else:
                 messages.error(request, f"Gateway Error: {res_data.get('message', 'Validation failed')}")
         
         except requests.exceptions.RequestException as e:
-            # This catches DNS, Connection, and Timeout errors
             print(f"CONNECTION ERROR: {e}")
             messages.error(request, "Unable to reach payment provider. Please check your network.")
         except Exception as e:
