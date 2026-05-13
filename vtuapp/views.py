@@ -175,19 +175,16 @@ def register(request):
                         messages.success(request, 'We found your unverified account. A new verification code has been sent to your email.')
                         return redirect('verify_otp')
 
-           # === Normal Registration (email doesn't exist) ===
-            user = form.save(commit=False)
-            user.is_active = False
-            user.save()
+            # === Normal Registration ===
+          user = form.save(commit=False)
+          user.is_active = False
+          user.save()
 
-            profile = user.profile
-            profile.full_name = form.cleaned_data.get('full_name', '')
-            profile.phone = form.cleaned_data.get('phone', '')
-
-                    # If 'dob' isn't in your form, this safely returns None without an error
-            profile.dob = form.cleaned_data.get('dob', None) 
-
-            profile.save()
+         # Ensure we get the profile correctly
+           profile, created = Profile.objects.get_or_create(user=user)
+           profile.full_name = form.cleaned_data.get('full_name', '')
+           profile.phone = request.POST.get('phone', '') # Get directly from POST if not in form
+           profile.save()
 
             otp = str(random.randint(100000, 999999))
             profile, _ = Profile.objects.get_or_create(user=user)

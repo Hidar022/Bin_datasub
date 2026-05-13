@@ -254,9 +254,9 @@
                         {% endif %}
 
                         <label class="absolute bottom-0 right-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white cursor-pointer">
-                            <i class="fas fa-camera"></i>
-                            <input type="file" name="profile_picture" hidden>
-                        </label>
+                          <i class="fas fa-camera"></i>
+                        <input type="file" name="profile_picture" id="profilePicInput" hidden onchange="previewImage(this)">
+                       </label>
 
                     </div>
 
@@ -662,6 +662,32 @@ function backspacePin() {
 
 function clearPinInput() {
     document.getElementById(activePinFieldId).value = "";
+}
+
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Find all profile images on the page and update them immediately
+            const previews = document.querySelectorAll('img[src*="profile_pics"], .w-28.h-28.rounded-full, .w-20.h-20.rounded-full');
+            previews.forEach(img => {
+                if (img.tagName === 'IMG') {
+                    img.src = e.target.result;
+                } else {
+                    // If it was a div with initials, turn it into an image
+                    const newImg = document.createElement('img');
+                    newImg.src = e.target.result;
+                    newImg.className = img.className + " object-cover";
+                    img.replaceWith(newImg);
+                }
+            });
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+        // Optional: Automatically trigger the save if you want it truly instant
+        // handleFormSubmit(new Event('submit'), 'profileForm', 'saveProfileBtn');
+    }
 }
 
 // --- 5. INITIALIZE EVENT LISTENERS ---

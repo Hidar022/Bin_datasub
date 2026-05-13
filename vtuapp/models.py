@@ -8,6 +8,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=15, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     dob = models.DateField(blank=True, null=True)
     email_otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
