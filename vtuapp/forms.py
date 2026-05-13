@@ -36,9 +36,12 @@ class DataPurchaseForm(forms.Form):
 # --- AUTH FORMS ---
 class CustomUserCreationForm(UserCreationForm):
     full_name = forms.CharField(
-        max_length=150, 
+        max_length=150, # Changed from max_digits to max_length
         required=True,
-        widget=forms.TextInput(attrs={'placeholder': 'Enter your full name'})
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Enter your full name',
+            'autofocus': 'autofocus'
+        }),
     )
     email = forms.EmailField(
         required=True,
@@ -49,7 +52,7 @@ class CustomUserCreationForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(attrs={
             'placeholder': '08012345678',
-            'class': 'phone-field', # <--- THIS MUST MATCH YOUR JS
+            'class': 'phone-field',
             'inputmode': 'numeric'
         })
     )

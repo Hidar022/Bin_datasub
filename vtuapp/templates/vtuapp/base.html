@@ -192,14 +192,6 @@
         <i class="fas fa-headset text-lg"></i>
     </a>
     {% endif %}
-
-    {% if not user.is_authenticated %}
-    <a href="{% url 'login' %}"
-       class="hidden md:flex h-11 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold items-center justify-center shadow-lg shadow-indigo-500/20 hover:scale-[1.02] transition">
-        Login
-    </a>
-    {% endif %}
-
 </div>
 
                 {% if not user.is_authenticated %}
