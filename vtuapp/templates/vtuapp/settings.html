@@ -308,10 +308,11 @@
 
             </div>
 
-            <button type="submit"
-                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold">
-                Save Changes
-            </button>
+          <button type="submit"
+              id="saveProfileBtn"
+             class="w-full py-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold">
+            Save Changes
+        </button>
 
         </form>
 
@@ -332,7 +333,7 @@
             </h2>
         </div>
 
-        <form class="space-y-5">
+        <form id="passwordForm" class="space-y-5">
 
             {% csrf_token %}
             <input type="hidden" name="section" value="password">
@@ -352,9 +353,10 @@
             </div>
 
             <button type="submit"
-                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-semibold">
-                Update Password
-            </button>
+            id="updatePassBtn"
+            class="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-semibold">
+             Update Password
+        </button>
 
         </form>
 
@@ -424,10 +426,11 @@
             </button>
         </div>
 
-        <button type="submit" id="savePinBtn"
-                class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
-            SAVE TRANSACTION PIN
-        </button>
+        <button type="submit" 
+        id="savePinBtn"
+        class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
+        SAVE TRANSACTION PIN
+     </button>
 
     </form>
 
@@ -503,7 +506,7 @@
                 will be permanently deleted and cannot be recovered.
             </p>
 
-            <form class="mt-8 space-y-5">
+            <form id="deleteAccountForm" class="mt-8 space-y-5">
 
                 {% csrf_token %}
                 <input type="hidden" name="section" value="delete_account">
@@ -514,9 +517,10 @@
                        class="w-full rounded-2xl border border-red-200 dark:border-red-500/10 bg-white dark:bg-[#1A1A2E] px-5 py-4">
 
                 <button type="submit"
-                        class="w-full py-5 rounded-2xl bg-red-600 text-white font-semibold">
-                    Permanently Delete Account
-                </button>
+                 id="deleteAccountBtn"
+                 class="w-full py-5 rounded-2xl bg-red-600 text-white font-semibold">
+                Permanently Delete Account
+             </button>
 
             </form>
 
@@ -525,134 +529,132 @@
     </div>
 
 </div>
+<!-- 1. Add SweetAlert2 for beautiful messages -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-
+// --- NAVIGATION LOGIC ---
 function openSection(sectionId) {
-
-    document.getElementById('mainSettings').classList.add('translate-x-[-100%]');
-    document.getElementById('mainSettings').classList.add('opacity-0');
-
+    document.getElementById('mainSettings').classList.add('translate-x-[-100%]', 'opacity-0');
     setTimeout(() => {
-
         document.getElementById('mainSettings').classList.add('hidden');
-
         const target = document.getElementById(sectionId);
-
-        target.classList.remove('hidden');
-        target.classList.remove('translate-x-full');
-
-        setTimeout(() => {
-            target.classList.remove('opacity-0');
-        }, 50);
-
+        target.classList.remove('hidden', 'translate-x-full');
+        setTimeout(() => target.classList.remove('opacity-0'), 50);
     }, 250);
 }
 
 function goBack(sectionId) {
-
     const target = document.getElementById(sectionId);
-
-    target.classList.add('translate-x-full');
-    target.classList.add('opacity-0');
-
+    target.classList.add('translate-x-full', 'opacity-0');
     setTimeout(() => {
-
         target.classList.add('hidden');
-
         const main = document.getElementById('mainSettings');
-
         main.classList.remove('hidden');
-
-        setTimeout(() => {
-            main.classList.remove('translate-x-[-100%]');
-            main.classList.remove('opacity-0');
-        }, 50);
-
+        setTimeout(() => main.classList.remove('translate-x-[-100%]', 'opacity-0'), 50);
     }, 250);
 }
 
-// Check if we need to open support on page load
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('open') === 'support') {
-        openSection('support_team');
-    }
-});
-
-// --- PIN KEYPAD LOGIC ---
-let activePinFieldId = 'new_pin'; // Default active field
-
-function setActivePinInput(id) {
-    activePinFieldId = id;
-    // Reset borders
-    document.querySelectorAll('.pin-input-field').forEach(el => {
-        el.classList.remove('border-emerald-500', 'ring-4', 'ring-emerald-500/10');
-    });
-    // Highlight active
-    const activeEl = document.getElementById(id);
-    activeEl.classList.add('border-emerald-500', 'ring-4', 'ring-emerald-500/10');
-}
-
-function pressPinKey(num) {
-    const input = document.getElementById(activePinFieldId);
-    if (input.value.length < 4) {
-        input.value += num;
-    }
-}
-
-function backspacePin() {
-    const input = document.getElementById(activePinFieldId);
-    input.value = input.value.slice(0, -1);
-}
-
-function clearPinInput() {
-    const input = document.getElementById(activePinFieldId);
-    input.value = "";
-}
-
-// Ensure "Old PIN" is active if it exists when section opens
-const originalOpenSection = openSection;
-openSection = function(sectionId) {
-    originalOpenSection(sectionId);
-    if (sectionId === 'pin') {
-        const oldPin = document.getElementById('old_pin');
-        setActivePinInput(oldPin ? 'old_pin' : 'new_pin');
-    }
-}
-
-// AJAX Form Submission for PIN (Matches your dashboard style)
-document.getElementById('pinUpdateForm').addEventListener('submit', async function(e) {
+// --- UNIVERSAL AJAX HANDLER ---
+async function handleFormSubmit(e, formId, btnId) {
     e.preventDefault();
-    const btn = document.getElementById('savePinBtn');
-    const originalText = btn.innerText;
-    
-    btn.disabled = true;
-    btn.innerText = "SAVING...";
+    const form = e.target;
+    const btn = document.getElementById(btnId);
+    const originalText = btn.innerHTML;
 
-    const formData = new FormData(this);
+    // 1. Client-side Validation
+    const inputs = form.querySelectorAll('input[required], input[type="password"]');
+    let isEmpty = false;
+    inputs.forEach(input => {
+        if (!input.value && input.name !== 'profile_picture') isEmpty = true;
+    });
+
+    if (isEmpty) {
+        Swal.fire({ icon: 'warning', title: 'Oops...', text: 'Please fill in all required fields!', background: '#111827', color: '#fff' });
+        return;
+    }
+
+    // 2. Start Loading State
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Processing...`;
+    btn.classList.add('opacity-70', 'cursor-not-allowed');
+
+    const formData = new FormData(form);
+
     try {
         const response = await fetch("{% url 'settings' %}", {
             method: "POST",
             body: formData,
             headers: { "X-Requested-With": "XMLHttpRequest" }
         });
-        const result = await response.json();
         
+        const result = await response.json();
+
         if (result.status === 'success') {
-            alert("✅ " + result.message);
-            location.reload();
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: result.message,
+                background: '#111827',
+                color: '#fff',
+                confirmButtonColor: '#06b6d4'
+            });
+            if (result.should_reload) window.location.reload();
+            else if (formId === 'passwordForm' || formId === 'pinUpdateForm') form.reset();
         } else {
-            alert("❌ " + result.message);
-            btn.disabled = false;
-            btn.innerText = originalText;
+            Swal.fire({ icon: 'error', title: 'Failed', text: result.message, background: '#111827', color: '#fff' });
         }
     } catch (error) {
-        alert("Server error occurred");
+        Swal.fire({ icon: 'error', title: 'Server Error', text: 'Something went wrong. Try again.', background: '#111827', color: '#fff' });
+    } finally {
         btn.disabled = false;
-        btn.innerText = originalText;
+        btn.innerHTML = originalText;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+    }
+}
+
+// --- ATTACH EVENTS ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Profile Form
+    const profileForm = document.querySelector('#profile form');
+    if(profileForm) {
+        profileForm.id = 'profileForm';
+        profileForm.addEventListener('submit', (e) => handleFormSubmit(e, 'profileForm', 'saveProfileBtn'));
+        // Update the button ID in your HTML to match 'saveProfileBtn'
+    }
+
+    // Password Form
+    const securityForm = document.querySelector('#security form');
+    if(securityForm) {
+        securityForm.id = 'passwordForm';
+        securityForm.addEventListener('submit', (e) => handleFormSubmit(e, 'passwordForm', 'updatePassBtn'));
+    }
+
+    // PIN Form
+    const pinForm = document.getElementById('pinUpdateForm');
+    if(pinForm) {
+        pinForm.addEventListener('submit', (e) => handleFormSubmit(e, 'pinUpdateForm', 'savePinBtn'));
     }
 });
+
+// --- PIN KEYPAD LOGIC (Keep your existing functions) ---
+let activePinFieldId = 'new_pin';
+function setActivePinInput(id) {
+    activePinFieldId = id;
+    document.querySelectorAll('.pin-input-field').forEach(el => el.classList.remove('border-emerald-500', 'ring-4', 'ring-emerald-500/10'));
+    document.getElementById(id).classList.add('border-emerald-500', 'ring-4', 'ring-emerald-500/10');
+}
+function pressPinKey(num) {
+    const input = document.getElementById(activePinFieldId);
+    if (input.value.length < 4) input.value += num;
+}
+function backspacePin() {
+    const input = document.getElementById(activePinFieldId);
+    input.value = input.value.slice(0, -1);
+}
+function clearPinInput() {
+    document.getElementById(activePinFieldId).value = "";
+}
 </script>
 
 {% endblock %}

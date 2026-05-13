@@ -1,6 +1,7 @@
 # 1. Standard Library Imports
 import json
 import hmac
+import time
 import hashlib
 import logging
 import random
@@ -11,9 +12,9 @@ from datetime import timedelta
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.contrib.admin.views.decorators import staff_member_required
-import time
 
 from .models import DataPlan
+from django.contrib.auth import update_session_auth_hash
 
 # 2. Django Core Imports
 from django.conf import settings
@@ -407,12 +408,15 @@ def dashboard(request):
     }
     return render(request, 'vtuapp/dashboard.html', context)        
 # ====================== SETTINGS ======================
+
 @login_required
 def settings_page(request):
+    # Ensure profile exists for Aliyu
     profile, created = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         section = request.POST.get('section')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if section == 'profile':
             user = request.user
@@ -420,77 +424,68 @@ def settings_page(request):
             user.save()
 
             profile.full_name = request.POST.get('full_name', profile.full_name)
-            profile.phone = request.POST.get('phone', profile.phone)
-            if request.POST.get('dob'):
-                profile.dob = request.POST.get('dob')
+            # Match the 'name' attribute in your HTML (name="phone")
+            profile.phone = request.POST.get('phone', profile.phone) 
+            
+            # Handle the profile picture upload from the camera icon
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
+            
             profile.save()
 
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'status': 'success', 'message': '✅ Profile updated successfully!'})
-            else:
-                messages.success(request, 'Profile updated successfully!')
-                return redirect('settings')
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': '✅ Profile updated successfully!', 'should_reload': True})
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('settings')
 
         elif section == 'password':
             old_password = request.POST.get('old_password')
             new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
 
             if not check_password(old_password, request.user.password):
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'error', 'message': '❌ Current password is incorrect'})
-                else:
-                    messages.error(request, 'Current password is incorrect')
-                    return redirect('settings')
-            elif new_password != confirm_password:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'error', 'message': '❌ New passwords do not match'})
-                else:
-                    messages.error(request, 'New passwords do not match')
-                    return redirect('settings')
-            elif len(new_password) < 6:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'error', 'message': '❌ Password must be at least 6 characters'})
-                else:
-                    messages.error(request, 'Password must be at least 6 characters')
-                    return redirect('settings')
-            else:
-                request.user.set_password(new_password)
-                request.user.save()
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'status': 'success', 'message': '✅ Account password updated successfully!'})
-                else:
-                    messages.success(request, 'Account password updated successfully!')
-                    return redirect('settings')
+                msg = '❌ Current password is incorrect'
+                return JsonResponse({'status': 'error', 'message': msg}) if is_ajax else redirect('settings')
+            
+            if len(new_password) < 6:
+                msg = '❌ Password must be at least 6 characters'
+                return JsonResponse({'status': 'error', 'message': msg}) if is_ajax else redirect('settings')
+
+            request.user.set_password(new_password)
+            request.user.save()
+            
+            # CRITICAL: Keep Aliyu logged in after password change
+            update_session_auth_hash(request, request.user)
+
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': '✅ Password updated successfully!', 'should_reload': False})
+            messages.success(request, 'Password updated successfully!')
+            return redirect('settings')
 
         elif section == 'pin':
             old_pin = request.POST.get('old_pin')
             new_pin = request.POST.get('new_pin')
-            # Use profile.transaction_pin to match your dashboard check
-            
-            # --- Logic for First Time PIN Creation ---
+
+            # First Time PIN Creation
             if not profile.transaction_pin:
                 if len(new_pin) == 4 and new_pin.isdigit():
                     profile.transaction_pin = new_pin
                     profile.save()
                     return JsonResponse({'status': 'success', 'message': '✅ Transaction PIN created!'})
-                return JsonResponse({'status': 'error', 'message': '❌ PIN must be 4 digits'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ PIN must be 4 digits'})
 
-            # --- Logic for Normal PIN Change ---
+            # Changing Existing PIN
             if profile.transaction_pin != old_pin: 
-                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'}, status=400)
+                return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'})
             
             if len(new_pin) == 4 and new_pin.isdigit():
                 profile.transaction_pin = new_pin
                 profile.save()
                 return JsonResponse({'status': 'success', 'message': '✅ PIN updated successfully!'})
-            else:
-                return JsonResponse({'status': 'error', 'message': '❌ New PIN must be 4 digits'}, status=400)
+            
+            return JsonResponse({'status': 'error', 'message': '❌ New PIN must be 4 digits'})
 
-    # Dashboard logic uses profile.transaction_pin
     has_pin = bool(profile.transaction_pin)
     return render(request, 'vtuapp/settings.html', {'has_pin': has_pin})
-
 
 # ====================== FUND WALLET (Paystack) ======================
 def get_gafia_headers(payload=None):
