@@ -26,6 +26,9 @@ load_dotenv(BASE_DIR / '.env')
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Media files (Profile pictures, etc.)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # This tells Django where to look for your custom static files (CSS/JS)
 STATICFILES_DIRS = [
