@@ -621,7 +621,7 @@ async function handleFormSubmit(e, formId, btnId) {
 
         if (result.status === 'success') {
             showMessage(result.message, 'success');
-            
+                        
             // Handle logical follow-up
             if (result.should_reload) {
                 setTimeout(() => window.location.reload(), 1500);
