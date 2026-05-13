@@ -610,11 +610,13 @@ async function handleFormSubmit(e, formId, btnId) {
 
     try {
         const response = await fetch(window.location.pathname, {
-            method: "POST",
-            body: formData,
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        });
-        
+        method: "POST",
+        body: formData,
+        headers: { 
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value // ADD THIS
+       }
+    });
         const result = await response.json();
 
         if (result.status === 'success') {
