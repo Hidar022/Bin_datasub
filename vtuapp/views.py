@@ -175,22 +175,24 @@ def register(request):
                         messages.success(request, 'We found your unverified account. A new verification code has been sent to your email.')
                         return redirect('verify_otp')
 
-            # === Normal Registration ===
-          user = form.save(commit=False)
-          user.is_active = False
-          user.save()
+            else:
+                # === Normal Registration (email doesn't exist) ===
+                user = form.save(commit=False)
+                user.is_active = False
+                user.save()
 
-         # Ensure we get the profile correctly
-           profile, created = Profile.objects.get_or_create(user=user)
-           profile.full_name = form.cleaned_data.get('full_name', '')
-           profile.phone = request.POST.get('phone', '') # Get directly from POST if not in form
-           profile.save()
-
-            otp = str(random.randint(100000, 999999))
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.email_otp = otp
-            profile.otp_created_at = timezone.now()
-            profile.save()
+                # Get or create profile and save phone/full name
+                profile, created = Profile.objects.get_or_create(user=user)
+                profile.full_name = form.cleaned_data.get('full_name', '')
+                # Ensure phone is pulled correctly from the POST data
+                profile.phone = request.POST.get('phone', '') 
+                profile.dob = form.cleaned_data.get('dob', None)
+                
+                # Generate and save OTP
+                otp = str(random.randint(100000, 999999))
+                profile.email_otp = otp
+                profile.otp_created_at = timezone.now()
+                profile.save()
 
             # Send email (same as before)
             subject = 'Your Bin Datasub Verification Code'
