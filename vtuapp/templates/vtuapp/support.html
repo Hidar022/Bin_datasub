@@ -4,58 +4,64 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 md:px-6 py-10">
 
-    <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:text-indigo-700 mb-8 font-medium">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    <!-- Back Button -->
+    <a href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}/{% endif %}" 
+       class="inline-flex items-center gap-2 text-indigo-600 dark:text-cyan-400 hover:opacity-80 mb-8 font-medium transition-all">
+        <i class="fas fa-arrow-left"></i> Back to {% if user.is_authenticated %}Dashboard{% else %}Home{% endif %}
     </a>
 
-    <div class="bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10">
+    <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-indigo-500/5">
         
         <div class="text-center mb-10">
-            <div class="w-20 h-20 mx-auto bg-cyan-100 dark:bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-5">
-                <i class="fas fa-headset text-6xl text-cyan-600 dark:text-cyan-400"></i>
+            <div class="w-20 h-20 mx-auto bg-indigo-50 dark:bg-indigo-500/10 rounded-[2rem] flex items-center justify-center mb-5 border border-indigo-100 dark:border-indigo-400/20">
+                <i class="fas fa-headset text-4xl text-indigo-600 dark:text-cyan-400"></i>
             </div>
-            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">24/7 Support</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-2">We're always ready to help you</p>
+            <h1 class="text-4xl font-black text-gray-900 dark:text-white tracking-tight">Help Center</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Send us a message and we'll get back to you shortly.</p>
         </div>
 
-        <form method="POST" class="space-y-8">
+        <form method="POST" class="space-y-6">
             {% csrf_token %}
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
-                <input type="text" name="subject" required
-                       class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white">
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-4">Subject</label>
+                <input type="text" name="subject" required placeholder="What do you need help with?"
+                       class="w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 dark:focus:border-cyan-400 rounded-2xl px-6 py-5 text-gray-900 dark:text-white outline-none transition-all">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
-                <textarea name="message" rows="6" required
-                          class="w-full bg-white dark:bg-[#25253A] border border-gray-300 dark:border-white/10 focus:border-indigo-500 rounded-3xl px-6 py-5 text-gray-900 dark:text-white resize-y"></textarea>
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-4">Detailed Message</label>
+                <textarea name="message" rows="5" required placeholder="Describe your issue in detail..."
+                          class="w-full bg-gray-50 dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 focus:border-indigo-500 dark:focus:border-cyan-400 rounded-2xl px-6 py-5 text-gray-900 dark:text-white outline-none transition-all resize-none"></textarea>
             </div>
 
             <button type="submit"
-                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 py-6 rounded-3xl text-lg font-semibold text-white flex items-center justify-center gap-3">
-                <i class="fas fa-paper-plane"></i> SEND MESSAGE
+                    class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 py-6 rounded-2xl text-lg font-bold text-white shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all">
+                SUBMIT TICKET
             </button>
         </form>
 
-        <!-- Contact Info -->
-        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
-                <i class="fas fa-phone text-3xl text-cyan-500 mb-3"></i>
-                <p class="font-medium">Call Us</p>
-                <p class="text-gray-600 dark:text-gray-400">+234 903 804 7335</p>
-            </div>
-            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
-                <i class="fas fa-envelope text-3xl text-cyan-500 mb-3"></i>
-                <p class="font-medium">Email</p>
-                <p class="text-gray-600 dark:text-gray-400">aliyubinahmad2020@gmail.com</p>
-            </div>
-            <div class="bg-gray-50 dark:bg-[#25253A] rounded-3xl p-6 text-center">
-                <i class="fas fa-clock text-3xl text-cyan-500 mb-3"></i>
-                <p class="font-medium">Response Time</p>
-                <p class="text-gray-600 dark:text-gray-400">Within 5 mins</p>
-            </div>
+        <!-- Quick Contact Grid -->
+        <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a href="https://wa.me/2349038047335" target="_blank" class="bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10 rounded-2xl p-5 flex items-center gap-4 group transition-all">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div class="text-left">
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-tighter">WhatsApp</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">Live Chat</p>
+                </div>
+            </a>
+
+            <a href="mailto:aliyubinahmad2022@gmail.com" class="bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10 rounded-2xl p-5 flex items-center gap-4 group transition-all">
+                <div class="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="text-left">
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-tighter">Email</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">Send Inquiry</p>
+                </div>
+            </a>
         </div>
     </div>
 </div>

@@ -142,6 +142,22 @@
 
             </button>
 
+ <!-- Support Team -->
+<button onclick="openSection('support_team')"
+        class="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[1.7rem] p-5 flex items-center justify-between hover:border-indigo-200 dark:hover:border-cyan-400/20 transition-all">
+
+    <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-cyan-400 text-xl">
+            <i class="fas fa-headset"></i>
+        </div>
+        <div class="text-left">
+            <h3 class="font-semibold text-gray-900 dark:text-white">Support Team</h3>
+            <p class="text-sm text-gray-500">Chat with us for help</p>
+        </div>
+    </div>
+    <i class="fas fa-chevron-right text-gray-400"></i>
+</button>
+
             <!-- Danger -->
             <button onclick="openSection('danger')"
                     class="w-full bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10 rounded-[1.7rem] p-5 flex items-center justify-between transition-all">
@@ -345,51 +361,122 @@
     </div>
 
     <!-- ================= PIN ================= -->
-    <div id="pin"
-         class="hidden opacity-0 translate-x-full transition-all duration-300">
+    <div id="pin" class="hidden opacity-0 translate-x-full transition-all duration-300">
 
-        <button onclick="goBack('pin')"
-                class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
+    <button onclick="goBack('pin')"
+            class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
+        <i class="fas fa-arrow-left"></i> Back
+    </button>
 
-        <div class="mb-6">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
-                Transaction PIN
-            </h2>
-        </div>
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Transaction PIN
+        </h2>
+    </div>
 
-        <form class="space-y-5">
+    <form class="space-y-5" id="pinUpdateForm">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="pin">
 
-            {% csrf_token %}
-            <input type="hidden" name="section" value="pin">
+        <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 space-y-5">
 
-            <div class="bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 space-y-5">
-
-                {% if has_pin %}
+            {% if has_pin %}
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-4">Current PIN</label>
                 <input type="password"
                        name="old_pin"
+                       id="old_pin"
                        maxlength="4"
-                       placeholder="Old PIN"
-                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[10px]">
-                {% endif %}
+                       placeholder="••••"
+                       readonly
+                       inputmode="none"
+                       onclick="setActivePinInput('old_pin')"
+                       class="pin-input-field w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[12px] focus:border-emerald-500 transition-all outline-none">
+            </div>
+            {% endif %}
 
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-4">New 4-Digit PIN</label>
                 <input type="password"
                        name="new_pin"
+                       id="new_pin"
                        maxlength="4"
-                       placeholder="New PIN"
-                       class="w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[10px]">
-
+                       placeholder="••••"
+                       readonly
+                       inputmode="none"
+                       onclick="setActivePinInput('new_pin')"
+                       class="pin-input-field w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1A1A2E] px-5 py-5 text-center text-3xl tracking-[12px] focus:border-emerald-500 transition-all outline-none">
             </div>
 
-            <button type="submit"
-                    class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-semibold">
-                Save PIN
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 bg-gray-50 dark:bg-white/5 p-4 rounded-[2.5rem] border border-gray-200 dark:border-white/10">
+            {% for i in "123456789"|make_list %}
+            <button type="button" onclick="pressPinKey('{{ i }}')"
+                    class="h-16 rounded-2xl bg-white dark:bg-[#1A1A2E] text-xl font-bold dark:text-white active:scale-90 transition-all shadow-sm">
+                {{ i }}
             </button>
+            {% endfor %}
+            <button type="button" onclick="clearPinInput()" class="h-16 rounded-2xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">C</button>
+            <button type="button" onclick="pressPinKey('0')" class="h-16 rounded-2xl bg-white dark:bg-[#1A1A2E] text-xl font-bold dark:text-white active:scale-90 transition-all shadow-sm">0</button>
+            <button type="button" onclick="backspacePin()" class="h-16 rounded-2xl text-gray-400 flex items-center justify-center active:scale-90 transition-all">
+                <i class="fas fa-backspace"></i>
+            </button>
+        </div>
 
-        </form>
+        <button type="submit" id="savePinBtn"
+                class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
+            SAVE TRANSACTION PIN
+        </button>
 
+    </form>
+
+</div>
+
+<!-- ================= SUPPORT TEAM ================= -->
+<div id="support_team" class="hidden opacity-0 translate-x-full transition-all duration-300">
+
+    <button onclick="goBack('support_team')"
+            class="mb-8 flex items-center gap-2 text-indigo-600 dark:text-cyan-400 font-medium">
+        <i class="fas fa-arrow-left"></i> Back
+    </button>
+
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Customer Support</h2>
+        <p class="text-gray-500 mt-2">Get fast response from our team</p>
     </div>
+
+    <div class="space-y-4">
+        <!-- WhatsApp Option -->
+        <a href="https://wa.me/2349038047335" target="_blank" 
+           class="block bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10 rounded-[2rem] p-6 hover:scale-[1.02] transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-2xl">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white text-lg">WhatsApp Chat</h4>
+                    <p class="text-sm text-emerald-600 dark:text-emerald-400 font-medium">Available 24/7</p>
+                </div>
+            </div>
+        </a>
+
+        <!-- Email Option -->
+        <a href="mailto:aliyubinahmad2022@gmail.com" 
+           class="block bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10 rounded-[2rem] p-6 hover:scale-[1.02] transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-blue-500 text-white flex items-center justify-center text-2xl">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white text-lg">Email Support</h4>
+                    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">Get a reply in 24 hours</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
 
     <!-- ================= DANGER ================= -->
     <div id="danger"
@@ -485,6 +572,87 @@ function goBack(sectionId) {
     }, 250);
 }
 
+// Check if we need to open support on page load
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open') === 'support') {
+        openSection('support_team');
+    }
+});
+
+// --- PIN KEYPAD LOGIC ---
+let activePinFieldId = 'new_pin'; // Default active field
+
+function setActivePinInput(id) {
+    activePinFieldId = id;
+    // Reset borders
+    document.querySelectorAll('.pin-input-field').forEach(el => {
+        el.classList.remove('border-emerald-500', 'ring-4', 'ring-emerald-500/10');
+    });
+    // Highlight active
+    const activeEl = document.getElementById(id);
+    activeEl.classList.add('border-emerald-500', 'ring-4', 'ring-emerald-500/10');
+}
+
+function pressPinKey(num) {
+    const input = document.getElementById(activePinFieldId);
+    if (input.value.length < 4) {
+        input.value += num;
+    }
+}
+
+function backspacePin() {
+    const input = document.getElementById(activePinFieldId);
+    input.value = input.value.slice(0, -1);
+}
+
+function clearPinInput() {
+    const input = document.getElementById(activePinFieldId);
+    input.value = "";
+}
+
+// Ensure "Old PIN" is active if it exists when section opens
+const originalOpenSection = openSection;
+openSection = function(sectionId) {
+    originalOpenSection(sectionId);
+    if (sectionId === 'pin') {
+        const oldPin = document.getElementById('old_pin');
+        setActivePinInput(oldPin ? 'old_pin' : 'new_pin');
+    }
+}
+
+// AJAX Form Submission for PIN (Matches your dashboard style)
+document.getElementById('pinUpdateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('savePinBtn');
+    const originalText = btn.innerText;
+    
+    btn.disabled = true;
+    btn.innerText = "SAVING...";
+
+    const formData = new FormData(this);
+    try {
+        const response = await fetch("{% url 'settings' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert("✅ " + result.message);
+            location.reload();
+        } else {
+            alert("❌ " + result.message);
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    } catch (error) {
+        alert("Server error occurred");
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+});
 </script>
 
 {% endblock %}
