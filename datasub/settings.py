@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
+    'cloudinary_storage',
     'cloudinary',
     'vtuapp',
     'widget_tweaks',
@@ -135,10 +136,11 @@ ROOT_URLCONF = 'datasub.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'], # This tells Django to look here first!
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -146,7 +148,6 @@ TEMPLATES = [
         },
     },
 ]
-
 WSGI_APPLICATION = 'datasub.wsgi.application'
 
 

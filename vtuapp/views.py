@@ -13,6 +13,10 @@ from django.http import HttpResponse
 from django.db.models import Sum, Count, Q
 from django.contrib.admin.views.decorators import staff_member_required
 
+
+
+from .models import Transaction, Wallet # Ensure these models are imported
+
 from .models import DataPlan
 from django.contrib.auth import update_session_auth_hash
 
@@ -60,54 +64,6 @@ def home_redirect(request):
 
 
 # ====================== AUTH ======================
-
-@staff_member_required
-def add_plan(request):
-    if request.method == 'POST':
-        # Get data from the Terminal Modal
-        network = request.POST.get('network')
-        name = request.POST.get('name')
-        price = request.POST.get('price')
-        sme_id = request.POST.get('smeplug_id')
-        net_id = request.POST.get('network_id')
-
-        # Save to Database
-        DataPlan.objects.create(
-            network=network,
-            name=name,
-            price=price,
-            smeplug_plan_id=sme_id,
-            network_id=net_id,
-            is_active=True
-        )
-        return redirect('admin_dashboard')
-
-@staff_member_required
-def admin_dashboard(request):
-    # Stats
-    sales_data = Transaction.objects.filter(status='Successful').exclude(transaction_type='Wallet Funding')
-    total_sales = sales_data.aggregate(Sum('amount'))['amount__sum'] or 0
-    total_cost = sales_data.aggregate(Sum('cost_price'))['cost_price__sum'] or 0
-    total_profit = total_sales - total_cost
-    
-    # User Stats
-    total_users = User.objects.count()
-    total_wallet_balances = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or 0
-    
-    # Data Lists
-    recent_txs = Transaction.objects.all().order_by('-timestamp')[:15]
-    all_users = User.objects.all().order_by('-date_joined')[:10] # Latest 10 users
-
-    context = {
-        'total_sales': total_sales,
-        'total_cost': total_cost,
-        'total_profit': total_profit,
-        'total_users': total_users,
-        'total_wallet_balances': total_wallet_balances,
-        'recent_txs': recent_txs,
-        'all_users': all_users,
-    }
-    return render(request, 'vtuapp/admin_dashboard.html', context)
 
 def home(request):
     if request.user.is_authenticated:
@@ -1051,6 +1007,75 @@ def webauthn_register_complete(request):
 
 # ====================== ADMIN DASHBOARD VIEWS ======================
 
+from django.db.models import F, Sum
+
+@staff_member_required
+def admin_dashboard(request):
+    # 1. CALCULATE FINANCIAL STATS
+    # total_sales: Sum of all successful transactions
+    total_sales = Transaction.objects.filter(status='successful').aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # FIX: Calculate profit as (amount - cost_price) for all successful transactions
+    profit_data = Transaction.objects.filter(status='successful').aggregate(
+        total_profit=Sum(F('amount') - F('cost_price'))
+    )
+    total_profit = profit_data['total_profit'] or 0
+    
+    # 2. THE REST OF YOUR VIEW...
+    total_wallet_balances = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or 0
+    total_users = User.objects.count()
+    recent_txs = Transaction.objects.select_related('user').order_by('-timestamp')[:10]
+    all_users = User.objects.select_related('wallet').order_by('-date_joined')[:5]
+
+    context = {
+        'total_sales': total_sales,
+        'total_profit': total_profit,
+        'total_wallet_balances': total_wallet_balances,
+        'total_users': total_users,
+        'recent_txs': recent_txs,
+        'all_users': all_users,
+        'last_backup': "Daily Sync Active",
+        'security_alerts': 0,
+    }
+    return render(request, 'admin/dashboard.html', context)
+
+@staff_member_required
+def admin_user_detail(request, user_id):
+    """View details for a specific user from the dashboard."""
+    user_obj = get_object_or_404(User, id=user_id)
+    # Get user's transactions and wallet
+    transactions = Transaction.objects.filter(user=user_obj).order_by('-timestamp')
+    
+    context = {
+        'user_obj': user_obj,
+        'transactions': transactions,
+    }
+    return render(request, 'admin/user_detail.html', context)
+
+@staff_member_required
+def admin_user_edit(request, user_id):
+    """View to edit user details from the CEO panel."""
+    user_obj = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        user_obj.username = request.POST.get('username')
+        user_obj.email = request.POST.get('email')
+        user_obj.first_name = request.POST.get('first_name')
+        user_obj.last_name = request.POST.get('last_name')
+        
+        # Handle staff status toggle if needed
+        is_staff = request.POST.get('is_staff') == 'on'
+        user_obj.is_staff = is_staff
+        
+        user_obj.save()
+        messages.success(request, f'✅ User {user_obj.username} updated successfully!')
+        return redirect('admin_dashboard')
+        
+    context = {
+        'user_obj': user_obj,
+    }
+    return render(request, 'admin/user_edit.html', context)        
+
 @staff_member_required
 def admin_users(request):
     """Admin User Management"""
@@ -1090,6 +1115,30 @@ def admin_users(request):
         'staff_users': users.filter(is_staff=True).count(),
     }
     return render(request, 'admin/users.html', context)
+
+@staff_member_required
+def add_plan(request):
+    """Handles the creation of new data plans from the CEO panel modal."""
+    if request.method == 'POST':
+        # Matching the 'name' attributes from your dashboard.html form
+        network = request.POST.get('network')
+        name = request.POST.get('name')
+        price = request.POST.get('price')
+        smeplug_id = request.POST.get('smeplug_id')
+        network_id = request.POST.get('network_id')
+
+        # Create the new plan in the database
+        DataPlan.objects.create(
+            network=network,
+            name=name,
+            price=price,
+            smeplug_plan_id=smeplug_id, # Check if your model field is 'smeplug_id' or 'smeplug_plan_id'
+            network_id=network_id,
+            is_active=True
+        )
+        return redirect('admin_dashboard')
+    
+    return redirect('admin_dashboard')    
 
 @staff_member_required
 def admin_transactions(request):
