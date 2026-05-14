@@ -1,0 +1,180 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}User Management{% endblock %}
+
+{% block page_actions %}
+<div class="flex gap-2">
+    <input type="text" id="userSearch" placeholder="Search users..." class="px-4 py-2 rounded-lg border border-white/10 bg-black text-white">
+    <button onclick="exportUsers()" class="btn-secondary">
+        <i class="fas fa-download mr-2"></i>Export
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- User Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Total Users</p>
+        <h3 class="text-xl md:text-3xl font-bold neon-orange">{{ total_users }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Active Users</p>
+        <h3 class="text-xl md:text-3xl font-bold text-green-500">{{ active_users }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Inactive Users</p>
+        <h3 class="text-xl md:text-3xl font-bold text-red-500">{{ inactive_users }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Staff Users</p>
+        <h3 class="text-xl md:text-3xl font-bold text-blue-500">{{ staff_users }}</h3>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="terminal-card overflow-hidden">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        USER_DATABASE • {{ users|length }} RECORDS
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="text-[9px] opacity-40 uppercase border-b border-white/5">
+                <tr>
+                    <th class="p-4">ID</th>
+                    <th class="p-4">Username</th>
+                    <th class="p-4">Email</th>
+                    <th class="p-4">Phone</th>
+                    <th class="p-4">Wallet Balance</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4">Joined</th>
+                    <th class="p-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-xs" id="usersTable">
+                {% for user in users %}
+                <tr class="border-b border-white/5 hover:bg-white/5 user-row" data-username="{{ user.username }}" data-email="{{ user.email }}">
+                    <td class="p-4 font-mono">{{ user.id }}</td>
+                    <td class="p-4">
+                        <span class="font-bold">{{ user.username }}</span>
+                        {% if user.is_staff %}
+                        <span class="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded">STAFF</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4">{{ user.email }}</td>
+                    <td class="p-4">{{ user.profile.phone|default:"N/A" }}</td>
+                    <td class="p-4 font-mono text-emerald-500 font-bold">₦{{ user.wallet.balance|floatformat:2 }}</td>
+                    <td class="p-4">
+                        {% if user.is_active %}
+                        <span class="text-green-500">● Active</span>
+                        {% else %}
+                        <span class="text-red-500">● Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4">{{ user.date_joined|date:"M d, Y" }}</td>
+                    <td class="p-4 space-x-2">
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <input type="hidden" name="action" value="activate" {% if user.is_active %}disabled{% endif %}>
+                            <button type="submit" {% if user.is_active %}disabled class="opacity-50"{% else %}class="text-green-500 hover:text-green-400"{% endif %} title="Activate User">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </form>
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <input type="hidden" name="action" value="deactivate" {% if not user.is_active %}disabled{% endif %}>
+                            <button type="submit" {% if not user.is_active %}disabled class="opacity-50"{% else %}class="text-orange-500 hover:text-orange-400"{% endif %} title="Deactivate User">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                        </form>
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete user {{ user.username }}?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="text-red-500 hover:text-red-400" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if users.has_other_pages %}
+    <div class="p-4 border-t border-white/5 flex justify-between items-center">
+        <div class="text-sm opacity-70">
+            Page {{ users.number }} of {{ users.paginator.num_pages }}
+        </div>
+        <div class="space-x-2">
+            {% if users.has_previous %}
+            <a href="?page={{ users.previous_page_number }}" class="btn-secondary">Previous</a>
+            {% endif %}
+            {% if users.has_next %}
+            <a href="?page={{ users.next_page_number }}" class="btn-secondary">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- User Detail Modal -->
+<div id="userModal" class="fixed inset-0 bg-black/95 hidden z-[999] flex items-center justify-center p-4">
+    <div class="terminal-card w-full max-w-2xl p-8 border-orange-600/50 shadow-[0_0_50px_rgba(249,115,22,0.2)]">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-white underline decoration-orange-600">USER_DETAILS</h3>
+            <button onclick="hideModal('userModal')" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div id="userModalContent">
+            <!-- Content loaded via AJAX -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('userSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const username = row.dataset.username.toLowerCase();
+        const email = row.dataset.email.toLowerCase();
+        const visible = username.includes(searchTerm) || email.includes(searchTerm);
+        row.style.display = visible ? '' : 'none';
+    });
+});
+
+function exportUsers() {
+    // Simple CSV export
+    const rows = document.querySelectorAll('.user-row');
+    let csv = 'ID,Username,Email,Phone,Wallet Balance,Status,Joined\n';
+    
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const cells = row.querySelectorAll('td');
+            const data = Array.from(cells).map(cell => {
+                const text = cell.textContent.trim();
+                // Remove icons and special characters
+                return text.replace(/[^\w\s@.₦-]/g, '').trim();
+            });
+            csv += data.join(',') + '\n';
+        }
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

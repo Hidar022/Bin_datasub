@@ -1,0 +1,215 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="grid md:grid-cols-2 gap-6">
+    <!-- API Settings -->
+    <div class="terminal-card p-6">
+        <h3 class="text-lg font-bold mb-4 underline decoration-orange-600">API_CONFIGURATION</h3>
+        <form action="{% url 'admin_settings' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">SMEPlug API Key</label>
+                <input type="password" name="smeplug_api_key" value="{{ settings.smeplug_api_key|default:'' }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10" placeholder="Enter API Key">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Webhook Secret</label>
+                <input type="password" name="webhook_secret" value="{{ settings.webhook_secret|default:'' }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10" placeholder="Enter Webhook Secret">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">API Base URL</label>
+                <input type="url" name="api_base_url" value="{{ settings.api_base_url|default:'https://api.smeplug.ng' }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10">
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="api_enabled" id="api_enabled" {{ settings.api_enabled|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="api_enabled" class="text-sm">Enable API Integration</label>
+            </div>
+            <button type="submit" name="save_api" class="w-full bg-orange-600 hover:bg-orange-500 p-3 text-white rounded-lg font-bold">
+                SAVE_API_SETTINGS
+            </button>
+        </form>
+    </div>
+
+    <!-- System Settings -->
+    <div class="terminal-card p-6">
+        <h3 class="text-lg font-bold mb-4 underline decoration-orange-600">SYSTEM_CONFIGURATION</h3>
+        <form action="{% url 'admin_settings' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Site Title</label>
+                <input type="text" name="site_title" value="{{ settings.site_title|default:'DataSub VTU' }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Support Email</label>
+                <input type="email" name="support_email" value="{{ settings.support_email|default:'' }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Maintenance Mode</label>
+                <select name="maintenance_mode" class="w-full p-3 rounded-lg mt-1 border border-white/10">
+                    <option value="false" {{ settings.maintenance_mode|default:'false'|lower == 'false'|yesno:"selected," }}>Disabled</option>
+                    <option value="true" {{ settings.maintenance_mode|default:'false'|lower == 'true'|yesno:"selected," }}>Enabled</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Default Currency</label>
+                <select name="currency" class="w-full p-3 rounded-lg mt-1 border border-white/10">
+                    <option value="NGN" {{ settings.currency|default:'NGN' == 'NGN'|yesno:"selected," }}>NGN (₦)</option>
+                    <option value="USD" {{ settings.currency|default:'NGN' == 'USD'|yesno:"selected," }}>USD ($)</option>
+                </select>
+            </div>
+            <button type="submit" name="save_system" class="w-full bg-orange-600 hover:bg-orange-500 p-3 text-white rounded-lg font-bold">
+                SAVE_SYSTEM_SETTINGS
+            </button>
+        </form>
+    </div>
+
+    <!-- Security Settings -->
+    <div class="terminal-card p-6">
+        <h3 class="text-lg font-bold mb-4 underline decoration-orange-600">SECURITY_SETTINGS</h3>
+        <form action="{% url 'admin_settings' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Session Timeout (minutes)</label>
+                <input type="number" name="session_timeout" value="{{ settings.session_timeout|default:30 }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10" min="5" max="480">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Max Login Attempts</label>
+                <input type="number" name="max_login_attempts" value="{{ settings.max_login_attempts|default:5 }}" 
+                       class="w-full p-3 rounded-lg mt-1 border border-white/10" min="1" max="20">
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="two_factor_required" id="two_factor" {{ settings.two_factor_required|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="two_factor" class="text-sm">Require 2FA for Admin</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="ip_whitelist_enabled" id="ip_whitelist" {{ settings.ip_whitelist_enabled|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="ip_whitelist" class="text-sm">Enable IP Whitelist</label>
+            </div>
+            <button type="submit" name="save_security" class="w-full bg-orange-600 hover:bg-orange-500 p-3 text-white rounded-lg font-bold">
+                SAVE_SECURITY_SETTINGS
+            </button>
+        </form>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="terminal-card p-6">
+        <h3 class="text-lg font-bold mb-4 underline decoration-orange-600">NOTIFICATION_SETTINGS</h3>
+        <form action="{% url 'admin_settings' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div class="flex items-center">
+                <input type="checkbox" name="email_notifications" id="email_notif" {{ settings.email_notifications|default:'true'|lower == 'true'|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="email_notif" class="text-sm">Email Notifications</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="sms_notifications" id="sms_notif" {{ settings.sms_notifications|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="sms_notif" class="text-sm">SMS Notifications</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="transaction_alerts" id="txn_alerts" {{ settings.transaction_alerts|default:'true'|lower == 'true'|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="txn_alerts" class="text-sm">Transaction Alerts</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="system_alerts" id="sys_alerts" {{ settings.system_alerts|default:'true'|lower == 'true'|yesno:"checked," }} 
+                       class="mr-2">
+                <label for="sys_alerts" class="text-sm">System Alerts</label>
+            </div>
+            <button type="submit" name="save_notifications" class="w-full bg-orange-600 hover:bg-orange-500 p-3 text-white rounded-lg font-bold">
+                SAVE_NOTIFICATION_SETTINGS
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- System Actions -->
+<div class="terminal-card p-6 mt-6">
+    <h3 class="text-lg font-bold mb-4 underline decoration-orange-600">SYSTEM_ACTIONS</h3>
+    <div class="grid md:grid-cols-3 gap-4">
+        <button onclick="confirmAction('Clear all cache?', () => clearCache())" class="btn-secondary">
+            <i class="fas fa-broom mr-2"></i>Clear Cache
+        </button>
+        <button onclick="confirmAction('Backup database?', () => backupDatabase())" class="btn-secondary">
+            <i class="fas fa-database mr-2"></i>Backup DB
+        </button>
+        <button onclick="confirmAction('Restart services?', () => restartServices())" class="btn-secondary">
+            <i class="fas fa-sync mr-2"></i>Restart Services
+        </button>
+    </div>
+</div>
+
+<!-- System Logs -->
+<div class="terminal-card mt-6">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        RECENT_SYSTEM_LOGS
+    </div>
+    <div class="max-h-96 overflow-y-auto p-4 space-y-2 font-mono text-xs">
+        {% for log in system_logs %}
+        <div class="flex items-start space-x-4">
+            <span class="text-gray-500 w-20">{{ log.timestamp|date:"H:i:s" }}</span>
+            <span class="text-blue-400 w-16">{{ log.level }}</span>
+            <span>{{ log.message }}</span>
+        </div>
+        {% empty %}
+        <div class="text-center opacity-50 py-8">No recent logs</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function clearCache() {
+    fetch('/admin/settings/clear-cache/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) location.reload();
+    });
+}
+
+function backupDatabase() {
+    fetch('/admin/settings/backup-db/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+    });
+}
+
+function restartServices() {
+    fetch('/admin/settings/restart-services/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) location.reload();
+    });
+}
+</script>
+{% endblock %}

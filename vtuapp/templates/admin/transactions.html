@@ -1,0 +1,216 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}Transaction Management{% endblock %}
+
+{% block page_actions %}
+<div class="flex gap-2">
+    <select id="statusFilter" class="px-4 py-2 rounded-lg border border-white/10 bg-black text-white">
+        <option value="">All Status</option>
+        <option value="successful">Successful</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+    </select>
+    <select id="typeFilter" class="px-4 py-2 rounded-lg border border-white/10 bg-black text-white">
+        <option value="">All Types</option>
+        <option value="airtime">Airtime</option>
+        <option value="data">Data</option>
+        <option value="cable">Cable TV</option>
+    </select>
+    <button onclick="exportTransactions()" class="btn-secondary">
+        <i class="fas fa-download mr-2"></i>Export
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Transaction Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Total Transactions</p>
+        <h3 class="text-xl md:text-3xl font-bold neon-orange">{{ total_transactions }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Successful</p>
+        <h3 class="text-xl md:text-3xl font-bold text-green-500">{{ successful_transactions }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Pending</p>
+        <h3 class="text-xl md:text-3xl font-bold text-yellow-500">{{ pending_transactions }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Failed</p>
+        <h3 class="text-xl md:text-3xl font-bold text-red-500">{{ failed_transactions }}</h3>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="terminal-card overflow-hidden">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        TRANSACTION_LOG • {{ transactions|length }} RECORDS
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="text-[9px] opacity-40 uppercase border-b border-white/5">
+                <tr>
+                    <th class="p-4">ID</th>
+                    <th class="p-4">User</th>
+                    <th class="p-4">Type</th>
+                    <th class="p-4">Amount</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4">Timestamp</th>
+                    <th class="p-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-xs" id="transactionsTable">
+                {% for tx in transactions %}
+                <tr class="border-b border-white/5 hover:bg-white/5 transaction-row" 
+                    data-status="{{ tx.status }}" 
+                    data-type="{{ tx.transaction_type }}">
+                    <td class="p-4 font-mono">{{ tx.id }}</td>
+                    <td class="p-4">
+                        <span class="font-bold">{{ tx.user.username }}</span><br>
+                        <span class="text-[9px] opacity-50">{{ tx.user.email }}</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2 py-1 bg-blue-600 text-white text-xs rounded">{{ tx.transaction_type }}</span>
+                    </td>
+                    <td class="p-4 font-mono text-emerald-500 font-bold">₦{{ tx.amount|floatformat:2 }}</td>
+                    <td class="p-4">
+                        {% if tx.status == 'successful' %}
+                        <span class="text-green-500">● Successful</span>
+                        {% elif tx.status == 'pending' %}
+                        <span class="text-yellow-500">● Pending</span>
+                        {% else %}
+                        <span class="text-red-500">● Failed</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4">{{ tx.timestamp|date:"M d, H:i:s" }}</td>
+                    <td class="p-4 space-x-2">
+                        <button onclick="viewTransactionDetails({{ tx.id }})" class="text-blue-500 hover:text-blue-400" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        {% if tx.status == 'pending' %}
+                        <button onclick="retryTransaction({{ tx.id }})" class="text-orange-500 hover:text-orange-400" title="Retry">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        {% endif %}
+                        <button onclick="confirmAction('Refund transaction #{{ tx.id }}?', () => refundTransaction({{ tx.id }}))" class="text-red-500 hover:text-red-400" title="Refund">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if transactions.has_other_pages %}
+    <div class="p-4 border-t border-white/5 flex justify-between items-center">
+        <div class="text-sm opacity-70">
+            Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
+        </div>
+        <div class="space-x-2">
+            {% if transactions.has_previous %}
+            <a href="?page={{ transactions.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}" class="btn-secondary">Previous</a>
+            {% endif %}
+            {% if transactions.has_next %}
+            <a href="?page={{ transactions.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}" class="btn-secondary">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Transaction Detail Modal -->
+<div id="transactionModal" class="fixed inset-0 bg-black/95 hidden z-[999] flex items-center justify-center p-4">
+    <div class="terminal-card w-full max-w-2xl p-8 border-orange-600/50 shadow-[0_0_50px_rgba(249,115,22,0.2)]">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-white underline decoration-orange-600">TRANSACTION_DETAILS</h3>
+            <button onclick="hideModal('transactionModal')" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div id="transactionModalContent">
+            <!-- Content loaded via AJAX -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function viewTransactionDetails(txId) {
+    fetch(`/admin/transaction/${txId}/details/`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('transactionModalContent').innerHTML = data.html;
+        showModal('transactionModal');
+    });
+}
+
+function retryTransaction(txId) {
+    if (confirm('Retry this transaction?')) {
+        fetch(`/admin/transaction/${txId}/retry/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+function refundTransaction(txId) {
+    if (confirm('Process refund for this transaction?')) {
+        fetch(`/admin/transaction/${txId}/refund/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+function exportTransactions() {
+    const status = document.getElementById('statusFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    let url = '/admin/transactions/export/';
+    if (status) url += `?status=${status}`;
+    if (type) url += `${status ? '&' : '?'}type=${type}`;
+    window.location.href = url;
+}
+
+// Filter functionality
+document.getElementById('statusFilter').addEventListener('change', filterTransactions);
+document.getElementById('typeFilter').addEventListener('change', filterTransactions);
+
+function filterTransactions() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    const rows = document.querySelectorAll('.transaction-row');
+    
+    rows.forEach(row => {
+        const status = row.dataset.status;
+        const type = row.dataset.type;
+        const statusMatch = !statusFilter || status === statusFilter;
+        const typeMatch = !typeFilter || type === typeFilter;
+        row.style.display = statusMatch && typeMatch ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIN DATASUB | ADMIN TERMINAL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #050505; --card: #0a0a0a; --text: #e0e0e0; --border: #1a1a1a; --neon: #ff6600; }
+        .light-mode { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --border: #e2e8f0; --neon: #ea580c; }
+
+        body { background-color: var(--bg); color: var(--text); transition: all 0.3s ease; font-family: 'Courier New', monospace; }
+        .terminal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+        .neon-orange { color: var(--neon); }
+        #mobile-sidebar { transition: transform 0.3s ease-in-out; }
+        input, select, textarea { background: #111 !important; border: 1px solid #222 !important; color: white !important; }
+        .light-mode input, .light-mode select, .light-mode textarea { background: #fff !important; border: 1px solid #cbd5e1 !important; color: #1a1a1a !important; }
+        .btn-primary { background: var(--neon); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: bold; }
+        .btn-primary:hover { background: #e55a00; }
+        .btn-secondary { background: #333; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; }
+        .btn-secondary:hover { background: #555; }
+        .table-header { background: #111; border-bottom: 1px solid var(--border); }
+        .table-row:hover { background: #222; }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-x-hidden">
+
+    <!-- Mobile Sidebar -->
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#080808] border-r border-white/10 z-[100] transform -translate-x-full md:hidden p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-xl font-black neon-orange italic">ADMIN_MENU</h1>
+            <button onclick="toggleSidebar()"><i class="fas fa-times text-2xl text-white"></i></button>
+        </div>
+        <nav class="space-y-6 flex-1">
+            <a href="{% url 'admin_dashboard' %}" class="block font-bold text-orange-500 underline">OVERVIEW</a>
+            <a href="{% url 'admin_users' %}" class="block opacity-70 text-white">USER_MGMT</a>
+            <a href="{% url 'admin_transactions' %}" class="block opacity-70 text-white">TRANSACTIONS</a>
+            <a href="{% url 'admin_plans' %}" class="block opacity-70 text-white">DATA_PLANS</a>
+            <a href="{% url 'admin_reports' %}" class="block opacity-70 text-white">REPORTS</a>
+            <a href="{% url 'admin_settings' %}" class="block opacity-70 text-white">SYSTEM_SETTINGS</a>
+            <button onclick="toggleTheme()" class="text-left text-white opacity-70 w-full font-bold uppercase text-xs">
+                <i class="fas fa-sun mr-2"></i> SWITCH_THEME
+            </button>
+            <a href="{% url 'dashboard' %}" class="block text-red-500 font-bold border-t border-white/5 pt-4">EXIT_APP</a>
+        </nav>
+    </div>
+
+    <!-- Desktop Sidebar -->
+    <aside class="w-64 border-r border-white/5 bg-black/20 hidden md:flex flex-col p-6 shadow-2xl">
+        <h1 class="text-2xl font-black neon-orange italic tracking-tighter mb-10">BIN_DATASUB</h1>
+        <nav class="space-y-4 flex-1">
+            <a href="{% url 'admin_dashboard' %}" class="block p-3 bg-orange-600/10 border-l-4 border-orange-600 font-bold">SYSTEM_OVERVIEW</a>
+            <a href="{% url 'admin_users' %}" class="block p-3 opacity-60 hover:opacity-100">USER_DATABASE</a>
+            <a href="{% url 'admin_transactions' %}" class="block p-3 opacity-60 hover:opacity-100">TRANSACTIONS</a>
+            <a href="{% url 'admin_plans' %}" class="block p-3 opacity-60 hover:opacity-100">DATA_PLANS</a>
+            <a href="{% url 'admin_reports' %}" class="block p-3 opacity-60 hover:opacity-100">REPORTS</a>
+            <a href="{% url 'admin_settings' %}" class="block p-3 opacity-60 hover:opacity-100">SYSTEM_SETTINGS</a>
+            <button onclick="toggleTheme()" class="w-full mt-10 p-3 rounded-xl border border-orange-600/30 flex items-center justify-center gap-2 hover:bg-orange-600/10">
+                <i class="fas fa-circle-half-stroke text-orange-600"></i>
+                <span class="text-xs font-bold uppercase">Toggle Theme</span>
+            </button>
+            <a href="{% url 'dashboard' %}" class="block p-3 text-red-500 mt-20 italic font-bold">EXIT_TO_APP</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-8 w-full">
+        <div class="md:hidden flex justify-between items-center mb-6">
+            <button onclick="toggleSidebar()" class="p-2 text-orange-500"><i class="fas fa-bars text-2xl"></i></button>
+            <h1 class="text-lg font-black neon-orange italic">ADMIN_PANEL</h1>
+            <div></div>
+        </div>
+
+        <div class="hidden md:flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold uppercase tracking-widest">{% block page_title %}Admin Console{% endblock %}</h2>
+                <p class="opacity-50 text-xs mt-1">ROOT@ADMIN:~#</p>
+            </div>
+            {% block page_actions %}{% endblock %}
+        </div>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('mobile-sidebar').classList.toggle('-translate-x-full');
+        }
+        function toggleTheme() {
+            const isLight = document.documentElement.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('theme') === 'light') document.documentElement.classList.add('light-mode');
+        });
+
+        // Global functions for modals and actions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+        function confirmAction(message, callback) {
+            if (confirm(message)) {
+                callback();
+            }
+        }
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

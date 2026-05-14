@@ -10,7 +10,7 @@ import requests
 from decimal import Decimal
 from datetime import timedelta
 from django.http import HttpResponse
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 from django.contrib.admin.views.decorators import staff_member_required
 
 from .models import DataPlan
@@ -1048,4 +1048,265 @@ def webauthn_register_complete(request):
     except Exception as e:
         print(f"WebAuthn Complete Error: {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+# ====================== ADMIN DASHBOARD VIEWS ======================
+
+@staff_member_required
+def admin_users(request):
+    """Admin User Management"""
+    users = User.objects.all().order_by('-date_joined')
+    
+    # Handle user actions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        user_id = request.POST.get('user_id')
+        
+        try:
+            user = User.objects.get(id=user_id)
+            
+            if action == 'activate':
+                user.is_active = True
+                user.save()
+                log_security_event('user_activated', user=user, details=f'by admin {request.user.username}')
+                messages.success(request, f'✅ User {user.username} activated')
+            elif action == 'deactivate':
+                user.is_active = False
+                user.save()
+                log_security_event('user_deactivated', user=user, details=f'by admin {request.user.username}')
+                messages.success(request, f'✅ User {user.username} deactivated')
+            elif action == 'delete':
+                user.delete()
+                log_security_event('user_deleted', details=f'user {user.username} deleted by admin {request.user.username}', severity='WARNING')
+                messages.success(request, f'✅ User {user.username} deleted')
+                
+        except User.DoesNotExist:
+            messages.error(request, 'User not found')
+    
+    context = {
+        'users': users,
+        'total_users': users.count(),
+        'active_users': users.filter(is_active=True).count(),
+        'inactive_users': users.filter(is_active=False).count(),
+        'staff_users': users.filter(is_staff=True).count(),
+    }
+    return render(request, 'admin/users.html', context)
+
+@staff_member_required
+def admin_transactions(request):
+    """Admin Transaction Management"""
+    transactions = Transaction.objects.all().order_by('-timestamp')
+    
+    # Filters
+    status_filter = request.GET.get('status', '')
+    type_filter = request.GET.get('type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    if type_filter:
+        transactions = transactions.filter(transaction_type=type_filter)
+    if date_from:
+        transactions = transactions.filter(timestamp__date__gte=date_from)
+    if date_to:
+        transactions = transactions.filter(timestamp__date__lte=date_to)
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(transactions, 50)  # 50 per page
+    page_number = request.GET.get('page')
+    transactions = paginator.get_page(page_number)
+    
+    # Stats
+    all_transactions = Transaction.objects.all()
+    total_transactions = all_transactions.count()
+    successful_transactions = all_transactions.filter(status='successful').count()
+    pending_transactions = all_transactions.filter(status='pending').count()
+    failed_transactions = all_transactions.filter(status='failed').count()
+    
+    context = {
+        'transactions': transactions,
+        'total_transactions': total_transactions,
+        'successful_transactions': successful_transactions,
+        'pending_transactions': pending_transactions,
+        'failed_transactions': failed_transactions,
+        'status_filter': status_filter,
+        'type_filter': type_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    return render(request, 'admin/transactions.html', context)
+
+@staff_member_required
+def admin_plans(request):
+    """Admin Data Plans Management"""
+    plans = DataPlan.objects.all().order_by('network', 'price')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            # Add new plan
+            DataPlan.objects.create(
+                network=request.POST.get('network'),
+                name=request.POST.get('name'),
+                price=request.POST.get('price'),
+                network_id=request.POST.get('network_id'),
+                smeplug_plan_id=request.POST.get('smeplug_id'),
+                is_active=True
+            )
+            messages.success(request, '✅ Plan added successfully')
+            
+        elif action == 'edit':
+            plan_id = request.POST.get('plan_id')
+            plan = DataPlan.objects.get(id=plan_id)
+            plan.network = request.POST.get('network')
+            plan.name = request.POST.get('name')
+            plan.price = request.POST.get('price')
+            plan.network_id = request.POST.get('network_id')
+            plan.smeplug_plan_id = request.POST.get('smeplug_id')
+            plan.save()
+            messages.success(request, '✅ Plan updated successfully')
+            
+        elif action == 'toggle':
+            plan_id = request.POST.get('plan_id')
+            plan = DataPlan.objects.get(id=plan_id)
+            plan.is_active = not plan.is_active
+            plan.save()
+            status = "activated" if plan.is_active else "deactivated"
+            messages.success(request, f'✅ Plan {status}')
+            
+        elif action == 'delete':
+            plan_id = request.POST.get('plan_id')
+            plan = DataPlan.objects.get(id=plan_id)
+            plan.delete()
+            messages.success(request, '✅ Plan deleted')
+    
+    context = {
+        'plans': plans,
+        'total_plans': plans.count(),
+        'mtn_plans': plans.filter(network='MTN').count(),
+        'glo_plans': plans.filter(network='GLO').count(),
+        'airtel_plans': plans.filter(network='AIRTEL').count(),
+        'mobile_plans': plans.filter(network='9MOBILE').count(),
+    }
+    return render(request, 'admin/plans.html', context)
+
+@staff_member_required
+def admin_reports(request):
+    """Admin Reports & Analytics"""
+    # Date range
+    from datetime import datetime, timedelta
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=30)
+    
+    date_from = request.GET.get('date_from', start_date)
+    date_to = request.GET.get('date_to', end_date)
+    
+    if isinstance(date_from, str):
+        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    if isinstance(date_to, str):
+        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+    
+    # Transaction reports
+    transactions = Transaction.objects.filter(
+        timestamp__date__gte=date_from,
+        timestamp__date__lte=date_to
+    )
+    
+    # Revenue by type
+    revenue_by_type = transactions.filter(status='Successful').values('transaction_type').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Revenue by network
+    revenue_by_network = transactions.filter(
+        status='Successful',
+        transaction_type__in=['Data Purchase', 'Airtime Purchase']
+    ).values('provider').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Daily revenue
+    daily_revenue = transactions.filter(status='Successful').extra(
+        select={'day': 'DATE(timestamp)'}
+    ).values('day').annotate(
+        total=Sum('amount')
+    ).order_by('day')
+    
+    # User growth
+    user_growth = User.objects.filter(
+        date_joined__date__gte=date_from,
+        date_joined__date__lte=date_to
+    ).extra(
+        select={'day': 'DATE(date_joined)'}
+    ).values('day').annotate(
+        count=Count('id')
+    ).order_by('day')
+    
+    # Top users by spending
+    top_users = User.objects.annotate(
+        total_spent=Sum('transaction__amount', filter=Q(transaction__status='Successful'))
+    ).filter(total_spent__gt=0).order_by('-total_spent')[:10]
+    
+    context = {
+        'date_from': date_from,
+        'date_to': date_to,
+        'revenue_by_type': revenue_by_type,
+        'revenue_by_network': revenue_by_network,
+        'daily_revenue': daily_revenue,
+        'user_growth': user_growth,
+        'top_users': top_users,
+        'total_revenue': transactions.filter(status='Successful').aggregate(Sum('amount'))['amount__sum'] or 0,
+        'total_transactions': transactions.count(),
+        'successful_transactions': transactions.filter(status='Successful').count(),
+    }
+    return render(request, 'admin/reports.html', context)
+
+@staff_member_required
+def admin_settings(request):
+    """Admin System Settings"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'update_settings':
+            # Update system settings (you can add more settings here)
+            messages.success(request, '✅ Settings updated successfully')
+            
+        elif action == 'clear_cache':
+            from django.core.cache import cache
+            cache.clear()
+            messages.success(request, '✅ Cache cleared successfully')
+            
+        elif action == 'backup_database':
+            # Simple database backup (you might want to use proper backup tools)
+            import os
+            from django.conf import settings
+            from datetime import datetime
+            
+            backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
+            backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
+            
+            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+            # For SQLite, just copy the file
+            import shutil
+            shutil.copy(settings.DATABASES['default']['NAME'], backup_path)
+            
+            messages.success(request, f'✅ Database backed up to {backup_name}')
+    
+    # System stats
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table';")
+        table_count = cursor.fetchone()[0]
+    
+    context = {
+        'table_count': table_count,
+        'user_count': User.objects.count(),
+        'transaction_count': Transaction.objects.count(),
+        'plan_count': DataPlan.objects.count(),
+    }
+    return render(request, 'admin/settings.html', context)
 

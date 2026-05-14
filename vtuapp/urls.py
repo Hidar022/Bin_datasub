@@ -51,7 +51,12 @@ urlpatterns = [
     path('webauthn/register/', views.webauthn_register_options, name='webauthn_register_options'),
     path('webauthn/register/complete/', views.webauthn_register_complete, name='webauthn_register_complete'),
 
+    # Admin Dashboard Routes
     path('ceo-panel/', views.admin_dashboard, name='admin_dashboard'),
     path('ceo/add-plan/', views.add_plan, name='add_plan'),
-     
+    path('admin/users/', views.admin_users, name='admin_users'),
+    path('admin/transactions/', views.admin_transactions, name='admin_transactions'),
+    path('admin/plans/', views.admin_plans, name='admin_plans'),
+    path('admin/reports/', views.admin_reports, name='admin_reports'),
+    path('admin/settings/', views.admin_settings, name='admin_settings'),
 ]
