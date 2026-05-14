@@ -1,28 +1,48 @@
 from django import forms
 from .models import DataPlan
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm # Fixed Import here
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
+
+# ✅ SECURITY: Phone number validator
+phone_validator = RegexValidator(
+    r'^0[789]\d{8}$',
+    'Please enter a valid Nigerian phone number (e.g., 08012345678)'
+)
 
 class AirtimeForm(forms.Form):
     NETWORK_CHOICES = [('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')]
     network = forms.ChoiceField(choices=NETWORK_CHOICES)
-    phone = forms.CharField(max_length=11, widget=forms.TextInput(attrs={'placeholder': '08012345678'}))
+    phone = forms.CharField(
+        max_length=11, 
+        validators=[phone_validator],
+        widget=forms.TextInput(attrs={'placeholder': '08012345678'})
+    )
     amount = forms.DecimalField(max_digits=6, decimal_places=2, min_value=50)
 
 class DataForm(forms.Form):
     NETWORK_CHOICES = [('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')]
     network = forms.ChoiceField(choices=NETWORK_CHOICES)
-    phone = forms.CharField(max_length=11)
+    phone = forms.CharField(
+        max_length=11,
+        validators=[phone_validator]
+    )
     amount = forms.DecimalField(max_digits=6, decimal_places=2, min_value=100)
 
 class ElectricityForm(forms.Form):
     provider = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'placeholder': 'IKEJA Electric'}))
-    meter_number = forms.CharField(max_length=20)
+    meter_number = forms.CharField(
+        max_length=20,
+        validators=[RegexValidator(r'^\d{10,12}$', 'Invalid meter number')]
+    )
     amount = forms.DecimalField(max_digits=8, decimal_places=2, min_value=1000)
 
 class CableTVForm(forms.Form):
     provider = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'placeholder': 'DSTV / GOTV'}))
-    smartcard_number = forms.CharField(max_length=20)
+    smartcard_number = forms.CharField(
+        max_length=20,
+        validators=[RegexValidator(r'^\d{10,20}$', 'Invalid smart card number')]
+    )
     amount = forms.DecimalField(max_digits=8, decimal_places=2, min_value=1000)
 
 class DataPurchaseForm(forms.Form):
@@ -30,7 +50,11 @@ class DataPurchaseForm(forms.Form):
         ('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')
     ])
     plan = forms.ModelChoiceField(queryset=DataPlan.objects.filter(is_active=True), empty_label="Select a data plan")
-    phone = forms.CharField(max_length=11, widget=forms.TextInput(attrs={'placeholder': '08012345678'}))
+    phone = forms.CharField(
+        max_length=11, 
+        validators=[phone_validator],
+        widget=forms.TextInput(attrs={'placeholder': '08012345678'})
+    )
     pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
 # --- AUTH FORMS ---

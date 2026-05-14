@@ -28,14 +28,9 @@ class VTUApiService:
             "phone": phone
         }
 
-        print("=== FINAL PAYLOAD TO SMEPLUG ===")
-        print(payload)
-        print("================================")
-
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=30)
-            print(f"Status Code: {response.status_code}")
-            print("Full Response:", response.text)
+            logger.info(f"SMEPlug Data Purchase - Status: {response.status_code}")
 
             # 1. Safely parse JSON so 'data' always exists
             try:
@@ -51,12 +46,11 @@ class VTUApiService:
                     return {
                         'success': True,
                         'provider': 'smeplug',
-                        'transaction_id': inner_data.get('reference'),
+                        'reference': inner_data.get('reference'),
                         'message': inner_data.get('msg', 'Success')
                     }
 
             # 3. Handle failures safely
-            # Smeplug usually puts errors in 'msg' or 'message'
             error_msg = data.get('msg') or data.get('message') or f"Status {response.status_code}: Purchase failed"
             return {
                 'success': False, 
@@ -64,7 +58,7 @@ class VTUApiService:
             }
 
         except Exception as e:
-            print(f"Exception in buy_data: {e}")
+            logger.error(f"SMEPlug API Error: {e}")
             return {
                 'success': False, 
                 'message': 'Connection error or Timeout. Check SMEPlug dashboard.'
@@ -88,8 +82,9 @@ class VTUApiService:
 
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=30)
+            logger.info(f"SMEPlug Airtime Purchase - Status: {response.status_code}")
             
-            # === THE FIX: Always initialize data ===
+            # Always initialize data
             try:
                 data = response.json()
             except ValueError:
@@ -109,5 +104,5 @@ class VTUApiService:
             return {'success': False, 'message': error_msg}
             
         except Exception as e:
-            # This is where your 'Connection Error' was coming from
+            logger.error(f"SMEPlug API Error: {e}")
             return {'success': False, 'message': f'API Error: {str(e)}'}

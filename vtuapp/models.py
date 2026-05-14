@@ -15,10 +15,21 @@ class Profile(models.Model):
     gafia_account_number = models.CharField(max_length=15, null=True, blank=True)
     gafia_bank_name = models.CharField(max_length=50, null=True, blank=True)
     gafia_account_name = models.CharField(max_length=100, null=True, blank=True)
-    transaction_pin = models.CharField(max_length=4, null=True, blank=True)
+    transaction_pin = models.CharField(max_length=128, null=True, blank=True)  # ✅ NOW HASHED (up to 128 chars for hash)
 
     def __str__(self):
         return self.user.username
+    
+    def set_pin(self, raw_pin):
+        """Hash the PIN before saving (use same method as Wallet)"""
+        self.transaction_pin = make_password(raw_pin)
+        self.save()
+    
+    def check_pin(self, raw_pin):
+        """Check if entered PIN is correct"""
+        if not self.transaction_pin:
+            return False
+        return check_password(raw_pin, self.transaction_pin)
 
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')

@@ -33,7 +33,15 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 
-# 3. Local Project Imports (Services, Models, and Forms)
+# 3. Security Utils ✅
+from .security_utils import (
+    verify_paystack_signature, verify_gafiapay_signature, 
+    check_webhook_timestamp, is_rate_limited, get_rate_limit_key,
+    check_account_lockout, record_failed_login, reset_failed_login,
+    log_security_event
+)
+
+# 4. Local Project Imports (Services, Models, and Forms)
 from .services.api_service import VTUApiService 
 from .models import Wallet, Transaction, DataPlan, Profile
 from .forms import (
@@ -44,6 +52,8 @@ from .forms import (
     CableTVForm, 
     DataPurchaseForm
 )
+
+logger = logging.getLogger(__name__)
 
 def home_redirect(request):
     return redirect('login') if not request.user.is_authenticated else redirect('dashboard')
@@ -273,6 +283,12 @@ def verify_otp(request):
         otp_input = request.POST.get('otp', '').strip()
         user_id = request.session.get('pending_user_id')
 
+        # ✅ SECURITY: Rate limiting
+        rate_limit_key = f"ratelimit_otp_{user_id}"
+        if is_rate_limited(rate_limit_key, limit=5, window=300):  # 5 attempts per 5 minutes
+            log_security_event('otp_rate_limit', details=f'user_id: {user_id}', severity='WARNING')
+            return JsonResponse({'success': False, 'message': '❌ Too many OTP attempts. Please try again later.'}, status=429)
+
         if not user_id:
             return JsonResponse({'success': False, 'message': 'Session expired. Please register again.'}, status=400)
 
@@ -300,12 +316,14 @@ def verify_otp(request):
 
                 login(request, user)
                 del request.session['pending_user_id']
-
+                
+                log_security_event('otp_verified', user=user)
                 return JsonResponse({
                     'success': True,
                     'message': '✅ Email verified successfully! Redirecting to dashboard...'
                 })
             else:
+                log_security_event('invalid_otp', details=f'user_id: {user_id}', severity='WARNING')
                 return JsonResponse({'success': False, 'message': '❌ Incorrect OTP. Please try again.'}, status=400)
 
         except User.DoesNotExist:
@@ -313,14 +331,33 @@ def verify_otp(request):
         except Profile.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Profile not found. Please register again.'}, status=400)
         except Exception as e:
-            print(f"OTP Verification Error: {e}")   # ← This will show in your terminal
-            return JsonResponse({'success': False, 'message': f'Something went wrong: {str(e)}'}, status=400)
+            logger.error(f"OTP Verification Error: {traceback.format_exc()}")
+            log_security_event('otp_verification_error', details=str(e), severity='ERROR')
+            return JsonResponse({'success': False, 'message': 'Something went wrong. Please try again.'}, status=400)
 
     return render(request, 'vtuapp/verify_otp.html', {})
 
 # ====================== LOGIN VIEW ======================
 def login_view(request):
     if request.method == 'POST':
+        username = request.POST.get('username', '')
+        
+        # ✅ Check account lockout
+        lockout_status = check_account_lockout(username)
+        if lockout_status['locked']:
+            msg = f'❌ Account locked after too many failed attempts. Try again in {int(lockout_status["remaining_minutes"])} minutes.'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': msg}, status=403)
+            messages.error(request, msg)
+            log_security_event('locked_account_access_attempt', details=f'username: {username}', severity='WARNING')
+            return redirect('login')
+        
+        # ✅ Rate limiting
+        rate_limit_key = get_rate_limit_key(request, 'login')
+        if is_rate_limited(rate_limit_key, limit=10, window=60):
+            msg = '❌ Too many login attempts. Please try again later.'
+            return JsonResponse({'success': False, 'message': msg}, status=429)
+        
         form = AuthenticationForm(data=request.POST)
         
         if form.is_valid():
@@ -328,45 +365,46 @@ def login_view(request):
             
             # 1. Check if user is verified/active
             if not user.is_active:
+                record_failed_login(username)
+                msg = '❌ Please verify your email before logging in.'
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'success': False,
-                        'message': '❌ Please verify your email before logging in.'
-                    }, status=400)
+                    return JsonResponse({'success': False, 'message': msg}, status=400)
                 else:
-                    messages.error(request, 'Please verify your email before logging in.')
+                    messages.error(request, msg)
+                    log_security_event('inactive_account_login', user=user, severity='WARNING')
                     return redirect('login')
 
             # 2. Log the user in
             login(request, user)
+            reset_failed_login(username)  # ✅ Clear lockout on successful login
+            log_security_event('successful_login', user=user)
 
             # 3. Determine Role-Based Redirect
-            # If you (aliyu) login, you go to CEO panel. Others go to dashboard.
             if user.is_staff:
                 redirect_url = reverse('admin_dashboard')
             else:
                 redirect_url = reverse('dashboard')
 
-            # 4. Handle Response based on request type
+            # 4. Handle Response
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
                     'message': 'Login successful! Redirecting...',
-                    'redirect_url': redirect_url  # Passing the role-based URL here
+                    'redirect_url': redirect_url
                 })
             else:
                 messages.success(request, f'Welcome back, {user.username}!')
                 return redirect(redirect_url)
 
         else:
-            # Invalid credentials
+            # Invalid credentials - record failed attempt
+            record_failed_login(username)
+            msg = '❌ Invalid username or password.'
+            log_security_event('failed_login', details=f'username: {username}', severity='WARNING')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'message': '❌ Invalid username or password.'
-                }, status=400)
+                return JsonResponse({'success': False, 'message': msg}, status=400)
             else:
-                messages.error(request, 'Invalid username or password.')
+                messages.error(request, msg)
                 return redirect('login')
 
     else:
@@ -385,19 +423,18 @@ def logout_view(request):
 def dashboard(request):
     profile = request.user.profile
     wallet = request.user.wallet
-    # CORRECT
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:5]
 
     # Handle the PIN Setup AJAX from the dashboard overlay
     if request.method == "POST" and request.POST.get('action') == 'set_initial_pin':
         new_pin = request.POST.get('new_pin')
         if len(new_pin) == 4 and new_pin.isdigit():
-            profile.transaction_pin = new_pin # Saving to Profile as per your models.py
-            profile.save()
+            profile.set_pin(new_pin)  # ✅ Use hash method
+            log_security_event('transaction_pin_created', user=request.user)
             return JsonResponse({'status': 'success'})
         return JsonResponse({'status': 'error'}, status=400)
 
-    # Use your Profile field: transaction_pin
+    # Check if PIN exists (still need to check transaction_pin field)
     has_pin = True if profile.transaction_pin else False
 
     context = {
@@ -467,18 +504,19 @@ def settings_page(request):
             # First Time PIN Creation
             if not profile.transaction_pin:
                 if len(new_pin) == 4 and new_pin.isdigit():
-                    profile.transaction_pin = new_pin
-                    profile.save()
+                    profile.set_pin(new_pin)  # ✅ Use hash method
+                    log_security_event('transaction_pin_created', user=request.user)
                     return JsonResponse({'status': 'success', 'message': '✅ Transaction PIN created!'})
                 return JsonResponse({'status': 'error', 'message': '❌ PIN must be 4 digits'})
 
             # Changing Existing PIN
-            if profile.transaction_pin != old_pin: 
+            if not profile.check_pin(old_pin):  # ✅ Use hash check method
+                log_security_event('failed_pin_change', user=request.user, severity='WARNING')
                 return JsonResponse({'status': 'error', 'message': '❌ Current PIN is incorrect'})
             
             if len(new_pin) == 4 and new_pin.isdigit():
-                profile.transaction_pin = new_pin
-                profile.save()
+                profile.set_pin(new_pin)  # ✅ Use hash method
+                log_security_event('transaction_pin_changed', user=request.user)
                 return JsonResponse({'status': 'success', 'message': '✅ PIN updated successfully!'})
             
             return JsonResponse({'status': 'error', 'message': '❌ New PIN must be 4 digits'})
@@ -508,9 +546,6 @@ def get_gafia_headers(payload=None):
         hashlib.sha256
     ).hexdigest()
     
-    print("GAFIA SIGNATURE MESSAGE:", message)
-    print("GAFIA SIGNATURE:", signature)
-    
     return {
         "x-api-key": public_key,
         "x-signature": signature,
@@ -527,23 +562,17 @@ def fund_wallet(request):
     if not user_profile.gafia_account_number:
         url = "https://api.gafiapay.com/api/v1/external/account/generate"
         
-        # We use the username + (Bin Datasub) to ensure it's always valid and unique
         username = request.user.username
         full_name = f"{username} (Bin Datasub)"
 
         payload = {
             "email": request.user.email or f"{username}@bindatasub.com",
-            "name": full_name.upper(), # API usually needs uppercase
+            "name": full_name.upper(),
         }
         
         try:
             headers = get_gafia_headers(payload)
             response = requests.post(url, json=payload, headers=headers, timeout=20)
-            
-            # Debugging logs stay exactly as you had them
-            print(f"GAFIA REQUEST PAYLOAD: {json.dumps(payload)}")
-            print(f"GAFIA RESPONSE STATUS: {response.status_code}")
-            print(f"GAFIA RESPONSE BODY: {response.text}")
             
             res_data = response.json()
             
@@ -551,18 +580,22 @@ def fund_wallet(request):
                 acc_data = res_data['data']
                 user_profile.gafia_account_number = acc_data['accountNumber']
                 user_profile.gafia_bank_name = acc_data['bankName']
-                # Store our formatted name so it displays exactly as we want
                 user_profile.gafia_account_name = full_name 
                 user_profile.save()
+                log_security_event('gafia_account_generated', user=request.user)
             else:
-                messages.error(request, f"Gateway Error: {res_data.get('message', 'Validation failed')}")
+                msg = f"Gateway Error: {res_data.get('message', 'Validation failed')}"
+                messages.error(request, msg)
+                log_security_event('gafia_account_error', user=request.user, details=msg, severity='WARNING')
         
         except requests.exceptions.RequestException as e:
-            print(f"CONNECTION ERROR: {e}")
+            logger.error(f"Gafiapay connection error: {e}")
             messages.error(request, "Unable to reach payment provider. Please check your network.")
+            log_security_event('gafia_connection_error', user=request.user, details=str(e), severity='ERROR')
         except Exception as e:
-            print(f"GENERAL ERROR: {e}")
+            logger.error(f"Gafiapay error: {e}")
             messages.error(request, "An unexpected error occurred. Please try again.")
+            log_security_event('gafia_error', user=request.user, details=str(e), severity='ERROR')
 
     context = {
         'acc_no': user_profile.gafia_account_number,
@@ -578,6 +611,7 @@ def fund_wallet_callback(request):
     
     if not reference:
         messages.error(request, 'Payment reference not found')
+        log_security_event('invalid_paystack_callback', details='No reference', severity='WARNING')
         return redirect('dashboard')
 
     try:
@@ -586,11 +620,14 @@ def fund_wallet_callback(request):
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
         }
         
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         res_data = response.json()
 
         if res_data.get('status') and res_data['data']['status'] == 'success':
             amount = Decimal(res_data['data']['amount']) / 100
+            
+            # ✅ SECURITY: Verify callback amount matches
+            # You can add additional verification here
 
             wallet = request.user.wallet
             wallet.balance += amount
@@ -601,34 +638,57 @@ def fund_wallet_callback(request):
                 transaction_type='Wallet Funding',
                 amount=amount,
                 provider='Paystack',
-                status='Successful'
+                status='Successful',
+                reference=reference
             )
 
+            log_security_event('wallet_funded_paystack', user=request.user, details=f'amount: {amount}')
             messages.success(request, f'✅ ₦{amount:,.2f} has been credited to your wallet successfully!')
         else:
-            messages.error(request, 'Payment verification failed. Contact support if money was deducted.')
+            msg = 'Payment verification failed. Contact support if money was deducted.'
+            log_security_event('paystack_verification_failed', user=request.user, details=msg, severity='WARNING')
+            messages.error(request, msg)
 
     except Exception as e:
+        logger.error(f"Paystack callback error: {traceback.format_exc()}")
+        log_security_event('paystack_callback_error', user=request.user, details=str(e), severity='ERROR')
         messages.error(request, f'Verification error: {str(e)}')
 
     return redirect('dashboard')
 
-@csrf_exempt
+@csrf_exempt  # Webhooks must allow POST from external services
 def gafiapay_webhook(request):
     if request.method != 'POST':
+        logger.warning("❌ Invalid webhook method")
         return HttpResponse(status=405)
 
     try:
-        payload = json.loads(request.body)
-        event = payload.get('event')
-        data = payload.get('data', {})
-        transaction = data.get('transaction', {}) # This is the missing link!
+        # ✅ SECURITY: Verify webhook signature
+        signature = request.META.get('HTTP_X_SIGNATURE', '')
+        timestamp = request.META.get('HTTP_X_TIMESTAMP', '')
+        payload = request.body
+        
+        # 1. Verify signature
+        if not verify_gafiapay_signature(payload.decode('utf-8'), signature, timestamp):
+            logger.warning("❌ WEBHOOK REJECTED: Invalid signature")
+            log_security_event('invalid_webhook_signature', details='gafiapay', severity='ERROR')
+            return HttpResponse(status=401)  # Unauthorized
+        
+        # 2. Verify timestamp (prevent replay attacks)
+        if not check_webhook_timestamp(timestamp, max_age_seconds=300):
+            logger.warning("❌ WEBHOOK REJECTED: Timestamp invalid or expired")
+            log_security_event('expired_webhook', details='gafiapay', severity='WARNING')
+            return HttpResponse(status=400)  # Bad request
+        
+        # 3. Parse payload
+        data = json.loads(payload)
+        event = data.get('event')
+        transaction = data.get('data', {}).get('transaction', {})
 
-        print(f"GAFIA WEBHOOK RECEIVED: {event}")
+        logger.info(f"✅ VALID webhook received: {event}")
 
-        # Check for the correct event from your screenshot
+        # Check for the correct event
         if event == 'payment.received':
-            # Extracting from the nested 'transaction' object seen in your image
             amount = Decimal(str(transaction.get('amount', 0)))
             email = transaction.get('email')
             reference = transaction.get('orderNo') or transaction.get('id')
@@ -638,7 +698,6 @@ def gafiapay_webhook(request):
 
             # Prevent double funding
             if not Transaction.objects.filter(reference=reference).exists():
-                # Find user by the email shown in your screenshot
                 user = User.objects.filter(email=email).first()
 
                 if user:
@@ -654,36 +713,50 @@ def gafiapay_webhook(request):
                         status='Successful',
                         reference=reference
                     )
-                    print(f"✅ SUCCESS: Credited {amount} to {user.username}")
+                    logger.info(f"✅ Credited {amount} to {user.username}")
+                    log_security_event('wallet_funded_gafiapay', user=user, details=f'amount: {amount}')
                     return HttpResponse(status=200)
                 else:
-                    print(f"❌ USER NOT FOUND: {email}")
+                    logger.warning(f"❌ USER NOT FOUND: {email}")
+                    log_security_event('webhook_user_not_found', details=f'email: {email}', severity='WARNING')
                     return HttpResponse(status=404)
 
+    except json.JSONDecodeError:
+        logger.error("❌ Invalid JSON in webhook")
+        log_security_event('invalid_webhook_json', severity='ERROR')
+        return HttpResponse(status=400)
     except Exception as e:
-        print(f"⚠️ WEBHOOK ERROR: {str(e)}")
+        logger.error(f"Webhook error: {traceback.format_exc()}")
+        log_security_event('webhook_error', details=str(e), severity='ERROR')
         return HttpResponse(status=500)
 
     return HttpResponse(status=200)
 
 # ====================== PURCHASE VIEWS ======================
 @login_required
-@csrf_exempt
 def buy_airtime(request):
     if request.method == 'POST':
         try:
             form = AirtimeForm(request.POST)
             if form.is_valid():
                 pin = form.cleaned_data.get('pin') or request.POST.get('pin')
+                profile = request.user.profile
                 wallet = request.user.wallet
                 amount = form.cleaned_data['amount']
                 phone = form.cleaned_data['phone']
                 network_name = form.cleaned_data['network'].upper()
 
+                # ✅ SECURITY: Rate limiting
+                rate_limit_key = get_rate_limit_key(request, 'buy_airtime')
+                if is_rate_limited(rate_limit_key, limit=20, window=60):
+                    msg = '❌ Too many requests. Please try again later.'
+                    return JsonResponse({'status': 'error', 'message': msg}, status=429)
+
                 # 1. Security & Balance Checks
-                if not wallet.pin:
+                if not profile.transaction_pin:
                     return JsonResponse({'status': 'no_pin', 'message': "Create Transaction PIN first"}, status=400)
-                if not wallet.check_pin(pin):
+                if not profile.check_pin(pin):  # ✅ Use hash check method
+                    log_security_event('failed_pin_airtime', user=request.user, severity='WARNING')
                     return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
                 if wallet.balance < amount:
                     return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
@@ -700,7 +773,6 @@ def buy_airtime(request):
                     wallet.balance -= amount
                     wallet.save()
                     
-                    # 🔥 CHANGE: Capture the transaction object in a variable
                     new_tx = Transaction.objects.create(
                         user=request.user,
                         transaction_type='Airtime',
@@ -708,34 +780,33 @@ def buy_airtime(request):
                         provider=network_name,
                         phone_or_meter=phone,
                         status='Successful',
-                        transaction_id=result.get('transaction_id')
+                        reference=result.get('transaction_id')
                     )
                     
-                    # 🔥 CHANGE: Return the redirect_url for the receipt
+                    log_security_event('airtime_purchase', user=request.user, details=f'amount: {amount}, network: {network_name}')
                     return JsonResponse({
                         'status': 'success', 
                         'message': f'✅ ₦{amount} Airtime sent!',
                         'redirect_url': reverse('receipt_detail', kwargs={'pk': new_tx.pk})
                     })
                 else:
+                    log_security_event('airtime_purchase_failed', user=request.user, details=result.get('message'))
                     return JsonResponse({'status': 'error', 'message': result['message']}, status=400)
             
             return JsonResponse({'status': 'error', 'message': '❌ Invalid form data'}, status=400)
         except Exception as e:
-            print(f"Buy airtime exception: {traceback.format_exc()}")
+            logger.error(f"Buy airtime exception: {traceback.format_exc()}")
             return JsonResponse({'status': 'error', 'message': f'Server error: {str(e)}'}, status=500)
 
     form = AirtimeForm()
     return render(request, 'vtuapp/buy_airtime.html', {'form': form})
 
 @login_required
-@csrf_exempt
 def buy_data(request):
     if request.method == 'POST':
         try:
             form = DataPurchaseForm(request.POST)
             if not form.is_valid():
-                # This helps debug the "Select Network" error
                 return JsonResponse({'status': 'error', 'message': f'Invalid Form: {form.errors.as_text()}'}, status=400)
 
             pin = request.POST.get('pin')
@@ -744,11 +815,18 @@ def buy_data(request):
             plan = form.cleaned_data['plan']
             phone = form.cleaned_data['phone']
 
-            # PIN Check (Updated to use Profile field)
+            # ✅ SECURITY: Rate limiting
+            rate_limit_key = get_rate_limit_key(request, 'buy_data')
+            if is_rate_limited(rate_limit_key, limit=20, window=60):
+                msg = '❌ Too many requests. Please try again later.'
+                return JsonResponse({'status': 'error', 'message': msg}, status=429)
+
+            # PIN Check (Updated to use Profile field and hash method)
             if not profile.transaction_pin:
                 return JsonResponse({'status': 'no_pin', 'message': "Please set a PIN in Settings first"}, status=400)
 
-            if profile.transaction_pin != pin:
+            if not profile.check_pin(pin):  # ✅ Use hash check method
+                log_security_event('failed_pin_data', user=request.user, severity='WARNING')
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
 
             # Balance Check
@@ -770,23 +848,26 @@ def buy_data(request):
                 
                 new_tx = Transaction.objects.create(
                     user=request.user,
-                    transaction_type='Data Purchase', # Consistent with your @property profit logic
+                    transaction_type='Data Purchase',
                     amount=plan.price,
-                    provider=plan.network, # Plan.network is a CharField in your models.py
+                    provider=plan.network,
                     phone_or_meter=phone,
                     status='Successful',
-                    reference=result.get('reference') # Using reference field from your Transaction model
+                    reference=result.get('reference')
                 )
 
+                log_security_event('data_purchase', user=request.user, details=f'amount: {plan.price}, plan: {plan.name}')
                 return JsonResponse({
                     'status': 'success',
                     'message': f'✅ {plan.name} sent to {phone}',
                     'redirect_url': reverse('receipt_detail', kwargs={'pk': new_tx.pk})
                 })
             else:
+                log_security_event('data_purchase_failed', user=request.user, details=result.get('message'))
                 return JsonResponse({'status': 'error', 'message': result.get('message', 'API Error')}, status=400)
 
         except Exception as e:
+            logger.error(f"Buy data exception: {traceback.format_exc()}")
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     form = DataPurchaseForm()

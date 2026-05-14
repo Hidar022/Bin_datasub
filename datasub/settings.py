@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+#STARTING THE DEVELOPMENT SERVER WITH
+#python manage.py runserver_plus --cert-file cert.crt
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -49,8 +50,8 @@ CSRF_TRUSTED_ORIGINS = [
 # Paystack Settings
 # Force a key to see if the site opens
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-debug-key-12345')
-# DEBUG = os.getenv('DEBUG', 'False') == 'True'
-DEBUG = True
+# CRITICAL: DEBUG must be False in production
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Use them for Paystack too
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
@@ -103,6 +104,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'cloudinary',
     'vtuapp',
     'widget_tweaks',
@@ -197,3 +199,60 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
+# ===================== SECURITY CONFIGURATION =====================
+
+# HTTPS & Cookies
+if not DEBUG:  # Production
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# Cookie Security
+SESSION_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SAMESITE = 'Strict'
+
+# Content Security
+SECURE_CONTENT_SECURITY_POLICY = {
+    'default-src': ("'self'",),
+    'script-src': ("'self'", "'unsafe-inline'", "cdn.jsdelivr.net"),
+    'style-src': ("'self'", "'unsafe-inline'", "fonts.googleapis.com"),
+    'font-src': ("'self'", "fonts.gstatic.com"),
+}
+
+# Headers
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+
+# File Upload Limits
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2621440  # 2.5 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2621440  # 2.5 MB
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['file', 'console'],
+        'level': 'INFO',
+    },
+}
