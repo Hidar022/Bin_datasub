@@ -4,7 +4,7 @@
 
 {% block page_actions %}
 <div class="flex gap-2">
-    <input type="text" id="userSearch" placeholder="Search users..." class="px-4 py-2 rounded-lg border border-white/10 bg-black text-white">
+    <input type="text" id="userSearch" name="q" value="{{ search_query }}" placeholder="Search users..." class="px-4 py-2 rounded-lg border border-white/10 bg-black text-white">
     <button onclick="exportUsers()" class="btn-secondary">
         <i class="fas fa-download mr-2"></i>Export
     </button>
@@ -76,7 +76,7 @@
                         <form method="post" style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <input type="hidden" name="action" value="activate" {% if user.is_active %}disabled{% endif %}>
+                            <input type="hidden" name="action" value="activate">
                             <button type="submit" {% if user.is_active %}disabled class="opacity-50"{% else %}class="text-green-500 hover:text-green-400"{% endif %} title="Activate User">
                                 <i class="fas fa-play"></i>
                             </button>
@@ -84,7 +84,7 @@
                         <form method="post" style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <input type="hidden" name="action" value="deactivate" {% if not user.is_active %}disabled{% endif %}>
+                            <input type="hidden" name="action" value="deactivate">
                             <button type="submit" {% if not user.is_active %}disabled class="opacity-50"{% else %}class="text-orange-500 hover:text-orange-400"{% endif %} title="Deactivate User">
                                 <i class="fas fa-pause"></i>
                             </button>

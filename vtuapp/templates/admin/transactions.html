@@ -21,6 +21,7 @@
     </button>
 </div>
 {% endblock %}
+<form id="globalCsrfForm">{% csrf_token %}</form>
 
 {% block content %}
 <!-- Transaction Stats -->
@@ -143,7 +144,22 @@ function viewTransactionDetails(txId) {
     fetch(`/admin/transaction/${txId}/details/`)
     .then(response => response.json())
     .then(data => {
-        document.getElementById('transactionModalContent').innerHTML = data.html;
+        const html = `
+            <div class="space-y-4 text-sm">
+                <div><strong>ID:</strong> ${data.id}</div>
+                <div><strong>User:</strong> ${data.user} (${data.email})</div>
+                <div><strong>Type:</strong> ${data.type}</div>
+                <div><strong>Amount:</strong> ₦${data.amount}</div>
+                <div><strong>Status:</strong> ${data.status}</div>
+                <div><strong>Provider:</strong> ${data.provider}</div>
+                <div><strong>Reference:</strong> ${data.reference || 'N/A'}</div>
+                <div><strong>Phone/Meter:</strong> ${data.phone_or_meter || 'N/A'}</div>
+                <div><strong>Cost Price:</strong> ₦${data.cost_price}</div>
+                <div><strong>Profit:</strong> ₦${data.profit}</div>
+                <div><strong>Timestamp:</strong> ${data.timestamp}</div>
+            </div>
+        `;
+        document.getElementById('transactionModalContent').innerHTML = html;
         showModal('transactionModal');
     });
 }

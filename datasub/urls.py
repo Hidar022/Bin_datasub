@@ -19,7 +19,7 @@ from django.urls import path, include
 from vtuapp import views as vtuapp_views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('django-admin/', admin.site.urls),
     path('fund-wallet/callback/', vtuapp_views.fund_wallet_callback, name='fund_wallet_callback'),
     path('gafia-webhook/', vtuapp_views.gafiapay_webhook, name='gafia_webhook'),
     path('gafiapay-webhook/', vtuapp_views.gafiapay_webhook, name='gafiapay_webhook'),

@@ -8,39 +8,110 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --bg: #050505; --card: #0a0a0a; --text: #e0e0e0; --border: #1a1a1a; --neon: #ff6600; }
-        .light-mode { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --border: #e2e8f0; --neon: #ea580c; }
+        :root {
+            --bg: #F8FAFC;
+            --card: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --accent: #4f46e5;
+            --accent-2: #06b6d4;
+        }
+        .light-mode {
+            --bg: #ffffff;
+            --card: #f8fafc;
+            --text: #0f172a;
+            --border: #e5e7eb;
+            --accent: #4f46e5;
+            --accent-2: #06b6d4;
+        }
+        .dark-mode,
+        .dark {
+            --bg: #070B14;
+            --card: #0f172a;
+            --text: #f8fafc;
+            --border: #1f2937;
+            --accent: #818cf8;
+            --accent-2: #22d3ee;
+        }
 
-        body { background-color: var(--bg); color: var(--text); transition: all 0.3s ease; font-family: 'Courier New', monospace; }
-        .terminal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
-        .neon-orange { color: var(--neon); }
-        #mobile-sidebar { transition: transform 0.3s ease-in-out; }
-        input, select, textarea { background: #111 !important; border: 1px solid #222 !important; color: white !important; }
-        .light-mode input, .light-mode select, .light-mode textarea { background: #fff !important; border: 1px solid #cbd5e1 !important; color: #1a1a1a !important; }
-        .btn-primary { background: var(--neon); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: bold; }
-        .btn-primary:hover { background: #e55a00; }
-        .btn-secondary { background: #333; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; }
-        .btn-secondary:hover { background: #555; }
-        .table-header { background: #111; border-bottom: 1px solid var(--border); }
-        .table-row:hover { background: #222; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .terminal-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        }
+        .neon-orange {
+            color: var(--accent);
+        }
+        #mobile-sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        input,
+        select,
+        textarea {
+            background: #f8fafc !important;
+            border: 1px solid #e5e7eb !important;
+            color: #111827 !important;
+        }
+        .dark input,
+        .dark select,
+        .dark textarea {
+            background: #111827 !important;
+            border: 1px solid #334155 !important;
+            color: #f8fafc !important;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            box-shadow: 0 18px 50px rgba(79, 70, 229, 0.15);
+        }
+        .btn-primary:hover {
+            filter: brightness(1.05);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+        .table-header {
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+        }
+        .table-row:hover {
+            background: #f1f5f9;
+        }
     </style>
 </head>
-<body class="flex min-h-screen overflow-x-hidden">
+<body class="min-h-screen overflow-x-hidden">
 
     <!-- Mobile Sidebar -->
-    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#080808] border-r border-white/10 z-[100] transform -translate-x-full md:hidden p-6 flex flex-col">
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white/95 dark:bg-[#0A0A1F]/95 border-r border-slate-200 dark:border-slate-700 z-[100] transform -translate-x-full md:hidden p-6 flex flex-col">
         <div class="flex justify-between items-center mb-10">
             <h1 class="text-xl font-black neon-orange italic">ADMIN_MENU</h1>
-            <button onclick="toggleSidebar()"><i class="fas fa-times text-2xl text-white"></i></button>
+            <button onclick="toggleSidebar()"><i class="fas fa-times text-2xl text-slate-900 dark:text-white"></i></button>
         </div>
         <nav class="space-y-6 flex-1">
-            <a href="{% url 'admin_dashboard' %}" class="block font-bold text-orange-500 underline">OVERVIEW</a>
-            <a href="{% url 'admin_users' %}" class="block opacity-70 text-white">USER_MGMT</a>
-            <a href="{% url 'admin_transactions' %}" class="block opacity-70 text-white">TRANSACTIONS</a>
-            <a href="{% url 'admin_plans' %}" class="block opacity-70 text-white">DATA_PLANS</a>
-            <a href="{% url 'admin_reports' %}" class="block opacity-70 text-white">REPORTS</a>
-            <a href="{% url 'admin_settings' %}" class="block opacity-70 text-white">SYSTEM_SETTINGS</a>
-            <button onclick="toggleTheme()" class="text-left text-white opacity-70 w-full font-bold uppercase text-xs">
+            <a href="{% url 'admin_dashboard' %}" class="block font-bold text-indigo-700 dark:text-indigo-300 underline">OVERVIEW</a>
+            <a href="{% url 'admin_users' %}" class="block opacity-70 text-slate-700 dark:text-slate-200">USER_MGMT</a>
+            <a href="{% url 'admin_transactions' %}" class="block opacity-70 text-slate-700 dark:text-slate-200">TRANSACTIONS</a>
+            <a href="{% url 'admin_plans' %}" class="block opacity-70 text-slate-700 dark:text-slate-200">DATA_PLANS</a>
+            <a href="{% url 'admin_reports' %}" class="block opacity-70 text-slate-700 dark:text-slate-200">REPORTS</a>
+            <a href="{% url 'admin_settings' %}" class="block opacity-70 text-slate-700 dark:text-slate-200">SYSTEM_SETTINGS</a>
+            <button onclick="toggleTheme()" class="text-left text-slate-700 dark:text-slate-200 opacity-70 w-full font-bold uppercase text-xs">
                 <i class="fas fa-sun mr-2"></i> SWITCH_THEME
             </button>
             <a href="{% url 'dashboard' %}" class="block text-red-500 font-bold border-t border-white/5 pt-4">EXIT_APP</a>
@@ -48,17 +119,17 @@
     </div>
 
     <!-- Desktop Sidebar -->
-    <aside class="w-64 border-r border-white/5 bg-black/20 hidden md:flex flex-col p-6 shadow-2xl">
+    <aside class="w-64 border-r border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-[#0A0A1F]/95 hidden md:flex flex-col p-6 shadow-2xl">
         <h1 class="text-2xl font-black neon-orange italic tracking-tighter mb-10">BIN_DATASUB</h1>
         <nav class="space-y-4 flex-1">
-            <a href="{% url 'admin_dashboard' %}" class="block p-3 bg-orange-600/10 border-l-4 border-orange-600 font-bold">SYSTEM_OVERVIEW</a>
-            <a href="{% url 'admin_users' %}" class="block p-3 opacity-60 hover:opacity-100">USER_DATABASE</a>
-            <a href="{% url 'admin_transactions' %}" class="block p-3 opacity-60 hover:opacity-100">TRANSACTIONS</a>
-            <a href="{% url 'admin_plans' %}" class="block p-3 opacity-60 hover:opacity-100">DATA_PLANS</a>
-            <a href="{% url 'admin_reports' %}" class="block p-3 opacity-60 hover:opacity-100">REPORTS</a>
-            <a href="{% url 'admin_settings' %}" class="block p-3 opacity-60 hover:opacity-100">SYSTEM_SETTINGS</a>
-            <button onclick="toggleTheme()" class="w-full mt-10 p-3 rounded-xl border border-orange-600/30 flex items-center justify-center gap-2 hover:bg-orange-600/10">
-                <i class="fas fa-circle-half-stroke text-orange-600"></i>
+            <a href="{% url 'admin_dashboard' %}" class="block p-3 bg-indigo-600/10 border-l-4 border-indigo-600 font-bold text-slate-900 dark:text-white rounded-xl">SYSTEM_OVERVIEW</a>
+            <a href="{% url 'admin_users' %}" class="block p-3 opacity-70 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">USER_DATABASE</a>
+            <a href="{% url 'admin_transactions' %}" class="block p-3 opacity-70 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">TRANSACTIONS</a>
+            <a href="{% url 'admin_plans' %}" class="block p-3 opacity-70 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">DATA_PLANS</a>
+            <a href="{% url 'admin_reports' %}" class="block p-3 opacity-70 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">REPORTS</a>
+            <a href="{% url 'admin_settings' %}" class="block p-3 opacity-70 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">SYSTEM_SETTINGS</a>
+            <button onclick="toggleTheme()" class="w-full mt-10 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <i class="fas fa-circle-half-stroke text-slate-900 dark:text-white"></i>
                 <span class="text-xs font-bold uppercase">Toggle Theme</span>
             </button>
             <a href="{% url 'dashboard' %}" class="block p-3 text-red-500 mt-20 italic font-bold">EXIT_TO_APP</a>

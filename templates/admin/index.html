@@ -1,0 +1,194 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}System Overview{% endblock %}
+
+{% block page_actions %}
+<button onclick="showModal('planModal')" class="bg-orange-600 hover:bg-orange-500 px-6 py-3 rounded-lg font-bold text-white shadow-lg shadow-orange-600/20">
+    + CREATE_DATA_PLAN
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+    <div class="terminal-card p-4 md:p-6 border-t-2 md:border-t-0 md:border-l-4 border-orange-600">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Net_Profit</p>
+        <h3 class="text-xl md:text-3xl font-bold neon-orange">₦{{ total_profit|floatformat:2 }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Total_Sales</p>
+        <h3 class="text-xl md:text-3xl font-bold">₦{{ total_sales|floatformat:2 }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Liabilities</p>
+        <h3 class="text-xl md:text-3xl font-bold text-red-600">₦{{ total_wallet_balances|floatformat:2 }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Active_Users</p>
+        <h3 class="text-xl md:text-3xl font-bold">{{ total_users }}</h3>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="grid md:grid-cols-2 gap-6 mb-10">
+    <!-- Recent Transactions -->
+    <div class="terminal-card">
+        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+            RECENT_TRANSACTIONS
+        </div>
+        <div class="max-h-96 overflow-y-auto">
+            {% for tx in recent_txs %}
+            <div class="p-4 border-b border-white/5 hover:bg-white/5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold">{{ tx.transaction_type }}</p>
+                        <p class="text-xs opacity-70">{{ tx.user.username }} • {{ tx.timestamp|date:"M d, H:i" }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold neon-orange">₦{{ tx.amount|floatformat:2 }}</p>
+                        <p class="text-xs opacity-70">{{ tx.status }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-4 text-center opacity-50">No transactions yet</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="terminal-card">
+        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+            SYSTEM_HEALTH
+        </div>
+        <div class="p-4 space-y-4">
+            <div class="flex justify-between">
+                <span>Database Status</span>
+                <span class="text-green-500">● ONLINE</span>
+            </div>
+            <div class="flex justify-between">
+                <span>API Services</span>
+                <span class="text-green-500">● OPERATIONAL</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Webhook Status</span>
+                <span class="text-green-500">● ACTIVE</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Last Backup</span>
+                <span class="text-yellow-500">{{ last_backup|default:"Never" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Security Alerts</span>
+                <span class="text-red-500">{{ security_alerts|default:0 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="terminal-card p-6 mb-10">
+    <h3 class="text-lg font-bold mb-4">QUICK_ACTIONS</h3>
+    <div class="grid md:grid-cols-4 gap-4">
+        <a href="{% url 'admin_users' %}" class="btn-primary text-center block">
+            <i class="fas fa-users mr-2"></i>Manage Users
+        </a>
+        <a href="{% url 'admin_transactions' %}" class="btn-primary text-center block">
+            <i class="fas fa-exchange-alt mr-2"></i>View Transactions
+        </a>
+        <a href="{% url 'admin_plans' %}" class="btn-primary text-center block">
+            <i class="fas fa-list mr-2"></i>Manage Plans
+        </a>
+        <a href="{% url 'admin_security' %}" class="btn-primary text-center block">
+            <i class="fas fa-shield-alt mr-2"></i>Security
+        </a>
+    </div>
+</div>
+
+<!-- Latest Users -->
+<div class="terminal-card overflow-hidden">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        LATEST_USER_REGISTRATIONS
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="text-[9px] opacity-40 uppercase border-b border-white/5">
+                <tr>
+                    <th class="p-4">Identity</th>
+                    <th class="p-4">Wallet</th>
+                    <th class="p-4 hidden md:table-cell">Contact</th>
+                    <th class="p-4 hidden md:table-cell">Joined</th>
+                    <th class="p-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-xs">
+                {% for u in all_users %}
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="p-4">
+                        <span class="font-bold">{{ u.username }}</span><br>
+                        <span class="text-[9px] opacity-50">{{ u.email }}</span>
+                    </td>
+                    <td class="p-4 font-mono text-emerald-500 font-bold">₦{{ u.wallet.balance|floatformat:2 }}</td>
+                    <td class="p-4 opacity-70 hidden md:table-cell">{{ u.profile.phone|default:"N/A" }}</td>
+                    <td class="p-4 opacity-70 hidden md:table-cell">{{ u.date_joined|date:"M d, Y" }}</td>
+                    <td class="p-4">
+                        <a href="{% url 'admin_user_detail' u.id %}" class="text-blue-500 hover:text-blue-400 mr-2">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'admin_user_edit' u.id %}" class="text-yellow-500 hover:text-yellow-400 mr-2">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Plan Modal -->
+<div id="planModal" class="fixed inset-0 bg-black/95 hidden z-[999] flex items-center justify-center p-4">
+    <div class="terminal-card w-full max-w-lg p-8 border-orange-600/50 shadow-[0_0_50px_rgba(249,115,22,0.2)]">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-white underline decoration-orange-600">INIT_NEW_PLAN</h3>
+            <button onclick="hideModal('planModal')" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+        </div>
+        <form action="{% url 'add_plan' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Network</label>
+                    <select name="network" class="w-full p-3 rounded-lg mt-1 border border-white/10">
+                        <option value="MTN">MTN</option>
+                        <option value="GLO">GLO</option>
+                        <option value="AIRTEL">AIRTEL</option>
+                        <option value="9MOBILE">9MOBILE</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Plan Name</label>
+                    <input type="text" name="name" placeholder="1GB SME" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Price (User)</label>
+                    <input type="number" step="0.01" name="price" placeholder="250.00" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">SMEPlug ID</label>
+                    <input type="text" name="smeplug_id" placeholder="MTN1GB" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-500 uppercase font-bold">Network ID (1=MTN, etc)</label>
+                <input type="number" name="network_id" placeholder="1" class="w-full p-3 rounded-lg mt-1 border border-white/10" required>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button type="button" onclick="hideModal('planModal')" class="flex-1 p-3 text-gray-500 hover:text-white uppercase font-bold">Abort</button>
+                <button type="submit" class="flex-1 bg-orange-600 p-3 text-white rounded-lg font-bold">EXECUTE_SAVE</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

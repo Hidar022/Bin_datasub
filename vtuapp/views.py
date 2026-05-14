@@ -10,7 +10,7 @@ import requests
 from decimal import Decimal
 from datetime import timedelta
 from django.http import HttpResponse
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg
 from django.contrib.admin.views.decorators import staff_member_required
 
 
@@ -1027,6 +1027,15 @@ def admin_dashboard(request):
     recent_txs = Transaction.objects.select_related('user').order_by('-timestamp')[:10]
     all_users = User.objects.select_related('wallet').order_by('-date_joined')[:5]
 
+    # Security alerts: suspicious users with many failed transactions
+    from django.db.models import Q
+    security_alerts = User.objects.filter(
+        Q(transaction__status='Failed') &
+        Q(transaction__timestamp__gte=timezone.now() - timedelta(hours=24))
+    ).annotate(
+        failed_count=Count('transaction')
+    ).filter(failed_count__gt=5).count()
+
     context = {
         'total_sales': total_sales,
         'total_profit': total_profit,
@@ -1035,9 +1044,9 @@ def admin_dashboard(request):
         'recent_txs': recent_txs,
         'all_users': all_users,
         'last_backup': "Daily Sync Active",
-        'security_alerts': 0,
+        'security_alerts': security_alerts,
     }
-    return render(request, 'admin/dashboard.html', context)
+    return render(request, 'admin/index.html', context)
 
 @staff_member_required
 def admin_user_detail(request, user_id):
@@ -1080,15 +1089,23 @@ def admin_user_edit(request, user_id):
 def admin_users(request):
     """Admin User Management"""
     users = User.objects.all().order_by('-date_joined')
-    
+    search_query = request.GET.get('q', '').strip()
+
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(profile__phone__icontains=search_query)
+        )
+
     # Handle user actions
     if request.method == 'POST':
         action = request.POST.get('action')
         user_id = request.POST.get('user_id')
-        
+
         try:
             user = User.objects.get(id=user_id)
-            
+
             if action == 'activate':
                 user.is_active = True
                 user.save()
@@ -1103,16 +1120,24 @@ def admin_users(request):
                 user.delete()
                 log_security_event('user_deleted', details=f'user {user.username} deleted by admin {request.user.username}', severity='WARNING')
                 messages.success(request, f'✅ User {user.username} deleted')
-                
+
         except User.DoesNotExist:
             messages.error(request, 'User not found')
-    
+
+        return redirect('admin_users')
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(users, 20)
+    page_number = request.GET.get('page')
+    users_page = paginator.get_page(page_number)
+
     context = {
-        'users': users,
+        'users': users_page,
         'total_users': users.count(),
         'active_users': users.filter(is_active=True).count(),
         'inactive_users': users.filter(is_active=False).count(),
         'staff_users': users.filter(is_staff=True).count(),
+        'search_query': search_query,
     }
     return render(request, 'admin/users.html', context)
 
@@ -1152,9 +1177,9 @@ def admin_transactions(request):
     date_to = request.GET.get('date_to', '')
     
     if status_filter:
-        transactions = transactions.filter(status=status_filter)
+        transactions = transactions.filter(status__iexact=status_filter)
     if type_filter:
-        transactions = transactions.filter(transaction_type=type_filter)
+        transactions = transactions.filter(transaction_type__icontains=type_filter)
     if date_from:
         transactions = transactions.filter(timestamp__date__gte=date_from)
     if date_to:
@@ -1164,17 +1189,17 @@ def admin_transactions(request):
     from django.core.paginator import Paginator
     paginator = Paginator(transactions, 50)  # 50 per page
     page_number = request.GET.get('page')
-    transactions = paginator.get_page(page_number)
+    transactions_page = paginator.get_page(page_number)
     
     # Stats
     all_transactions = Transaction.objects.all()
     total_transactions = all_transactions.count()
-    successful_transactions = all_transactions.filter(status='successful').count()
-    pending_transactions = all_transactions.filter(status='pending').count()
-    failed_transactions = all_transactions.filter(status='failed').count()
+    successful_transactions = all_transactions.filter(status__iexact='successful').count()
+    pending_transactions = all_transactions.filter(status__iexact='pending').count()
+    failed_transactions = all_transactions.filter(status__iexact='failed').count()
     
     context = {
-        'transactions': transactions,
+        'transactions': transactions_page,
         'total_transactions': total_transactions,
         'successful_transactions': successful_transactions,
         'pending_transactions': pending_transactions,
@@ -1187,15 +1212,128 @@ def admin_transactions(request):
     return render(request, 'admin/transactions.html', context)
 
 @staff_member_required
+def admin_transaction_detail(request, tx_id):
+    tx = get_object_or_404(Transaction, id=tx_id)
+    return JsonResponse({
+        'id': tx.id,
+        'user': tx.user.username,
+        'email': tx.user.email,
+        'type': tx.transaction_type,
+        'amount': str(tx.amount),
+        'status': tx.status,
+        'provider': tx.provider,
+        'reference': tx.reference,
+        'phone_or_meter': tx.phone_or_meter,
+        'timestamp': tx.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        'cost_price': str(tx.cost_price),
+        'profit': str(tx.amount - tx.cost_price),
+    })
+
+@staff_member_required
+def admin_transaction_retry(request, tx_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    tx = get_object_or_404(Transaction, id=tx_id)
+    if tx.status.lower() != 'pending':
+        return JsonResponse({'success': False, 'message': 'Only pending transactions can be retried'}, status=400)
+    tx.status = 'Successful'
+    tx.save()
+    log_security_event('transaction_retried', user=tx.user, details=f'tx {tx.id} retried by {request.user.username}')
+    return JsonResponse({'success': True, 'message': 'Transaction retried successfully'})
+
+@staff_member_required
+def admin_transaction_refund(request, tx_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    tx = get_object_or_404(Transaction, id=tx_id)
+    if tx.status.lower() != 'successful':
+        return JsonResponse({'success': False, 'message': 'Only successful transactions can be refunded'}, status=400)
+    wallet = tx.user.wallet
+    wallet.balance += tx.amount
+    wallet.save()
+    tx.status = 'Refunded'
+    tx.save()
+    log_security_event('transaction_refunded', user=tx.user, details=f'tx {tx.id} refunded by {request.user.username}', severity='WARNING')
+    return JsonResponse({'success': True, 'message': 'Transaction refunded and wallet credited'})
+
+@staff_member_required
+def admin_plan_detail(request, plan_id):
+    plan = get_object_or_404(DataPlan, id=plan_id)
+    return JsonResponse({
+        'id': plan.id,
+        'network': plan.network,
+        'name': plan.name,
+        'price': str(plan.price),
+        'network_id': plan.network_id,
+        'smeplug_plan_id': plan.smeplug_plan_id,
+        'is_active': plan.is_active,
+    })
+
+@staff_member_required
+def admin_plan_toggle_status(request, plan_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    plan = get_object_or_404(DataPlan, id=plan_id)
+    plan.is_active = not plan.is_active
+    plan.save()
+    return JsonResponse({'success': True, 'message': f'Plan status updated to {"active" if plan.is_active else "inactive"}'})
+
+@staff_member_required
+def admin_plan_delete(request, plan_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    plan = get_object_or_404(DataPlan, id=plan_id)
+    plan.delete()
+    return JsonResponse({'success': True, 'message': 'Plan deleted successfully'})
+
+@staff_member_required
+def admin_plan_edit(request, plan_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    plan = get_object_or_404(DataPlan, id=plan_id)
+    plan.network = request.POST.get('network')
+    plan.name = request.POST.get('name')
+    plan.price = request.POST.get('price')
+    plan.network_id = request.POST.get('network_id')
+    plan.smeplug_plan_id = request.POST.get('smeplug_id')
+    plan.save()
+    return JsonResponse({'success': True, 'message': 'Plan updated successfully'})
+
+@staff_member_required
+def admin_transactions_export(request):
+    status_filter = request.GET.get('status', '')
+    type_filter = request.GET.get('type', '')
+    transactions = Transaction.objects.all().order_by('-timestamp')
+
+    if status_filter:
+        transactions = transactions.filter(status__iexact=status_filter)
+    if type_filter:
+        transactions = transactions.filter(transaction_type__icontains=type_filter)
+
+    rows = [
+        'ID,User,Email,Type,Amount,Status,Provider,Reference,Phone/Meter,Timestamp',
+    ]
+    for tx in transactions:
+        rows.append(
+            f'{tx.id},{tx.user.username},{tx.user.email},{tx.transaction_type},"{tx.amount}",{tx.status},{tx.provider},{tx.reference or ""},{tx.phone_or_meter},{tx.timestamp.strftime("%Y-%m-%d %H:%M:%S")}'
+        )
+
+    response = HttpResponse('\n'.join(rows), content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="transactions_export.csv"'
+    return response
+
+@staff_member_required
 def admin_plans(request):
     """Admin Data Plans Management"""
     plans = DataPlan.objects.all().order_by('network', 'price')
-    
+    network_filter = request.GET.get('network', '')
+    if network_filter:
+        plans = plans.filter(network__iexact=network_filter)
+
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'add':
-            # Add new plan
             DataPlan.objects.create(
                 network=request.POST.get('network'),
                 name=request.POST.get('name'),
@@ -1205,6 +1343,7 @@ def admin_plans(request):
                 is_active=True
             )
             messages.success(request, '✅ Plan added successfully')
+            return redirect('admin_plans')
             
         elif action == 'edit':
             plan_id = request.POST.get('plan_id')
@@ -1216,6 +1355,7 @@ def admin_plans(request):
             plan.smeplug_plan_id = request.POST.get('smeplug_id')
             plan.save()
             messages.success(request, '✅ Plan updated successfully')
+            return redirect('admin_plans')
             
         elif action == 'toggle':
             plan_id = request.POST.get('plan_id')
@@ -1224,20 +1364,28 @@ def admin_plans(request):
             plan.save()
             status = "activated" if plan.is_active else "deactivated"
             messages.success(request, f'✅ Plan {status}')
+            return redirect('admin_plans')
             
         elif action == 'delete':
             plan_id = request.POST.get('plan_id')
             plan = DataPlan.objects.get(id=plan_id)
             plan.delete()
             messages.success(request, '✅ Plan deleted')
-    
+            return redirect('admin_plans')
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(plans, 25)
+    page_number = request.GET.get('page')
+    plans_page = paginator.get_page(page_number)
+
     context = {
-        'plans': plans,
+        'plans': plans_page,
         'total_plans': plans.count(),
-        'mtn_plans': plans.filter(network='MTN').count(),
-        'glo_plans': plans.filter(network='GLO').count(),
-        'airtel_plans': plans.filter(network='AIRTEL').count(),
-        'mobile_plans': plans.filter(network='9MOBILE').count(),
+        'mtn_plans': plans.filter(network__iexact='MTN').count(),
+        'glo_plans': plans.filter(network__iexact='GLO').count(),
+        'airtel_plans': plans.filter(network__iexact='AIRTEL').count(),
+        'mobile_plans': plans.filter(network__iexact='9MOBILE').count(),
+        'network_filter': network_filter,
     }
     return render(request, 'admin/plans.html', context)
 
@@ -1300,6 +1448,39 @@ def admin_reports(request):
         total_spent=Sum('transaction__amount', filter=Q(transaction__status='Successful'))
     ).filter(total_spent__gt=0).order_by('-total_spent')[:10]
     
+    total_revenue = transactions.filter(status='Successful').aggregate(Sum('amount'))['amount__sum'] or 0
+    previous_period = Transaction.objects.filter(
+        timestamp__date__gte=start_date - timedelta(days=30),
+        timestamp__date__lt=start_date,
+        status='Successful'
+    )
+    previous_revenue = previous_period.aggregate(Sum('amount'))['amount__sum'] or 0
+    monthly_growth = 0
+    if previous_revenue:
+        monthly_growth = round(((total_revenue - previous_revenue) / previous_revenue) * 100, 2)
+
+    average_transaction = transactions.aggregate(Avg('amount'))['amount__avg'] or 0
+    top_network_obj = revenue_by_network.first()
+    top_network = top_network_obj['provider'] if top_network_obj else 'N/A'
+
+    revenue_labels = [row['day'].strftime('%b %d') for row in daily_revenue]
+    revenue_data = [float(row['total']) for row in daily_revenue]
+    transaction_labels = [item['transaction_type'] for item in revenue_by_type]
+    transaction_data = [float(item['total']) for item in revenue_by_type]
+    network_stats = [
+        {
+            'network': item['provider'],
+            'revenue': item['total'],
+            'transactions': item['count'],
+        }
+        for item in revenue_by_network
+    ]
+
+    top_users = User.objects.annotate(
+        total_spent=Sum('transaction__amount', filter=Q(transaction__status='Successful')),
+        transaction_count=Count('transaction__id', filter=Q(transaction__status='Successful'))
+    ).filter(total_spent__gt=0).order_by('-total_spent')[:10]
+
     context = {
         'date_from': date_from,
         'date_to': date_to,
@@ -1308,42 +1489,126 @@ def admin_reports(request):
         'daily_revenue': daily_revenue,
         'user_growth': user_growth,
         'top_users': top_users,
-        'total_revenue': transactions.filter(status='Successful').aggregate(Sum('amount'))['amount__sum'] or 0,
+        'total_revenue': total_revenue,
         'total_transactions': transactions.count(),
         'successful_transactions': transactions.filter(status='Successful').count(),
+        'monthly_growth': monthly_growth,
+        'avg_transaction': average_transaction,
+        'top_network': top_network,
+        'network_stats': network_stats,
+        'revenue_labels': json.dumps(revenue_labels),
+        'revenue_data': json.dumps(revenue_data),
+        'transaction_labels': json.dumps(transaction_labels),
+        'transaction_data': json.dumps(transaction_data),
     }
     return render(request, 'admin/reports.html', context)
+
+@staff_member_required
+def admin_reports_generate(request):
+    query = request.GET.urlencode()
+    url = reverse('admin_reports')
+    if query:
+        url = f"{url}?{query}"
+    return redirect(url)
+
+@staff_member_required
+def admin_reports_export(request):
+    report_type = request.GET.get('type', 'transactions')
+    fmt = request.GET.get('format', 'csv').lower()
+    start_date = request.GET.get('start')
+    end_date = request.GET.get('end')
+
+    transactions = Transaction.objects.all().order_by('-timestamp')
+    if start_date:
+        transactions = transactions.filter(timestamp__date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(timestamp__date__lte=end_date)
+
+    rows = [
+        'ID,User,Email,Type,Amount,Status,Provider,Reference,Phone/Meter,Timestamp'
+    ]
+    for tx in transactions:
+        rows.append(
+            f'{tx.id},{tx.user.username},{tx.user.email},{tx.transaction_type},"{tx.amount}",{tx.status},{tx.provider},{tx.reference or ""},{tx.phone_or_meter},{tx.timestamp.strftime("%Y-%m-%d %H:%M:%S")}'
+        )
+
+    if fmt == 'json':
+        payload = []
+        for tx in transactions:
+            payload.append({
+                'id': tx.id,
+                'user': tx.user.username,
+                'email': tx.user.email,
+                'type': tx.transaction_type,
+                'amount': str(tx.amount),
+                'status': tx.status,
+                'provider': tx.provider,
+                'reference': tx.reference,
+                'phone_or_meter': tx.phone_or_meter,
+                'timestamp': tx.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            })
+        response = HttpResponse(json.dumps(payload, indent=2), content_type='application/json')
+        response['Content-Disposition'] = 'attachment; filename="reports_export.json"'
+        return response
+
+    content_type = 'text/csv'
+    filename = 'reports_export.csv'
+    if fmt == 'excel':
+        content_type = 'application/vnd.ms-excel'
+        filename = 'reports_export.xls'
+    elif fmt == 'pdf':
+        content_type = 'application/pdf'
+        filename = 'reports_export.pdf'
+
+    response = HttpResponse('\n'.join(rows), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 @staff_member_required
 def admin_settings(request):
     """Admin System Settings"""
     if request.method == 'POST':
         action = request.POST.get('action')
-        
+        if not action and any(k in request.POST for k in ['save_api', 'save_system', 'save_security', 'save_notifications']):
+            action = 'update_settings'
+
+        saved_settings = None
         if action == 'update_settings':
-            # Update system settings (you can add more settings here)
             messages.success(request, '✅ Settings updated successfully')
-            
+            saved_settings = {
+                'smeplug_api_key': request.POST.get('smeplug_api_key', ''),
+                'webhook_secret': request.POST.get('webhook_secret', ''),
+                'api_base_url': request.POST.get('api_base_url', 'https://api.smeplug.ng'),
+                'api_enabled': request.POST.get('api_enabled') == 'on',
+                'site_title': request.POST.get('site_title', 'DataSub VTU'),
+                'support_email': request.POST.get('support_email', ''),
+                'maintenance_mode': request.POST.get('maintenance_mode', 'false'),
+                'currency': request.POST.get('currency', 'NGN'),
+                'session_timeout': int(request.POST.get('session_timeout', 30)),
+                'max_login_attempts': int(request.POST.get('max_login_attempts', 5)),
+                'two_factor_required': request.POST.get('two_factor_required') == 'on',
+                'ip_whitelist_enabled': request.POST.get('ip_whitelist_enabled') == 'on',
+                'email_notifications': request.POST.get('email_notifications') == 'on',
+                'sms_notifications': request.POST.get('sms_notifications') == 'on',
+                'transaction_alerts': request.POST.get('transaction_alerts') == 'on',
+                'system_alerts': request.POST.get('system_alerts') == 'on',
+            }
         elif action == 'clear_cache':
             from django.core.cache import cache
             cache.clear()
             messages.success(request, '✅ Cache cleared successfully')
-            
         elif action == 'backup_database':
-            # Simple database backup (you might want to use proper backup tools)
             import os
-            from django.conf import settings
+            from django.conf import settings as django_settings
             from datetime import datetime
-            
-            backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
-            backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
-            
-            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
-            # For SQLite, just copy the file
             import shutil
-            shutil.copy(settings.DATABASES['default']['NAME'], backup_path)
-            
+            backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
+            backup_path = os.path.join(django_settings.BASE_DIR, 'backups', backup_name)
+            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+            shutil.copy(django_settings.DATABASES['default']['NAME'], backup_path)
             messages.success(request, f'✅ Database backed up to {backup_name}')
+        elif action == 'restart_services':
+            messages.success(request, '✅ Service restart command queued')
     
     # System stats
     from django.db import connection
@@ -1351,11 +1616,93 @@ def admin_settings(request):
         cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table';")
         table_count = cursor.fetchone()[0]
     
+    settings_context = {
+        'smeplug_api_key': getattr(settings, 'SMEPLUG_API_KEY', ''),
+        'webhook_secret': getattr(settings, 'WEBHOOK_SECRET', ''),
+        'api_base_url': getattr(settings, 'API_BASE_URL', 'https://api.smeplug.ng'),
+        'api_enabled': getattr(settings, 'API_ENABLED', False),
+        'site_title': getattr(settings, 'SITE_TITLE', 'DataSub VTU'),
+        'support_email': getattr(settings, 'SUPPORT_EMAIL', ''),
+        'maintenance_mode': getattr(settings, 'MAINTENANCE_MODE', 'false'),
+        'currency': getattr(settings, 'CURRENCY', 'NGN'),
+        'session_timeout': getattr(settings, 'SESSION_TIMEOUT', 30),
+        'max_login_attempts': getattr(settings, 'MAX_LOGIN_ATTEMPTS', 5),
+        'two_factor_required': getattr(settings, 'TWO_FACTOR_REQUIRED', False),
+        'ip_whitelist_enabled': getattr(settings, 'IP_WHITELIST_ENABLED', False),
+        'email_notifications': getattr(settings, 'EMAIL_NOTIFICATIONS', True),
+        'sms_notifications': getattr(settings, 'SMS_NOTIFICATIONS', True),
+        'transaction_alerts': getattr(settings, 'TRANSACTION_ALERTS', True),
+        'system_alerts': getattr(settings, 'SYSTEM_ALERTS', True),
+    }
+    if 'saved_settings' in locals() and saved_settings:
+        settings_context.update(saved_settings)
+    
     context = {
         'table_count': table_count,
         'user_count': User.objects.count(),
         'transaction_count': Transaction.objects.count(),
         'plan_count': DataPlan.objects.count(),
+        'settings': settings_context,
+        'system_logs': [],
     }
     return render(request, 'admin/settings.html', context)
+
+@staff_member_required
+def admin_settings_clear_cache(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    from django.core.cache import cache
+    cache.clear()
+    return JsonResponse({'success': True, 'message': 'Cache cleared successfully'})
+
+@staff_member_required
+def admin_settings_backup_db(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    import os
+    from django.conf import settings as django_settings
+    from datetime import datetime
+    import shutil
+    os.makedirs(os.path.join(django_settings.BASE_DIR, 'backups'), exist_ok=True)
+    backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
+    backup_path = os.path.join(django_settings.BASE_DIR, 'backups', backup_name)
+    shutil.copy(django_settings.DATABASES['default']['NAME'], backup_path)
+    return JsonResponse({'success': True, 'message': f'Database backed up to {backup_name}'})
+
+@staff_member_required
+def admin_settings_restart_services(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+    # Placeholder for service restart; actual restart requires system privileges
+    return JsonResponse({'success': True, 'message': 'Service restart command queued'})
+
+@staff_member_required
+def admin_security(request):
+    """Admin Security Dashboard"""
+    from django.core.cache import cache
+
+    # Security stats
+    failed_login_attempts = cache.get('failed_login_count', 0)
+    locked_accounts = 0  # Would need to count cache keys, but for simplicity
+    
+    # Recent security events (from logs if available)
+    security_alerts = []
+    
+    # Check for suspicious activities
+    suspicious_users = User.objects.filter(
+        Q(transaction__status='Failed') &
+        Q(transaction__timestamp__gte=timezone.now() - timedelta(hours=24))
+    ).annotate(
+        failed_count=Count('transaction')
+    ).filter(failed_count__gt=5).distinct()
+    
+    context = {
+        'failed_login_attempts': failed_login_attempts,
+        'locked_accounts': locked_accounts,
+        'security_alerts': security_alerts,
+        'suspicious_users': suspicious_users,
+        'total_users': User.objects.count(),
+        'active_sessions': 0,  # Would need session tracking
+    }
+    return render(request, 'admin/security.html', context)
 

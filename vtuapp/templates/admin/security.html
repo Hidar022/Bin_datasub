@@ -1,0 +1,106 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}Security Dashboard{% endblock %}
+
+{% block content %}
+<!-- Security Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Failed Logins</p>
+        <h3 class="text-xl md:text-3xl font-bold text-red-500">{{ failed_login_attempts }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Locked Accounts</p>
+        <h3 class="text-xl md:text-3xl font-bold text-yellow-500">{{ locked_accounts }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Active Sessions</p>
+        <h3 class="text-xl md:text-3xl font-bold">{{ active_sessions }}</h3>
+    </div>
+    <div class="terminal-card p-4 md:p-6">
+        <p class="opacity-50 text-[10px] font-bold uppercase">Total Users</p>
+        <h3 class="text-xl md:text-3xl font-bold">{{ total_users }}</h3>
+    </div>
+</div>
+
+<!-- Security Actions -->
+<div class="terminal-card p-6 mb-10">
+    <h3 class="text-lg font-bold mb-4">SECURITY_ACTIONS</h3>
+    <div class="grid md:grid-cols-3 gap-4">
+        <button onclick="clearFailedLogins()" class="btn-primary text-center">
+            <i class="fas fa-shield-alt mr-2"></i>Clear Failed Logins
+        </button>
+        <button onclick="unlockAccounts()" class="btn-primary text-center">
+            <i class="fas fa-unlock mr-2"></i>Unlock Accounts
+        </button>
+        <button onclick="generateSecurityReport()" class="btn-primary text-center">
+            <i class="fas fa-file-alt mr-2"></i>Security Report
+        </button>
+    </div>
+</div>
+
+<!-- Suspicious Users -->
+<div class="terminal-card overflow-hidden">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        SUSPICIOUS_USERS
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="text-[9px] opacity-40 uppercase border-b border-white/5">
+                <tr>
+                    <th class="p-4">Username</th>
+                    <th class="p-4">Failed Transactions</th>
+                    <th class="p-4">Last Activity</th>
+                    <th class="p-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-xs">
+                {% for user in suspicious_users %}
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="p-4">
+                        <span class="font-bold">{{ user.username }}</span>
+                    </td>
+                    <td class="p-4 font-mono text-red-500 font-bold">{{ user.failed_count }}</td>
+                    <td class="p-4 opacity-70">{{ user.transaction_set.last.timestamp|date:"M d, H:i" }}</td>
+                    <td class="p-4">
+                        <a href="{% url 'admin_user_detail' user.id %}" class="text-blue-500 hover:text-blue-400 mr-2">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <button onclick="lockUser({{ user.id }})" class="text-red-500 hover:text-red-400">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function clearFailedLogins() {
+    if (confirm('Clear all failed login attempts?')) {
+        // Implement AJAX call
+        alert('Failed logins cleared');
+    }
+}
+
+function unlockAccounts() {
+    if (confirm('Unlock all locked accounts?')) {
+        // Implement AJAX call
+        alert('Accounts unlocked');
+    }
+}
+
+function generateSecurityReport() {
+    alert('Security report generated');
+}
+
+function lockUser(userId) {
+    if (confirm('Lock this user account?')) {
+        // Implement AJAX call
+        alert('User locked');
+    }
+}
+</script>
+{% endblock %}

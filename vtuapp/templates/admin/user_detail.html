@@ -1,0 +1,94 @@
+{% extends 'admin/base.html' %}
+
+{% block page_title %}User Details{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="terminal-card p-6 md:p-8 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="text-3xl font-bold uppercase tracking-widest">{{ user_obj.username }}</h2>
+                <p class="opacity-60 text-sm">{{ user_obj.email }} | Joined {{ user_obj.date_joined|date:"M d, Y" }}</p>
+                <p class="mt-2 text-xs uppercase opacity-50">Status: {% if user_obj.is_active %}Active{% else %}Inactive{% endif %} • Staff: {% if user_obj.is_staff %}Yes{% else %}No{% endif %}</p>
+            </div>
+            <div class="space-x-2">
+                <a href="{% url 'admin_users' %}" class="btn-secondary">Back to Users</a>
+                <a href="{% url 'admin_user_edit' user_obj.id %}" class="btn-primary">Edit User</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6 mb-8">
+        <div class="terminal-card p-6">
+            <h3 class="text-lg font-bold mb-4 uppercase">Profile</h3>
+            <div class="space-y-3 text-sm opacity-80">
+                <p><strong>Full name:</strong> {{ user_obj.profile.full_name|default:'N/A' }}</p>
+                <p><strong>Phone:</strong> {{ user_obj.profile.phone|default:'N/A' }}</p>
+                <p><strong>Date of birth:</strong> {{ user_obj.profile.dob|date:'M d, Y'|default:'N/A' }}</p>
+                <p><strong>Wallet balance:</strong> ₦{{ user_obj.wallet.balance|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="terminal-card p-6">
+            <h3 class="text-lg font-bold mb-4 uppercase">Security</h3>
+            <div class="space-y-3 text-sm opacity-80">
+                <p><strong>Email verified:</strong> {% if user_obj.is_active %}Yes{% else %}No{% endif %}</p>
+                <p><strong>Staff access:</strong> {% if user_obj.is_staff %}Enabled{% else %}Disabled{% endif %}</p>
+                <p><strong>Admin last modified:</strong> {{ user_obj.last_login|date:'M d, Y H:i'|default:'N/A' }}</p>
+            </div>
+        </div>
+
+        <div class="terminal-card p-6">
+            <h3 class="text-lg font-bold mb-4 uppercase">Actions</h3>
+            <div class="space-y-4">
+                <form method="post" action="{% url 'admin_users' %}" onsubmit="return confirm('Delete this user?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="user_id" value="{{ user_obj.id }}">
+                    <button type="submit" class="btn-secondary w-full">Delete User</button>
+                </form>
+                <form method="post" action="{% url 'admin_users' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="{% if user_obj.is_active %}deactivate{% else %}activate{% endif %}">
+                    <input type="hidden" name="user_id" value="{{ user_obj.id }}">
+                    <button type="submit" class="btn-primary w-full">{% if user_obj.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="terminal-card overflow-hidden">
+        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">USER_TRANSACTIONS</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="uppercase opacity-40 border-b border-white/5 text-[9px]">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Type</th>
+                        <th class="p-4">Amount</th>
+                        <th class="p-4">Status</th>
+                        <th class="p-4">Reference</th>
+                        <th class="p-4">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr class="border-b border-white/5 hover:bg-white/5">
+                        <td class="p-4 font-mono">{{ tx.id }}</td>
+                        <td class="p-4">{{ tx.transaction_type }}</td>
+                        <td class="p-4 font-mono text-emerald-500">₦{{ tx.amount|floatformat:2 }}</td>
+                        <td class="p-4">{{ tx.status }}</td>
+                        <td class="p-4">{{ tx.reference|default:'-' }}</td>
+                        <td class="p-4">{{ tx.timestamp|date:'M d, H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-4 text-center opacity-50">No transactions found for this user.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
