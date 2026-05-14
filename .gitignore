@@ -17,3 +17,14 @@ db.sqlite3
 # Folder metadata
 .vscode/
 .idea/
+
+# SSL Certificates (STRICTLY PRIVATE)
+cert.crt
+cert.key
+
+# Security & Audit Logs
+logs/
+*.log
+SECURITY_REPORT_2026.md
+SECURITY_AUDIT_COMPLETE.md
+SECURITY_FIXES_IMPLEMENTED.md
