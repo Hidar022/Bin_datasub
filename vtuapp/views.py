@@ -379,7 +379,7 @@ def logout_view(request):
 def dashboard(request):
     profile = request.user.profile
     wallet = request.user.wallet
-    transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:5]
+    transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:4]
 
     # Handle the PIN Setup AJAX from the dashboard overlay
     if request.method == "POST" and request.POST.get('action') == 'set_initial_pin':

@@ -15,31 +15,31 @@
 <!-- User Stats -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Total Users</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Total Users</p>
         <h3 class="text-xl md:text-3xl font-bold neon-orange">{{ total_users }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Active Users</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Active Users</p>
         <h3 class="text-xl md:text-3xl font-bold text-green-500">{{ active_users }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Inactive Users</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Inactive Users</p>
         <h3 class="text-xl md:text-3xl font-bold text-red-500">{{ inactive_users }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Staff Users</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Staff Users</p>
         <h3 class="text-xl md:text-3xl font-bold text-blue-500">{{ staff_users }}</h3>
     </div>
 </div>
 
 <!-- Users Table -->
 <div class="terminal-card overflow-hidden">
-    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-xs tracking-widest opacity-60">
         USER_DATABASE • {{ users|length }} RECORDS
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-left">
-            <thead class="text-[9px] opacity-40 uppercase border-b border-white/5">
+            <thead class="text-xs opacity-40 uppercase border-b border-white/5">
                 <tr>
                     <th class="p-4">ID</th>
                     <th class="p-4">Username</th>

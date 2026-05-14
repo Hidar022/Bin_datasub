@@ -12,19 +12,19 @@
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
     <div class="terminal-card p-4 md:p-6 border-t-2 md:border-t-0 md:border-l-4 border-orange-600">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Net_Profit</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Net_Profit</p>
         <h3 class="text-xl md:text-3xl font-bold neon-orange">₦{{ total_profit|floatformat:2 }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Total_Sales</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Total_Sales</p>
         <h3 class="text-xl md:text-3xl font-bold">₦{{ total_sales|floatformat:2 }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Liabilities</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Liabilities</p>
         <h3 class="text-xl md:text-3xl font-bold text-red-600">₦{{ total_wallet_balances|floatformat:2 }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Active_Users</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Active_Users</p>
         <h3 class="text-xl md:text-3xl font-bold">{{ total_users }}</h3>
     </div>
 </div>
@@ -33,7 +33,7 @@
 <div class="grid md:grid-cols-2 gap-6 mb-10">
     <!-- Recent Transactions -->
     <div class="terminal-card">
-        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-xs tracking-widest opacity-60">
             RECENT_TRANSACTIONS
         </div>
         <div class="max-h-96 overflow-y-auto">
@@ -58,7 +58,7 @@
 
     <!-- System Health -->
     <div class="terminal-card">
-        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+        <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-xs tracking-widest opacity-60">
             SYSTEM_HEALTH
         </div>
         <div class="p-4 space-y-4">

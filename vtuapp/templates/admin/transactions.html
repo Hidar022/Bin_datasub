@@ -27,26 +27,26 @@
 <!-- Transaction Stats -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Total Transactions</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Total Transactions</p>
         <h3 class="text-xl md:text-3xl font-bold neon-orange">{{ total_transactions }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Successful</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Successful</p>
         <h3 class="text-xl md:text-3xl font-bold text-green-500">{{ successful_transactions }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Pending</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Pending</p>
         <h3 class="text-xl md:text-3xl font-bold text-yellow-500">{{ pending_transactions }}</h3>
     </div>
     <div class="terminal-card p-4 md:p-6">
-        <p class="opacity-50 text-[10px] font-bold uppercase">Failed</p>
+        <p class="opacity-50 text-xs font-bold uppercase">Failed</p>
         <h3 class="text-xl md:text-3xl font-bold text-red-500">{{ failed_transactions }}</h3>
     </div>
 </div>
 
 <!-- Transactions Table -->
 <div class="terminal-card overflow-hidden">
-    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-[10px] tracking-widest opacity-60">
+    <div class="p-4 border-b border-white/5 bg-white/5 font-bold text-xs tracking-widest opacity-60">
         TRANSACTION_LOG • {{ transactions|length }} RECORDS
     </div>
     <div class="overflow-x-auto">
