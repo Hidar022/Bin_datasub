@@ -19,6 +19,7 @@ class AirtimeForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': '08012345678'})
     )
     amount = forms.DecimalField(max_digits=6, decimal_places=2, min_value=50)
+    pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
 class DataForm(forms.Form):
     NETWORK_CHOICES = [('MTN', 'MTN'), ('Glo', 'Glo'), ('Airtel', 'Airtel'), ('9mobile', '9mobile')]
@@ -36,6 +37,7 @@ class ElectricityForm(forms.Form):
         validators=[RegexValidator(r'^\d{10,12}$', 'Invalid meter number')]
     )
     amount = forms.DecimalField(max_digits=8, decimal_places=2, min_value=1000)
+    pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
 class CableTVForm(forms.Form):
     provider = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'placeholder': 'DSTV / GOTV'}))
@@ -44,6 +46,7 @@ class CableTVForm(forms.Form):
         validators=[RegexValidator(r'^\d{10,20}$', 'Invalid smart card number')]
     )
     amount = forms.DecimalField(max_digits=8, decimal_places=2, min_value=1000)
+    pin = forms.CharField(max_length=4, widget=forms.PasswordInput(attrs={'placeholder': '••••'}))
 
 class DataPurchaseForm(forms.Form):
     network = forms.ChoiceField(choices=[

@@ -243,7 +243,7 @@ def verify_otp(request):
         rate_limit_key = f"ratelimit_otp_{user_id}"
         if is_rate_limited(rate_limit_key, limit=5, window=300):  # 5 attempts per 5 minutes
             log_security_event('otp_rate_limit', details=f'user_id: {user_id}', severity='WARNING')
-            return JsonResponse({'success': False, 'message': '❌ Too many OTP attempts. Please try again later.'}, status=429)
+            return JsonResponse({'success': False, 'message': '🔒 Section locked - Too many OTP attempts. Please try again after 5 minutes.'}, status=429)
 
         if not user_id:
             return JsonResponse({'success': False, 'message': 'Session expired. Please register again.'}, status=400)
@@ -311,7 +311,8 @@ def login_view(request):
         # ✅ Rate limiting
         rate_limit_key = get_rate_limit_key(request, 'login')
         if is_rate_limited(rate_limit_key, limit=10, window=60):
-            msg = '❌ Too many login attempts. Please try again later.'
+            msg = '🔒 Section locked - Too many login attempts. Please try again after 1 minute.'
+            log_security_event('login_rate_limit', user=request.user if request.user.is_authenticated else None, severity='WARNING')
             return JsonResponse({'success': False, 'message': msg}, status=429)
         
         form = AuthenticationForm(data=request.POST)
@@ -585,7 +586,7 @@ def fund_wallet_callback(request):
             # ✅ SECURITY: Verify callback amount matches
             # You can add additional verification here
 
-            wallet = request.user.wallet
+            wallet, created = Wallet.objects.get_or_create(user=request.user)
             wallet.balance += amount
             wallet.save()
 
@@ -705,8 +706,9 @@ def buy_airtime(request):
                 # ✅ SECURITY: Rate limiting
                 rate_limit_key = get_rate_limit_key(request, 'buy_airtime')
                 if is_rate_limited(rate_limit_key, limit=20, window=60):
-                    msg = '❌ Too many requests. Please try again later.'
-                    return JsonResponse({'status': 'error', 'message': msg}, status=429)
+                    msg = '🔒 Section locked - Too many attempts. Please try again after a few minutes.'
+                    log_security_event('airtime_rate_limit', user=request.user, severity='WARNING')
+                    return JsonResponse({'status': 'rate_limited', 'message': msg}, status=429)
 
                 # 1. Security & Balance Checks
                 if not profile.transaction_pin:
@@ -749,7 +751,14 @@ def buy_airtime(request):
                     log_security_event('airtime_purchase_failed', user=request.user, details=result.get('message'))
                     return JsonResponse({'status': 'error', 'message': result['message']}, status=400)
             
-            return JsonResponse({'status': 'error', 'message': '❌ Invalid form data'}, status=400)
+            # Return specific form validation errors
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_messages.append(f"{field}: {error}")
+            error_text = ' | '.join(error_messages) if error_messages else '❌ Invalid form data'
+            log_security_event('airtime_form_error', user=request.user, details=error_text, severity='INFO')
+            return JsonResponse({'status': 'error', 'message': error_text}, status=400)
         except Exception as e:
             logger.error(f"Buy airtime exception: {traceback.format_exc()}")
             return JsonResponse({'status': 'error', 'message': f'Server error: {str(e)}'}, status=500)
@@ -774,8 +783,9 @@ def buy_data(request):
             # ✅ SECURITY: Rate limiting
             rate_limit_key = get_rate_limit_key(request, 'buy_data')
             if is_rate_limited(rate_limit_key, limit=20, window=60):
-                msg = '❌ Too many requests. Please try again later.'
-                return JsonResponse({'status': 'error', 'message': msg}, status=429)
+                msg = '🔒 Section locked - Too many attempts. Please try again after a few minutes.'
+                log_security_event('data_rate_limit', user=request.user, severity='WARNING')
+                return JsonResponse({'status': 'rate_limited', 'message': msg}, status=429)
 
             # PIN Check (Updated to use Profile field and hash method)
             if not profile.transaction_pin:
@@ -861,7 +871,14 @@ def pay_electricity(request):
             else:
                 return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
         
-        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
+        # Return specific form validation errors
+        error_messages = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                error_messages.append(f"{field}: {error}")
+        error_text = ' | '.join(error_messages) if error_messages else '❌ Please fill all fields correctly'
+        log_security_event('electricity_form_error', user=request.user, details=error_text, severity='INFO')
+        return JsonResponse({'status': 'error', 'message': error_text}, status=400)
 
     form = ElectricityForm()
     return render(request, 'vtuapp/pay_electricity.html', {'form': form})
@@ -898,10 +915,14 @@ def cable_tv(request):
             else:
                 return JsonResponse({'status': 'error', 'message': '❌ Insufficient wallet balance!'}, status=400)
         
-        return JsonResponse({'status': 'error', 'message': '❌ Please fill all fields correctly'}, status=400)
-
-    form = CableTVForm()
-    return render(request, 'vtuapp/cable_tv.html', {'form': form})
+        # Return specific form validation errors
+        error_messages = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                error_messages.append(f"{field}: {error}")
+        error_text = ' | '.join(error_messages) if error_messages else '❌ Please fill all fields correctly'
+        log_security_event('cable_tv_form_error', user=request.user, details=error_text, severity='INFO')
+        return JsonResponse({'status': 'error', 'message': error_text}, status=400)
 
 
 # ====================== OTHER PAGES ======================
