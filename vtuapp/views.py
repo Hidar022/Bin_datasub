@@ -379,7 +379,7 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     profile = request.user.profile
-    wallet = request.user.wallet
+    wallet, _ = Wallet.objects.get_or_create(user=request.user)
     transactions = Transaction.objects.filter(user=request.user).order_by('-timestamp')[:4]
 
     # Handle the PIN Setup AJAX from the dashboard overlay
@@ -621,15 +621,39 @@ def gafiapay_webhook(request):
 
     try:
         # ✅ SECURITY: Verify webhook signature
-        signature = request.META.get('HTTP_X_SIGNATURE', '')
-        timestamp = request.META.get('HTTP_X_TIMESTAMP', '')
-        payload = request.body
+        # Try multiple header name variations (Gafiapay might send different header names)
+        signature = (request.META.get('HTTP_X_SIGNATURE', '') or 
+                    request.META.get('HTTP_SIGNATURE', '') or
+                    request.META.get('X_SIGNATURE', ''))
         
-        # 1. Verify signature
-        if not verify_gafiapay_signature(payload.decode('utf-8'), signature, timestamp):
-            logger.warning("❌ WEBHOOK REJECTED: Invalid signature")
-            log_security_event('invalid_webhook_signature', details='gafiapay', severity='ERROR')
-            return HttpResponse(status=401)  # Unauthorized
+        timestamp = (request.META.get('HTTP_X_TIMESTAMP', '') or 
+                    request.META.get('HTTP_TIMESTAMP', '') or
+                    request.META.get('X_TIMESTAMP', ''))
+        
+        payload = request.body
+        payload_str = payload.decode('utf-8') if isinstance(payload, bytes) else payload
+        
+        # DEBUG: Log what we're receiving
+        logger.info(f"📨 Webhook received - Signature: {signature[:20] if signature else 'MISSING'}..., Timestamp: {timestamp}, SecretKey Set: {bool(settings.GAFIAPAY_SECRET_KEY)}")
+        
+        # 1. Check if secret key is configured
+        if not settings.GAFIAPAY_SECRET_KEY:
+            logger.error("❌ GAFIAPAY_SECRET_KEY not configured in environment!")
+            log_security_event('missing_gafiapay_secret_key', severity='ERROR')
+            # Still return 401 for security, but log this critical issue
+            return HttpResponse(status=401)
+        
+        # 2. Verify signature
+        if signature and timestamp:
+            if not verify_gafiapay_signature(payload_str, signature, timestamp):
+                logger.warning(f"❌ WEBHOOK REJECTED: Invalid signature")
+                logger.info(f"DEBUG - Payload length: {len(payload_str)}, Signature length: {len(signature)}, Timestamp: {timestamp}")
+                log_security_event('invalid_webhook_signature', details='gafiapay', severity='ERROR')
+                return HttpResponse(status=401)  # Unauthorized
+        else:
+            logger.warning(f"❌ WEBHOOK REJECTED: Missing signature or timestamp | Sig: {bool(signature)}, Time: {bool(timestamp)}")
+            log_security_event('missing_webhook_headers', details='gafiapay', severity='ERROR')
+            return HttpResponse(status=401)
         
         # 2. Verify timestamp (prevent replay attacks)
         if not check_webhook_timestamp(timestamp, max_age_seconds=300):
@@ -658,7 +682,7 @@ def gafiapay_webhook(request):
                 user = User.objects.filter(email=email).first()
 
                 if user:
-                    wallet = user.wallet
+                    wallet, _ = Wallet.objects.get_or_create(user=user)
                     wallet.balance += amount
                     wallet.save()
 
@@ -670,7 +694,7 @@ def gafiapay_webhook(request):
                         status='Successful',
                         reference=reference
                     )
-                    logger.info(f"✅ Credited {amount} to {user.username}")
+                    logger.info(f"✅ Credited ₦{amount} to {user.username}")
                     log_security_event('wallet_funded_gafiapay', user=user, details=f'amount: {amount}')
                     return HttpResponse(status=200)
                 else:
@@ -698,7 +722,7 @@ def buy_airtime(request):
             if form.is_valid():
                 pin = form.cleaned_data.get('pin') or request.POST.get('pin')
                 profile = request.user.profile
-                wallet = request.user.wallet
+                wallet, _ = Wallet.objects.get_or_create(user=request.user)
                 amount = form.cleaned_data['amount']
                 phone = form.cleaned_data['phone']
                 network_name = form.cleaned_data['network'].upper()
@@ -776,7 +800,7 @@ def buy_data(request):
 
             pin = request.POST.get('pin')
             profile = request.user.profile
-            wallet = request.user.wallet
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
             plan = form.cleaned_data['plan']
             phone = form.cleaned_data['phone']
 
@@ -846,7 +870,7 @@ def pay_electricity(request):
         form = ElectricityForm(request.POST)
         if form.is_valid():
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
-            wallet = request.user.wallet
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
 
             if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
@@ -890,7 +914,7 @@ def cable_tv(request):
         form = CableTVForm(request.POST)
         if form.is_valid():
             pin = form.cleaned_data.get('pin') or request.POST.get('pin')
-            wallet = request.user.wallet
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
 
             if not wallet.check_pin(pin):
                 return JsonResponse({'status': 'error', 'message': '❌ Incorrect Transaction PIN'}, status=400)
