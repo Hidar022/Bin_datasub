@@ -45,6 +45,7 @@ def verify_paystack_signature(payload, signature):
     return is_valid
 
 
+
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
     Verify Gafiapay webhook signature using explicit field concatenation
@@ -120,6 +121,28 @@ def verify_gafiapay_signature(payload, signature, timestamp):
     logger.warning("❌ INVALID Gafiapay signature verification failure across all structural layout checks.")
     return False
 
+
+def check_webhook_timestamp(timestamp_str, max_age_seconds=600):
+    """
+    Verify webhook timestamp is recent (prevent replay attacks)
+    Handles milliseconds strings gracefully.
+    """
+    from datetime import datetime
+    try:
+        # Convert milliseconds from gateway to python timestamp object
+        webhook_time = datetime.fromtimestamp(int(timestamp_str) / 1000)
+        
+        # Calculate difference against native local server time
+        current_time = datetime.now() 
+        age = (current_time - webhook_time).total_seconds()
+        
+        # Using abs() handles slight clock drifts between your server and Gafiapay
+        if abs(age) > max_age_seconds:
+            return False
+        
+        return True
+    except Exception as e:
+        return False
 # ===================== RATE LIMITING =====================
 
 def is_rate_limited(key, limit=5, window=60):
