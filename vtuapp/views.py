@@ -12,6 +12,7 @@ from datetime import timedelta
 from django.http import HttpResponse
 from django.db.models import Sum, Count, Q, Avg
 from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, redirect, get_object_or_404
 
 
 
@@ -613,15 +614,14 @@ def fund_wallet_callback(request):
 
     return redirect('dashboard')
 
-@csrf_exempt  # Webhooks must allow POST from external services
+@csrf_exempt
 def gafiapay_webhook(request):
     if request.method != 'POST':
         logger.warning("❌ Invalid webhook method")
         return HttpResponse(status=405)
 
     try:
-        # ✅ SECURITY: Verify webhook signature
-        # Try multiple header name variations (Gafiapay might send different header names)
+        # 1. Fetch headers gracefully
         signature = (request.META.get('HTTP_X_SIGNATURE', '') or 
                     request.META.get('HTTP_SIGNATURE', '') or
                     request.META.get('X_SIGNATURE', ''))
@@ -630,45 +630,34 @@ def gafiapay_webhook(request):
                     request.META.get('HTTP_TIMESTAMP', '') or
                     request.META.get('X_TIMESTAMP', ''))
         
-        payload = request.body
-        payload_str = payload.decode('utf-8') if isinstance(payload, bytes) else payload
+        # ALWAYS preserve the exact raw network bytes for cryptographic signatures
+        raw_payload = request.body 
         
-        # DEBUG: Log what we're receiving
-        logger.info(f"📨 Webhook received - Signature: {signature[:20] if signature else 'MISSING'}..., Timestamp: {timestamp}, SecretKey Set: {bool(settings.GAFIAPAY_SECRET_KEY)}")
+        logger.info(f"📨 Webhook received - Signature: {signature[:10]}..., Timestamp: {timestamp}")
         
-        # 1. Check if secret key is configured
         if not settings.GAFIAPAY_SECRET_KEY:
-            logger.error("❌ GAFIAPAY_SECRET_KEY not configured in environment!")
-            log_security_event('missing_gafiapay_secret_key', severity='ERROR')
-            # Still return 401 for security, but log this critical issue
-            return HttpResponse(status=401)
+            logger.error("❌ GAFIAPAY_SECRET_KEY not configured!")
+            return HttpResponse(status=500)
         
-        # 2. Verify signature
+        # 2. Verify signature using raw bytes payload
         if signature and timestamp:
-            if not verify_gafiapay_signature(payload_str, signature, timestamp):
-                logger.warning(f"❌ WEBHOOK REJECTED: Invalid signature")
-                logger.info(f"DEBUG - Payload length: {len(payload_str)}, Signature length: {len(signature)}, Timestamp: {timestamp}")
-                log_security_event('invalid_webhook_signature', details='gafiapay', severity='ERROR')
-                return HttpResponse(status=401)  # Unauthorized
+            if not verify_gafiapay_signature(raw_payload, signature, timestamp):
+                logger.warning(f"❌ WEBHOOK REJECTED: Invalid signature calculation match.")
+                return HttpResponse(status=401)
         else:
-            logger.warning(f"❌ WEBHOOK REJECTED: Missing signature or timestamp | Sig: {bool(signature)}, Time: {bool(timestamp)}")
-            log_security_event('missing_webhook_headers', details='gafiapay', severity='ERROR')
+            logger.warning("❌ WEBHOOK REJECTED: Missing key authentication headers")
             return HttpResponse(status=401)
         
-        # 2. Verify timestamp (prevent replay attacks)
-        if not check_webhook_timestamp(timestamp, max_age_seconds=300):
+        # 3. Verify timestamp 
+        if not check_webhook_timestamp(timestamp):
             logger.warning("❌ WEBHOOK REJECTED: Timestamp invalid or expired")
-            log_security_event('expired_webhook', details='gafiapay', severity='WARNING')
-            return HttpResponse(status=400)  # Bad request
+            return HttpResponse(status=400)
         
-        # 3. Parse payload
-        data = json.loads(payload)
+        # 4. Parse and credit wallet
+        data = json.loads(raw_payload)
         event = data.get('event')
         transaction = data.get('data', {}).get('transaction', {})
 
-        logger.info(f"✅ VALID webhook received: {event}")
-
-        # Check for the correct event
         if event == 'payment.received':
             amount = Decimal(str(transaction.get('amount', 0)))
             email = transaction.get('email')
@@ -677,7 +666,6 @@ def gafiapay_webhook(request):
             if not reference:
                 return HttpResponse(status=200)
 
-            # Prevent double funding
             if not Transaction.objects.filter(reference=reference).exists():
                 user = User.objects.filter(email=email).first()
 
@@ -695,24 +683,16 @@ def gafiapay_webhook(request):
                         reference=reference
                     )
                     logger.info(f"✅ Credited ₦{amount} to {user.username}")
-                    log_security_event('wallet_funded_gafiapay', user=user, details=f'amount: {amount}')
                     return HttpResponse(status=200)
                 else:
                     logger.warning(f"❌ USER NOT FOUND: {email}")
-                    log_security_event('webhook_user_not_found', details=f'email: {email}', severity='WARNING')
                     return HttpResponse(status=404)
 
-    except json.JSONDecodeError:
-        logger.error("❌ Invalid JSON in webhook")
-        log_security_event('invalid_webhook_json', severity='ERROR')
-        return HttpResponse(status=400)
     except Exception as e:
-        logger.error(f"Webhook error: {traceback.format_exc()}")
-        log_security_event('webhook_error', details=str(e), severity='ERROR')
+        logger.error(f"Webhook exception occurred: {str(e)}")
         return HttpResponse(status=500)
 
     return HttpResponse(status=200)
-
 # ====================== PURCHASE VIEWS ======================
 @login_required
 def buy_airtime(request):

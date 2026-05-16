@@ -5,6 +5,7 @@ Security utilities for Bin Datasub
 - Input sanitization
 """
 
+import json
 import hmac
 import hashlib
 import logging
@@ -45,100 +46,77 @@ def verify_paystack_signature(payload, signature):
 
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Verify Gafiapay webhook signature
-    
-    Args:
-        payload: Raw request body JSON string
-        signature: x-signature header value
-        timestamp: x-timestamp header value
-    
-    Returns:
-        bool: True if signature is valid
+    Verify Gafiapay webhook signature using RAW BYTES or strings cleanly.
     """
     if not signature or not timestamp:
         logger.warning(f"❌ Missing signature or timestamp for Gafiapay verification")
         return False
     
-    # Try multiple possible signature formats that Gafiapay might use
+    # Ensure payload is in bytes format for hashing
+    if isinstance(payload, str):
+        payload_bytes = payload.encode('utf-8')
+    else:
+        payload_bytes = payload
+
+    # If payload is JSON bytes, let's also try a compact string version to match your out-going logic
+    payload_compact_bytes = None
+    try:
+        raw_json = json.loads(payload_bytes.decode('utf-8'))
+        compact_str = json.dumps(raw_json, separators=(",", ":"))
+        payload_compact_bytes = compact_str.encode('utf-8')
+    except Exception:
+        pass
+
+    timestamp_bytes = timestamp.encode('utf-8')
+    secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
+    
     attempts = []
     
-    # Format 1: payload + timestamp + secret (original)
-    message1 = f"{payload}{timestamp}"
-    hash_obj1 = hmac.new(
-        settings.GAFIAPAY_SECRET_KEY.encode('utf-8'),
-        message1.encode('utf-8'),
-        hashlib.sha256
-    )
-    sig1 = hash_obj1.hexdigest()
-    attempts.append(("format1_payload+timestamp", sig1))
+    # Format 1: payload + timestamp
+    attempts.append(("format1_payload+timestamp", payload_bytes + timestamp_bytes))
     
-    # Format 2: timestamp + payload + secret
-    message2 = f"{timestamp}{payload}"
-    hash_obj2 = hmac.new(
-        settings.GAFIAPAY_SECRET_KEY.encode('utf-8'),
-        message2.encode('utf-8'),
-        hashlib.sha256
-    )
-    sig2 = hash_obj2.hexdigest()
-    attempts.append(("format2_timestamp+payload", sig2))
+    # Format 2: timestamp + payload
+    attempts.append(("format2_timestamp+payload", timestamp_bytes + payload_bytes))
     
     # Format 3: payload only
-    hash_obj3 = hmac.new(
-        settings.GAFIAPAY_SECRET_KEY.encode('utf-8'),
-        payload.encode('utf-8'),
-        hashlib.sha256
-    )
-    sig3 = hash_obj3.hexdigest()
-    attempts.append(("format3_payload_only", sig3))
+    attempts.append(("format3_payload_only", payload_bytes))
+
+    # Formats 4-6: Using the compact string variation (if JSON parsing succeeded)
+    if payload_compact_bytes:
+        attempts.append(("format4_compact+timestamp", payload_compact_bytes + timestamp_bytes))
+        attempts.append(("format5_timestamp+compact", timestamp_bytes + payload_compact_bytes))
+        attempts.append(("format6_compact_only", payload_compact_bytes))
     
-    # Format 4: with sha512
-    hash_obj4 = hmac.new(
-        settings.GAFIAPAY_SECRET_KEY.encode('utf-8'),
-        message1.encode('utf-8'),
-        hashlib.sha512
-    )
-    sig4 = hash_obj4.hexdigest()
-    attempts.append(("format4_sha512", sig4))
-    
-    # Check if any format matches (using constant-time comparison for all)
-    for format_name, computed_sig in attempts:
+    # Loop and compare hashes
+    for format_name, message_bytes in attempts:
         try:
+            computed_sig = hmac.new(secret_key, message_bytes, hashlib.sha256).hexdigest()
             if hmac.compare_digest(computed_sig, signature):
                 logger.info(f"✅ Gafiapay signature verified using {format_name}")
                 return True
         except Exception as e:
             logger.warning(f"Error comparing signature with {format_name}: {e}")
             continue
-    
-    # None matched - log details for debugging
+            
     logger.warning(f"❌ INVALID Gafiapay signature - received: {signature[:20]}...")
-    logger.debug(f"Attempted formats: {[a[0] for a in attempts]}")
-    
     return False
 
 
-def check_webhook_timestamp(timestamp_str, max_age_seconds=300):
+def check_webhook_timestamp(timestamp_str, max_age_seconds=600): # Increased to 10 mins to account for server drift
     """
-    Verify webhook timestamp is recent (prevent replay attacks)
-    
-    Args:
-        timestamp_str: Timestamp from webhook header (milliseconds)
-        max_age_seconds: Maximum age in seconds (default 5 minutes)
-    
-    Returns:
-        bool: True if timestamp is recent
+    Verify webhook timestamp is recent, dealing gracefully with naive vs aware timezones
     """
     try:
+        # Convert milliseconds from gateway to timestamp
         webhook_time = datetime.fromtimestamp(int(timestamp_str) / 1000)
-        current_time = datetime.utcnow()
+        
+        # FIX: Check naive local time difference to avoid native UTC vs local server time mismatch
+        current_time = datetime.now() 
         age = (current_time - webhook_time).total_seconds()
         
-        if age > max_age_seconds:
-            logger.warning(f"❌ Webhook timestamp too old: {age} seconds")
-            return False
-        
-        if age < 0:  # Future timestamp
-            logger.warning(f"❌ Webhook timestamp in future: {age} seconds")
+        # Absolute value handles slight clock differences between your server and Gafiapay
+        if abs(age) > max_age_seconds:
+            logger.warning(f"❌ Webhook timestamp out of acceptable bounds. Age: {age} seconds")
             return False
         
         return True
