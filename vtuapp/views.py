@@ -633,6 +633,15 @@ def gafiapay_webhook(request):
         # ALWAYS preserve the exact raw network bytes for cryptographic signatures
         raw_payload = request.body 
         
+        # 🔍 ADDED DEBUG LINES HERE TO CATCH THE EXACT PAYLOAD FOR MATCHING
+        try:
+            payload_str = raw_payload.decode('utf-8') if isinstance(raw_payload, bytes) else str(raw_payload)
+            logger.info(f"🚨 DEBUG RAW PAYLOAD TEXT: {payload_str}")
+            logger.info(f"🚨 DEBUG EXPECTED SIGNATURE: {signature}")
+            logger.info(f"🚨 DEBUG EXPECTED TIMESTAMP: {timestamp}")
+        except Exception as log_err:
+            logger.error(f"Failed to print debug payload logs: {log_err}")
+        
         logger.info(f"📨 Webhook received - Signature: {signature[:10]}..., Timestamp: {timestamp}")
         
         if not settings.GAFIAPAY_SECRET_KEY:
