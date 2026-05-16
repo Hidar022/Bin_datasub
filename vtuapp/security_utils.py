@@ -5,6 +5,7 @@ Security utilities for Bin Datasub
 - Input sanitization
 """
 
+
 import json
 import hmac
 import hashlib
@@ -44,61 +45,65 @@ def verify_paystack_signature(payload, signature):
     return is_valid
 
 
+
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Verify Gafiapay webhook signature using RAW BYTES or strings cleanly.
+    Verify Gafiapay webhook signature by safely extracting normalized JSON
+    to match standard payment gateway payload signature structures.
     """
     if not signature or not timestamp:
-        logger.warning(f"❌ Missing signature or timestamp for Gafiapay verification")
+        logger.warning("❌ Missing signature or timestamp for Gafiapay verification")
         return False
-    
-    # Ensure payload is in bytes format for hashing
-    if isinstance(payload, str):
-        payload_bytes = payload.encode('utf-8')
-    else:
-        payload_bytes = payload
 
-    # If payload is JSON bytes, let's also try a compact string version to match your out-going logic
-    payload_compact_bytes = None
-    try:
-        raw_json = json.loads(payload_bytes.decode('utf-8'))
-        compact_str = json.dumps(raw_json, separators=(",", ":"))
-        payload_compact_bytes = compact_str.encode('utf-8')
-    except Exception:
-        pass
-
-    timestamp_bytes = timestamp.encode('utf-8')
     secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
+    timestamp_str = str(timestamp)
     
-    attempts = []
-    
-    # Format 1: payload + timestamp
-    attempts.append(("format1_payload+timestamp", payload_bytes + timestamp_bytes))
-    
-    # Format 2: timestamp + payload
-    attempts.append(("format2_timestamp+payload", timestamp_bytes + payload_bytes))
-    
-    # Format 3: payload only
-    attempts.append(("format3_payload_only", payload_bytes))
+    # Step 1: Normalize payload to an identical compressed string format
+    try:
+        # If payload is passed as bytes, decode it to string first
+        if isinstance(payload, bytes):
+            payload_str = payload.decode('utf-8')
+        else:
+            payload_str = str(payload)
+            
+        # Parse into a python dictionary
+        payload_dict = json.loads(payload_str)
+        
+        # Strip all whitespace formatting and sort keys alphabetically to maintain strict matching
+        normalized_json = json.dumps(payload_dict, separators=(",", ":"), sort_keys=True)
+        # Also prepare an unsorted version just in case their webhook engine does not sort keys
+        normalized_json_unsorted = json.dumps(payload_dict, separators=(",", ":"))
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to normalize webhook payload JSON: {e}")
+        return False
 
-    # Formats 4-6: Using the compact string variation (if JSON parsing succeeded)
-    if payload_compact_bytes:
-        attempts.append(("format4_compact+timestamp", payload_compact_bytes + timestamp_bytes))
-        attempts.append(("format5_timestamp+compact", timestamp_bytes + payload_compact_bytes))
-        attempts.append(("format6_compact_only", payload_compact_bytes))
+    # Step 2: Formulate potential message patterns 
+    # (Payload + Timestamp is their standard outgoing signature pattern)
+    attempts = [
+        ("sorted_payload+timestamp", f"{normalized_json}{timestamp_str}"),
+        ("unsorted_payload+timestamp", f"{normalized_json_unsorted}{timestamp_str}"),
+        ("timestamp+sorted_payload", f"{timestamp_str}{normalized_json}"),
+        ("timestamp+unsorted_payload", f"{timestamp_str}{normalized_json_unsorted}"),
+    ]
     
-    # Loop and compare hashes
-    for format_name, message_bytes in attempts:
+    # Step 3: Run secure constant-time check loops across the variations
+    for format_name, message_string in attempts:
         try:
-            computed_sig = hmac.new(secret_key, message_bytes, hashlib.sha256).hexdigest()
+            computed_sig = hmac.new(
+                secret_key,
+                message_string.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            
             if hmac.compare_digest(computed_sig, signature):
-                logger.info(f"✅ Gafiapay signature verified using {format_name}")
+                logger.info(f"✅ Gafiapay signature verified successfully using {format_name}!")
                 return True
         except Exception as e:
-            logger.warning(f"Error comparing signature with {format_name}: {e}")
+            logger.warning(f"Error checking variation {format_name}: {e}")
             continue
-            
-    logger.warning(f"❌ INVALID Gafiapay signature - received: {signature[:20]}...")
+
+    logger.warning(f"❌ INVALID Gafiapay signature verification failure.")
     return False
 
 
