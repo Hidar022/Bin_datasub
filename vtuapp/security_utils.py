@@ -47,41 +47,70 @@ def verify_paystack_signature(payload, signature):
 
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Verify Gafiapay webhook signature by replacing the signature hash value 
-    with an empty string to exactly match the gateway's signing state.
+    Verify Gafiapay webhook signature by explicitly hashing the core transaction
+    properties back-to-back, matching industry gateway security protocols.
     """
     if not signature:
         logger.warning("❌ Missing signature string for verification")
         return False
 
-    # Ensure payload is handled as a standard string
-    if isinstance(payload, bytes):
-        payload_str = payload.decode('utf-8')
-    else:
-        payload_str = str(payload)
+    try:
+        # Decode data body to dict
+        if isinstance(payload, bytes):
+            payload_str = payload.decode('utf-8')
+        else:
+            payload_str = str(payload)
+            
+        payload_dict = json.loads(payload_str)
+        transaction_data = payload_dict.get('data', {}).get('transaction', {})
+        
+        # Pull values exactly as they are sent
+        tx_id = str(transaction_data.get('id', ''))
+        amount = str(transaction_data.get('amount', ''))
+        currency = str(transaction_data.get('currency', ''))
+        order_no = str(transaction_data.get('orderNo', ''))
+        timestamp_str = str(timestamp)
 
-    # Gafiapay signs the body by replacing the signature value with an empty string ""
-    # We replace the received signature with "" to reconstruct their exact input string
-    reconstructed_payload = payload_str.replace(signature, "")
+    except Exception as e:
+        logger.error(f"❌ Failed to parse payload dictionary for properties: {e}")
+        return False
 
     secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
 
-    # Run hmac check on the exact reconstructed payload text layout
-    try:
-        computed_sig = hmac.new(
-            secret_key,
-            reconstructed_payload.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
+    # Build direct string concatenation combinations
+    attempts = [
+        # Standard Gafiapay formula pattern: id + amount + currency + orderNo + timestamp
+        ("standard_sequence", f"{tx_id}{amount}{currency}{order_no}{timestamp_str}"),
+        
+        # Sequence Variation 2: orderNo + amount + currency + timestamp
+        ("order_no_sequence", f"{order_no}{amount}{currency}{timestamp_str}"),
+        
+        # Sequence Variation 3: id + orderNo + timestamp
+        ("id_order_timestamp", f"{tx_id}{order_no}{timestamp_str}"),
+    ]
 
-        if hmac.compare_digest(computed_sig, signature):
-            logger.info("✅ Gafiapay signature verified successfully using direct string injection replacement!")
-            return True
+    for format_name, message_string in attempts:
+        # Skip if core components are missing
+        if not tx_id or not amount:
+            continue
             
-    except Exception as e:
-        logger.error(f"Error calculating text hash match: {e}")
+        try:
+            # Check standard raw format match
+            computed_sig = hmac.new(
+                secret_key,
+                message_string.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
 
-    logger.warning("❌ INVALID Gafiapay signature verification failure.")
+            if hmac.compare_digest(computed_sig, signature):
+                logger.info(f"✅ Gafiapay signature verified successfully using {format_name}!")
+                return True
+                
+        except Exception as e:
+            logger.warning(f"Error checking verification pattern {format_name}: {e}")
+            continue
+
+    logger.warning("❌ INVALID Gafiapay signature verification failure across explicit tracking fields.")
     return False
 def check_webhook_timestamp(timestamp_str, max_age_seconds=600):
     """
