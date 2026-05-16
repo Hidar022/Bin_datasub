@@ -47,46 +47,55 @@ def verify_paystack_signature(payload, signature):
 
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Verify Gafiapay webhook signature using the exact cryptographic order
-    defined by Gafiapay's standard serialization strategy: JSON string + Timestamp.
+    Verify Gafiapay webhook signature using the official 3-field sequence layout:
+    secret_key + transaction_id + amount
     """
-    if not signature or not timestamp:
-        logger.warning("❌ Missing key verification properties.")
+    if not signature:
+        logger.warning("❌ Missing signature string for verification")
         return False
 
-    # Ensure we treat incoming payload as string
-    if isinstance(payload, bytes):
-        payload_str = payload.decode('utf-8')
-    else:
-        payload_str = str(payload)
+    try:
+        # Decode the incoming raw payload
+        if isinstance(payload, bytes):
+            payload_str = payload.decode('utf-8')
+        else:
+            payload_str = str(payload)
+            
+        payload_dict = json.loads(payload_str)
+        transaction_data = payload_dict.get('data', {}).get('transaction', {})
+        
+        # Pull the exact core matching parameters
+        tx_id = str(transaction_data.get('id', ''))
+        amount = str(transaction_data.get('amount', ''))
+        order_no = str(transaction_data.get('orderNo', ''))
+        timestamp_str = str(timestamp)
 
-    secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
-    timestamp_str = str(timestamp)
+    except Exception as e:
+        logger.error(f"❌ Failed to parse payload elements for hashing: {e}")
+        return False
 
-    # 1. Exact Strategy: Replace the signature hash string value with an empty string ""
-    # This leaves the commas, nested blocks, and layout intact exactly as signed by the gateway.
-    body_with_empty_sig = payload_str.replace(signature, "")
-    
-    # 2. Base Strategy: Strip the signature key block out completely
-    import re
-    body_stripped_sig = re.sub(r',?"signature"\s*:\s*"[^"]*"', '', payload_str)
-    body_stripped_sig = body_stripped_sig.replace('{,', '{').replace(',}', '}').replace(',,', ',')
+    secret_key_str = getattr(settings, 'GAFIAPAY_SECRET_KEY', '')
+    secret_bytes = secret_key_str.encode('utf-8')
 
+    # Build the official combinations
     attempts = [
-        # Strategy A: Reconstructed payload with empty signature field
-        ("empty_sig_body", body_with_empty_sig),
-        # Strategy B: Reconstructed payload plus timestamp (Matches get_gafia_headers layout)
-        ("empty_sig_plus_timestamp", f"{body_with_empty_sig}{timestamp_str}"),
-        # Strategy C: Stripped body layout
-        ("stripped_sig_body", body_stripped_sig),
-        # Strategy D: Stripped body plus timestamp
-        ("stripped_sig_plus_timestamp", f"{body_stripped_sig}{timestamp_str}"),
+        # Formula 1: Secret Key + Tx ID + Amount (Official Webhook Standard)
+        ("official_webhook_layout", f"{secret_key_str}{tx_id}{amount}"),
+        
+        # Formula 2: Secret Key + Order No + Amount
+        ("order_no_layout", f"{secret_key_str}{order_no}{amount}"),
+        
+        # Formula 3: Tx ID + Amount + Timestamp
+        ("tx_amount_timestamp", f"{tx_id}{amount}{timestamp_str}"),
     ]
 
     for format_name, message_string in attempts:
+        if not tx_id or not amount:
+            continue
+            
         try:
             computed_sig = hmac.new(
-                secret_key,
+                secret_bytes,
                 message_string.encode('utf-8'),
                 hashlib.sha256
             ).hexdigest()
@@ -95,10 +104,10 @@ def verify_gafiapay_signature(payload, signature, timestamp):
                 logger.info(f"✅ Gafiapay signature verified successfully using {format_name}!")
                 return True
         except Exception as e:
-            logger.warning(f"Error checking verification model {format_name}: {e}")
+            logger.warning(f"Error executing strategy {format_name}: {e}")
             continue
 
-    logger.warning("❌ INVALID Gafiapay signature verification failure across all structural serialization checks.")
+    logger.warning("❌ INVALID Gafiapay signature verification failure across property verification formulas.")
     return False
 
 def check_webhook_timestamp(timestamp_str, max_age_seconds=600):
