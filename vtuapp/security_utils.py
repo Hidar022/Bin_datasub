@@ -48,100 +48,71 @@ def verify_paystack_signature(payload, signature):
 
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Verify Gafiapay webhook signature using explicit field concatenation
-    to match the gateway's internal cryptographic layout.
+    Verify Gafiapay signature by calculating the HMAC SHA256 of the 
+    received payload with the 'signature' key removed.
     """
-    if not signature or not timestamp:
-        logger.warning("❌ Missing signature or timestamp for Gafiapay verification")
+    if not signature:
+        logger.warning("❌ Missing signature string for verification")
         return False
 
-    secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
-    timestamp_str = str(timestamp)
-    
     try:
-        # Decode bytes if necessary
+        # 1. Safely decode raw payload to text string
         if isinstance(payload, bytes):
             payload_str = payload.decode('utf-8')
         else:
             payload_str = str(payload)
-            
+
+        # 2. Parse into Python dictionary
         payload_dict = json.loads(payload_str)
         
-        # Safely drill down to the inner transaction dictionary block
-        transaction_data = payload_dict.get('data', {}).get('transaction', {})
+        # 3. POP out the signature key (this matches the exact payload state before signing)
+        payload_dict.pop('signature', None)
         
-        # Pull core verification properties explicitly
-        tx_id = str(transaction_data.get('id', ''))
-        amount = str(transaction_data.get('amount', ''))
-        currency = str(transaction_data.get('currency', ''))
-        order_no = str(transaction_data.get('orderNo', ''))
-        
-        # Fallback to general event if nested layout isn't present
-        event_name = str(payload_dict.get('event', ''))
+        # 4. Convert back to exact compact JSON structure matching gateway standards
+        # Gafiapay builds signatures using standard unsorted compact keys
+        cleaned_payload_str = json.dumps(payload_dict, separators=(',', ':'))
 
     except Exception as e:
-        logger.error(f"❌ Webhook payload dictionary parsing failure: {e}")
+        logger.error(f"❌ Failed to process payload data text structure: {e}")
         return False
 
-    # Create various string combinations that match Gafiapay signature layouts
+    # 5. Fetch secret key securely
+    secret_key = settings.GAFIAPAY_SECRET_KEY.encode('utf-8')
+
+    # 6. Check the raw payload variation and explicit property formats
     attempts = [
-        # Format A: Explicit property chain (Standard gateway design)
-        ("explicit_field_chain", f"{tx_id}{amount}{currency}{order_no}{timestamp_str}"),
-        
-        # Format B: Normalized compact whole body (Our previous method)
-        ("compact_body_sorted", f"{json.dumps(payload_dict, separators=(',', ':'), sort_keys=True)}{timestamp_str}"),
-        ("compact_body_unsorted", f"{json.dumps(payload_dict, separators=(',', ':'))}{timestamp_str}"),
-        
-        # Format C: Simple concatenation of core data blocks
-        ("tx_id+timestamp", f"{tx_id}{timestamp_str}"),
-        ("order_no+timestamp", f"{order_no}{timestamp_str}"),
-        ("event+timestamp", f"{event_name}{timestamp_str}")
+        ("clean_body_raw", cleaned_payload_str),
+        ("clean_body_plus_timestamp", f"{cleaned_payload_str}{timestamp}"),
     ]
-    
-    # Run the comparison loop
+
     for format_name, message_string in attempts:
-        # Skip attempt if essential tracking variables are blank
-        if "explicit" in format_name and not (tx_id and amount):
-            continue
-            
-        try:
-            computed_sig = hmac.new(
-                secret_key,
-                message_string.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            
-            if hmac.compare_digest(computed_sig, signature):
-                logger.info(f"✅ Gafiapay signature verified successfully using {format_name}!")
-                return True
-        except Exception as e:
-            logger.warning(f"Error checking verification model {format_name}: {e}")
-            continue
+        computed_sig = hmac.new(
+            secret_key,
+            message_string.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
 
-    logger.warning("❌ INVALID Gafiapay signature verification failure across all structural layout checks.")
+        if hmac.compare_digest(computed_sig, signature):
+            logger.info(f"✅ Gafiapay signature verified successfully using {format_name}!")
+            return True
+
+    logger.warning("❌ INVALID Gafiapay signature verification failure after exact body processing.")
     return False
-
 
 def check_webhook_timestamp(timestamp_str, max_age_seconds=600):
     """
     Verify webhook timestamp is recent (prevent replay attacks)
-    Handles milliseconds strings gracefully.
     """
     from datetime import datetime
     try:
-        # Convert milliseconds from gateway to python timestamp object
         webhook_time = datetime.fromtimestamp(int(timestamp_str) / 1000)
-        
-        # Calculate difference against native local server time
         current_time = datetime.now() 
         age = (current_time - webhook_time).total_seconds()
         
-        # Using abs() handles slight clock drifts between your server and Gafiapay
         if abs(age) > max_age_seconds:
             return False
-        
         return True
-    except Exception as e:
+    except Exception:
         return False
 # ===================== RATE LIMITING =====================
 
