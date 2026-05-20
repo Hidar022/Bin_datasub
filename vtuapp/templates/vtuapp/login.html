@@ -130,24 +130,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4000);
     });
 
-    // 2. THE UI MESSAGE FUNCTION (The Fix)
+    // 2. THE FLOATING TOAST FUNCTION (FIXED: Placed Top Center)
     function showMessage(message, type = 'error') {
         const old = document.getElementById('global-toast');
         if (old) old.remove();
 
         const div = document.createElement('div');
         div.id = 'global-toast';
-        // Styled to match your "Technical" vibe
-        div.className = `fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-l-4 animate-bounce-once ${
-            type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-red-600 border-red-400'
+        
+        // ✨ FIXED POSITIONING: Now explicitly floating at top center
+        div.className = `fixed top-6 left-1/2 -translate-x-1/2 z-[9999] px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border border-white/10 flex items-center gap-3 transition-all duration-300 transform scale-95 opacity-0 ${
+            type === 'success' ? 'bg-emerald-600/95 backdrop-blur-md' : 'bg-red-600/95 backdrop-blur-md'
         }`;
-        div.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i> ${message}`;
+        
+        div.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> <span>${message}</span>`;
         document.body.appendChild(div);
 
+        // Quick trick to animate scaling up
         setTimeout(() => {
-            div.style.opacity = '0';
-            setTimeout(() => div.remove(), 500);
-        }, 3500);
+            div.classList.remove('scale-95', 'opacity-0');
+            div.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        // Remove gracefully
+        setTimeout(() => {
+            div.classList.remove('scale-100', 'opacity-100');
+            div.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => div.remove(), 300);
+        }, 4000);
     }
 
     // 3. LOGIN FORM LOGIC
@@ -179,23 +189,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // Parse json body regardless of response.ok status code
             const data = await response.json();
 
             if (response.ok && data.success) {
-                // THE SUCCESS MESSAGE YOU WANTED
                 showMessage('Login Successful! Redirecting...', 'success');
-                
-                // Wait 1.5 seconds so they can see the message before leaving
                 setTimeout(() => {
                     window.location.href = data.redirect_url;
                 }, 1500);
             } else {
+                // 🚀 FIX: Display the real lockout/limit warning message from backend
                 showMessage(data.message || 'Invalid Credentials', 'error');
                 setLoading(false);
             }
         } catch (err) {
             console.error(err);
-            showMessage('Connection error. Check your network.', 'error');
+            // This now only triggers if the internet connection is actually dead
+            showMessage('Network connection failed. Please check your internet.', 'error');
             setLoading(false);
         }
     });
