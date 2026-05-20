@@ -83,10 +83,14 @@ EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD') # This MUST be the 16-char App Password
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_USER', 'your_email@gmail.com')
 
-# Session - User must re-login after closing browser
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7   # 7 days max (optional)
-SESSION_COOKIE_HTTPONLY = True
+# Force session to expire when the user closes their browser window
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  
+
+# Set absolute inactivity time in seconds (e.g., 1800 seconds = 30 minutes)
+SESSION_COOKIE_AGE = 1800  
+
+# Tell Django to save and restart the timer on every single request/click
+SESSION_SAVE_EVERY_REQUEST = True
 # Automatic Security Switching
 if DEBUG:
     SESSION_COOKIE_SECURE = False

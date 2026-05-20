@@ -74,7 +74,14 @@ class Transaction(models.Model):
             return self.amount - self.cost_price
         return 0
 
-class DataPlan(models.Model):                                                                                                                                                   
+class DataPlan(models.Model):
+    PLAN_TYPES = [
+        ('SME', 'SME'),
+        ('GIFTING', 'Gifting'),
+        ('AWOOF', 'Awoof / Promo'),
+        ('CORPORATE', 'Corporate Gifting'),
+    ]
+                                                                                                                                                   
     network = models.CharField(max_length=20, choices=[
         ('MTN', 'MTN'), 
         ('Glo', 'Glo'), 
@@ -82,6 +89,8 @@ class DataPlan(models.Model):
         ('9mobile', '9mobile')
     ])
     name = models.CharField(max_length=100)
+    # 🚀 NEW FIELD: Categorization system
+    plan_type = models.CharField(max_length=20, choices=PLAN_TYPES, default='SME')
     data_amount = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     validity = models.CharField(max_length=50, default="30 Days")
@@ -97,7 +106,7 @@ class DataPlan(models.Model):
     )
 
     def __str__(self):
-        return f"{self.network} - {self.name} - ₦{self.price}"
+        return f"{self.network} - {self.name} ({self.get_plan_type_display()}) - ₦{self.price}"
 
 class BiometricCredential(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='biometric_credentials')
