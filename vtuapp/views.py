@@ -620,6 +620,14 @@ def gafiapay_webhook(request):
         logger.warning("❌ Invalid webhook method")
         return HttpResponse(status=405)
 
+    # 🛡️ SYSTEM ARMOR: Validate official Gafiapay outbound IP address from docs
+    ALLOWED_IPS = ['38.242.149.154', '127.0.0.1']
+    client_ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() or request.META.get('REMOTE_ADDR')
+    
+    if client_ip not in ALLOWED_IPS:
+        logger.warning(f"🚫 BLOCKED UNAUTHORIZED WEBHOOK SOURCE IP: {client_ip}")
+        return HttpResponse("Unauthorized Source", status=403)
+
     try:
         # 1. Fetch headers gracefully
         signature = (request.META.get('HTTP_X_SIGNATURE', '') or 
@@ -630,32 +638,16 @@ def gafiapay_webhook(request):
                     request.META.get('HTTP_TIMESTAMP', '') or
                     request.META.get('X_TIMESTAMP', ''))
         
-        # ALWAYS preserve the exact raw network bytes for cryptographic signatures
         raw_payload = request.body 
-        
-        # 🔍 ADDED DEBUG LINES HERE TO CATCH THE EXACT PAYLOAD FOR MATCHING
-        try:
-            payload_str = raw_payload.decode('utf-8') if isinstance(raw_payload, bytes) else str(raw_payload)
-            logger.info(f"🚨 DEBUG RAW PAYLOAD TEXT: {payload_str}")
-            logger.info(f"🚨 DEBUG EXPECTED SIGNATURE: {signature}")
-            logger.info(f"🚨 DEBUG EXPECTED TIMESTAMP: {timestamp}")
-        except Exception as log_err:
-            logger.error(f"Failed to print debug payload logs: {log_err}")
-        
-        logger.info(f"📨 Webhook received - Signature: {signature[:10]}..., Timestamp: {timestamp}")
         
         if not settings.GAFIAPAY_SECRET_KEY:
             logger.error("❌ GAFIAPAY_SECRET_KEY not configured!")
             return HttpResponse(status=500)
         
-        # 2. Verify signature using raw bytes payload
-        if signature and timestamp:
-            if not verify_gafiapay_signature(raw_payload, signature, timestamp):
-                # 🚨 EMERGENCY BYPASS: Log the failure, but DO NOT block the payment processing
-                logger.warning("⚠️ Gafiapay signature calculation mismatch. Proceeding with payload processing fallback.")
-        else:
-            logger.warning("❌ WEBHOOK REJECTED: Missing key authentication headers")
-            return HttpResponse(status=401)
+        # 2. Strict Signature Verification - NO MORE BYPASSING!
+        if not verify_gafiapay_signature(raw_payload, signature, timestamp):
+            logger.warning("❌ WEBHOOK REJECTED: Cryptographic signature mismatch.")
+            return HttpResponse("Invalid Signature", status=401)
         
         # 3. Verify timestamp 
         if not check_webhook_timestamp(timestamp):

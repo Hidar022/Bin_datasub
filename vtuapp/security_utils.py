@@ -47,73 +47,34 @@ def verify_paystack_signature(payload, signature):
 
 def verify_gafiapay_signature(payload, signature, timestamp):
     """
-    Exhaustive signature check exploring both HMAC-SHA256 and straight SHA256 hash 
-    combinations of the transaction data to pinpoint the gateway's layout.
+    Verifies Gafiapay webhook signature by matching their Node.js implementation.
+    Gafiapay signs ONLY the timestamp string using HMAC-SHA256.
     """
-    if not signature:
-        logger.warning("❌ Missing signature string for verification")
+    if not signature or not timestamp:
+        logger.warning("❌ Missing signature or timestamp string for verification")
         return False
 
     try:
-        if isinstance(payload, bytes):
-            payload_str = payload.decode('utf-8')
-        else:
-            payload_str = str(payload)
+        secret_key_str = getattr(settings, 'GAFIAPAY_SECRET_KEY', '')
+        secret_bytes = secret_key_str.encode('utf-8')
+        
+        # Ensure timestamp is treated purely as a clean string before byte conversion
+        timestamp_str = str(timestamp).strip()
+        message_bytes = timestamp_str.encode('utf-8')
+        
+        # Calculate expected HMAC-SHA256 signature
+        computed_hmac = hmac.new(secret_bytes, message_bytes, hashlib.sha256).hexdigest()
+        
+        # Constant-time comparison to prevent timing attacks
+        if hmac.compare_digest(computed_hmac, signature):
+            logger.info("✅ Gafiapay signature verified successfully using direct timestamp hashing!")
+            return True
             
-        payload_dict = json.loads(payload_str)
-        transaction_data = payload_dict.get('data', {}).get('transaction', {})
-        
-        tx_id = str(transaction_data.get('id', ''))
-        amount = str(transaction_data.get('amount', ''))
-        currency = str(transaction_data.get('currency', ''))
-        order_no = str(transaction_data.get('orderNo', ''))
-        timestamp_str = str(timestamp)
-        
-        # Plain text reconstruction layout variations
-        body_with_empty_sig = payload_str.replace(signature, "")
-
     except Exception as e:
-        logger.error(f"❌ Failed to parse data values for hashing: {e}")
+        logger.error(f"❌ Exception during Gafiapay signature calculation: {e}")
         return False
 
-    secret_key_str = getattr(settings, 'GAFIAPAY_SECRET_KEY', '')
-    secret_bytes = secret_key_str.encode('utf-8')
-
-    # Value chains for comparison
-    strings_to_hash = [
-        # 1. Straight field chains
-        ("standard_sequence", f"{tx_id}{amount}{currency}{order_no}{timestamp_str}"),
-        ("official_webhook_layout", f"{secret_key_str}{tx_id}{amount}"),
-        ("key_id_order_amount", f"{secret_key_str}{tx_id}{order_no}{amount}"),
-        
-        # 2. Raw body strings combined with the secret key string
-        ("body_plus_key", f"{body_with_empty_sig}{secret_key_str}"),
-        ("key_plus_body", f"{secret_key_str}{body_with_empty_sig}"),
-        ("body_plus_timestamp_key", f"{body_with_empty_sig}{timestamp_str}{secret_key_str}"),
-    ]
-
-    for format_name, message_string in strings_to_hash:
-        message_bytes = message_string.encode('utf-8')
-        
-        # --- TEST METHOD 1: Standard HMAC-SHA256 ---
-        try:
-            computed_hmac = hmac.new(secret_bytes, message_bytes, hashlib.sha256).hexdigest()
-            if hmac.compare_digest(computed_hmac, signature):
-                logger.info(f"✅ Gafiapay signature verified successfully using HMAC via {format_name}!")
-                return True
-        except Exception:
-            pass
-
-        # --- TEST METHOD 2: Plain SHA256 Hashing ---
-        try:
-            computed_sha256 = hashlib.sha256(message_bytes).hexdigest()
-            if hmac.compare_digest(computed_sha256, signature):
-                logger.info(f"✅ Gafiapay signature verified successfully using Plain SHA256 via {format_name}!")
-                return True
-        except Exception:
-            pass
-
-    logger.warning("❌ INVALID Gafiapay signature verification failure across all cryptographic methods.")
+    logger.warning("❌ INVALID Gafiapay webhook signature detected.")
     return False
 def check_webhook_timestamp(timestamp_str, max_age_seconds=600):
     """
