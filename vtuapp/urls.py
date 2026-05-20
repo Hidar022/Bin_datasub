@@ -53,7 +53,7 @@ urlpatterns = [
 
     # Admin Dashboard Routes
     path('admin/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin/add-plan/', views.add_plan, name='add_plan'),
+    path('admin/add-plan/', views.admin_plans, name='add_plan'),
     path('admin/users/', views.admin_users, name='admin_users'),
     path('admin/user/<int:user_id>/', views.admin_user_detail, name='admin_user_detail'),
     path('admin/user/edit/<int:user_id>/', views.admin_user_edit, name='admin_user_edit'),

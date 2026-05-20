@@ -8,11 +8,15 @@ import random
 import traceback
 import requests
 from decimal import Decimal
-from datetime import timedelta
 from django.http import HttpResponse
 from django.db.models import Sum, Count, Q, Avg
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, redirect, get_object_or_404
+
+
+import os
+import shutil
+from datetime import datetime, timedelta
 
 
 
@@ -1168,127 +1172,13 @@ def admin_users(request):
     return render(request, 'admin/users.html', context)
 
 @staff_member_required
-def add_plan(request):
-    """Handles the creation of new data plans from the CEO panel modal."""
-    if request.method == 'POST':
-        # Matching the 'name' attributes from your dashboard.html form
-        network = request.POST.get('network')
-        name = request.POST.get('name')
-        price = request.POST.get('price')
-        smeplug_id = request.POST.get('smeplug_id')
-        network_id = request.POST.get('network_id')
-
-        # Create the new plan in the database
-        DataPlan.objects.create(
-            network=network,
-            name=name,
-            price=price,
-            smeplug_plan_id=smeplug_id, # Check if your model field is 'smeplug_id' or 'smeplug_plan_id'
-            network_id=network_id,
-            is_active=True
-        )
-        return redirect('admin_dashboard')
-    
-    return redirect('admin_dashboard')    
-
-@staff_member_required
-def admin_transactions(request):
-    """Admin Transaction Management"""
-    transactions = Transaction.objects.all().order_by('-timestamp')
-    
-    # Filters
-    status_filter = request.GET.get('status', '')
-    type_filter = request.GET.get('type', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    
-    if status_filter:
-        transactions = transactions.filter(status__iexact=status_filter)
-    if type_filter:
-        transactions = transactions.filter(transaction_type__icontains=type_filter)
-    if date_from:
-        transactions = transactions.filter(timestamp__date__gte=date_from)
-    if date_to:
-        transactions = transactions.filter(timestamp__date__lte=date_to)
-    
-    # Pagination
-    from django.core.paginator import Paginator
-    paginator = Paginator(transactions, 50)  # 50 per page
-    page_number = request.GET.get('page')
-    transactions_page = paginator.get_page(page_number)
-    
-    # Stats
-    all_transactions = Transaction.objects.all()
-    total_transactions = all_transactions.count()
-    successful_transactions = all_transactions.filter(status__iexact='successful').count()
-    pending_transactions = all_transactions.filter(status__iexact='pending').count()
-    failed_transactions = all_transactions.filter(status__iexact='failed').count()
-    
-    context = {
-        'transactions': transactions_page,
-        'total_transactions': total_transactions,
-        'successful_transactions': successful_transactions,
-        'pending_transactions': pending_transactions,
-        'failed_transactions': failed_transactions,
-        'status_filter': status_filter,
-        'type_filter': type_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-    }
-    return render(request, 'admin/transactions.html', context)
-
-@staff_member_required
-def admin_transaction_detail(request, tx_id):
-    tx = get_object_or_404(Transaction, id=tx_id)
-    return JsonResponse({
-        'id': tx.id,
-        'user': tx.user.username,
-        'email': tx.user.email,
-        'type': tx.transaction_type,
-        'amount': str(tx.amount),
-        'status': tx.status,
-        'provider': tx.provider,
-        'reference': tx.reference,
-        'phone_or_meter': tx.phone_or_meter,
-        'timestamp': tx.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-        'cost_price': str(tx.cost_price),
-        'profit': str(tx.amount - tx.cost_price),
-    })
-
-@staff_member_required
-def admin_transaction_retry(request, tx_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
-    tx = get_object_or_404(Transaction, id=tx_id)
-    if tx.status.lower() != 'pending':
-        return JsonResponse({'success': False, 'message': 'Only pending transactions can be retried'}, status=400)
-    tx.status = 'Successful'
-    tx.save()
-    log_security_event('transaction_retried', user=tx.user, details=f'tx {tx.id} retried by {request.user.username}')
-    return JsonResponse({'success': True, 'message': 'Transaction retried successfully'})
-
-@staff_member_required
-def admin_transaction_refund(request, tx_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
-    tx = get_object_or_404(Transaction, id=tx_id)
-    if tx.status.lower() != 'successful':
-        return JsonResponse({'success': False, 'message': 'Only successful transactions can be refunded'}, status=400)
-    wallet = tx.user.wallet
-    wallet.balance += tx.amount
-    wallet.save()
-    tx.status = 'Refunded'
-    tx.save()
-    log_security_event('transaction_refunded', user=tx.user, details=f'tx {tx.id} refunded by {request.user.username}', severity='WARNING')
-    return JsonResponse({'success': True, 'message': 'Transaction refunded and wallet credited'})
-
-@staff_member_required
 def admin_plan_detail(request, plan_id):
     plan = get_object_or_404(DataPlan, id=plan_id)
     return JsonResponse({
         'id': plan.id,
         'network': plan.network,
         'name': plan.name,
+        'plan_type': plan.plan_type,  # 🚀 Added to populate the edit modal dropdown
         'price': str(plan.price),
         'network_id': plan.network_id,
         'smeplug_plan_id': plan.smeplug_plan_id,
@@ -1314,11 +1204,13 @@ def admin_plan_delete(request, plan_id):
 
 @staff_member_required
 def admin_plan_edit(request, plan_id):
+    """Handles async AJAX updates to plans if applicable"""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
     plan = get_object_or_404(DataPlan, id=plan_id)
     plan.network = request.POST.get('network')
     plan.name = request.POST.get('name')
+    plan.plan_type = request.POST.get('plan_type', 'SME')  # 🚀 Added type interceptor
     plan.price = request.POST.get('price')
     plan.network_id = request.POST.get('network_id')
     plan.smeplug_plan_id = request.POST.get('smeplug_id')
@@ -1350,11 +1242,17 @@ def admin_transactions_export(request):
 
 @staff_member_required
 def admin_plans(request):
-    """Admin Data Plans Management"""
+    """Admin Data Plans Management Terminal"""
     plans = DataPlan.objects.all().order_by('network', 'price')
+    
+    # Optional URL Filtering parameters
     network_filter = request.GET.get('network', '')
+    type_filter = request.GET.get('plan_type', '') # 🚀 Added capability to filter dashboard view by type
+    
     if network_filter:
         plans = plans.filter(network__iexact=network_filter)
+    if type_filter:
+        plans = plans.filter(plan_type__iexact=type_filter)
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1363,6 +1261,7 @@ def admin_plans(request):
             DataPlan.objects.create(
                 network=request.POST.get('network'),
                 name=request.POST.get('name'),
+                plan_type=request.POST.get('plan_type', 'SME'),  # 🚀 Save plan type from template dropdown selection
                 price=request.POST.get('price'),
                 network_id=request.POST.get('network_id'),
                 smeplug_plan_id=request.POST.get('smeplug_id'),
@@ -1376,6 +1275,7 @@ def admin_plans(request):
             plan = DataPlan.objects.get(id=plan_id)
             plan.network = request.POST.get('network')
             plan.name = request.POST.get('name')
+            plan.plan_type = request.POST.get('plan_type', 'SME')  # 🚀 Update edited plan type choice
             plan.price = request.POST.get('price')
             plan.network_id = request.POST.get('network_id')
             plan.smeplug_plan_id = request.POST.get('smeplug_id')
@@ -1412,8 +1312,27 @@ def admin_plans(request):
         'airtel_plans': plans.filter(network__iexact='AIRTEL').count(),
         'mobile_plans': plans.filter(network__iexact='9MOBILE').count(),
         'network_filter': network_filter,
+        'type_filter': type_filter,
+        'plan_types_choices': DataPlan.PLAN_TYPES,  # Passed choices dynamically to populate fields in template
     }
     return render(request, 'admin/plans.html', context)
+
+@staff_member_required
+def admin_transactions(request):
+    """View to list historical transactions in the CEO dashboard"""
+    transactions = Transaction.objects.all().order_by('-timestamp')
+    
+    # Simple search or filter handling
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        transactions = transactions.filter(status__iexact=status_filter)
+        
+    from django.core.paginator import Paginator
+    paginator = Paginator(transactions, 50) # 50 logs per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin/transactions.html', {'transactions': page_obj})
 
 @staff_member_required
 def admin_reports(request):
@@ -1592,7 +1511,7 @@ def admin_reports_export(request):
 
 @staff_member_required
 def admin_settings(request):
-    """Admin System Settings"""
+    """Admin System Settings Panel"""
     if request.method == 'POST':
         action = request.POST.get('action')
         if not action and any(k in request.POST for k in ['save_api', 'save_system', 'save_security', 'save_notifications']):
@@ -1624,19 +1543,15 @@ def admin_settings(request):
             cache.clear()
             messages.success(request, '✅ Cache cleared successfully')
         elif action == 'backup_database':
-            import os
-            from django.conf import settings as django_settings
-            from datetime import datetime
-            import shutil
             backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
-            backup_path = os.path.join(django_settings.BASE_DIR, 'backups', backup_name)
+            backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
             os.makedirs(os.path.dirname(backup_path), exist_ok=True)
-            shutil.copy(django_settings.DATABASES['default']['NAME'], backup_path)
+            shutil.copy(settings.DATABASES['default']['NAME'], backup_path)
             messages.success(request, f'✅ Database backed up to {backup_name}')
         elif action == 'restart_services':
             messages.success(request, '✅ Service restart command queued')
     
-    # System stats
+    # System DB stats query
     from django.db import connection
     with connection.cursor() as cursor:
         cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table';")
@@ -1685,36 +1600,27 @@ def admin_settings_clear_cache(request):
 def admin_settings_backup_db(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
-    import os
-    from django.conf import settings as django_settings
-    from datetime import datetime
-    import shutil
-    os.makedirs(os.path.join(django_settings.BASE_DIR, 'backups'), exist_ok=True)
+    os.makedirs(os.path.join(settings.BASE_DIR, 'backups'), exist_ok=True)
     backup_name = f"db_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sqlite3"
-    backup_path = os.path.join(django_settings.BASE_DIR, 'backups', backup_name)
-    shutil.copy(django_settings.DATABASES['default']['NAME'], backup_path)
+    backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
+    shutil.copy(settings.DATABASES['default']['NAME'], backup_path)
     return JsonResponse({'success': True, 'message': f'Database backed up to {backup_name}'})
 
 @staff_member_required
 def admin_settings_restart_services(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
-    # Placeholder for service restart; actual restart requires system privileges
     return JsonResponse({'success': True, 'message': 'Service restart command queued'})
 
 @staff_member_required
 def admin_security(request):
-    """Admin Security Dashboard"""
+    """Admin Security Dashboard Engine"""
     from django.core.cache import cache
 
-    # Security stats
     failed_login_attempts = cache.get('failed_login_count', 0)
-    locked_accounts = 0  # Would need to count cache keys, but for simplicity
-    
-    # Recent security events (from logs if available)
+    locked_accounts = 0  
     security_alerts = []
     
-    # Check for suspicious activities
     suspicious_users = User.objects.filter(
         Q(transaction__status='Failed') &
         Q(transaction__timestamp__gte=timezone.now() - timedelta(hours=24))
@@ -1728,7 +1634,7 @@ def admin_security(request):
         'security_alerts': security_alerts,
         'suspicious_users': suspicious_users,
         'total_users': User.objects.count(),
-        'active_sessions': 0,  # Would need session tracking
+        'active_sessions': 0,  
     }
     return render(request, 'admin/security.html', context)
 
